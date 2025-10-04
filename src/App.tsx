@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase/config';
 import { useAuthStore } from './store/authStore';
 import { useTaskStore } from './store/taskStore';
@@ -116,9 +116,6 @@ function App() {
     setLabels(mockLabels);
   };
 
-  const handleSignOut = () => {
-    signOut(auth);
-  };
 
   if (loading) {
     return (
@@ -136,14 +133,6 @@ function App() {
     <div className="flex h-screen bg-gray-50">
       <Sidebar />
       <MainContent />
-      
-      {/* Sign out button */}
-      <button
-        onClick={handleSignOut}
-        className="fixed top-4 right-4 px-3 py-1 text-sm text-gray-600 hover:text-gray-800 bg-white border border-gray-300 rounded shadow-sm hover:shadow-md"
-      >
-        Sign out
-      </button>
     </div>
   );
 }

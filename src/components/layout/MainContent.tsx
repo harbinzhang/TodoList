@@ -1,6 +1,7 @@
 import { useTaskStore } from '../../store/taskStore';
 import TaskList from '../tasks/TaskList';
 import SearchBar from '../common/SearchBar';
+import ProfileDropdown from '../common/ProfileDropdown';
 import { format } from 'date-fns';
 
 const MainContent = () => {
@@ -47,8 +48,11 @@ const MainContent = () => {
               <p className="text-sm text-gray-500 mt-1">{getViewSubtitle()}</p>
             )}
           </div>
-          <div className="w-64">
-            <SearchBar />
+          <div className="flex items-center space-x-4">
+            <div className="w-64">
+              <SearchBar />
+            </div>
+            <ProfileDropdown />
           </div>
         </div>
       </div>

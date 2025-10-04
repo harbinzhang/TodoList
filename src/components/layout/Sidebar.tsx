@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useTaskStore } from '../../store/taskStore';
-import { useAuthStore } from '../../store/authStore';
 import ProjectForm from '../projects/ProjectForm';
 import LabelForm from '../labels/LabelForm';
 import {
@@ -14,7 +13,6 @@ import {
 } from '@heroicons/react/24/outline';
 
 const Sidebar = () => {
-  const { user } = useAuthStore();
   const { currentView, projects, labels, tasks, setCurrentView } = useTaskStore();
   const [isProjectsOpen, setIsProjectsOpen] = useState(true);
   const [isLabelsOpen, setIsLabelsOpen] = useState(false);
@@ -54,20 +52,9 @@ const Sidebar = () => {
 
   return (
     <div className="w-64 bg-gray-50 border-r border-gray-200 h-screen flex flex-col">
-      {/* User Section */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium">
-            {user?.displayName?.[0] || user?.email?.[0] || 'U'}
-          </div>
-          <span className="font-medium text-gray-900 truncate">
-            {user?.displayName || user?.email || 'User'}
-          </span>
-        </div>
-      </div>
 
       {/* Quick Add */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-gray-200 mt-4">
         <button className="w-full flex items-center space-x-2 text-red-500 hover:bg-red-50 rounded-lg p-2">
           <PlusIcon className="w-5 h-5" />
           <span className="font-medium">Add task</span>
