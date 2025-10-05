@@ -82,6 +82,7 @@ export const parserConfig: ParserConfig = {
       'sun': () => getDayOfWeek('sunday'),
     },
     patterns: [
+      // MM/DD/YYYY format (4-digit year) - highest priority
       {
         regex: /\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/g,
         parser: (match) => {
@@ -90,6 +91,42 @@ export const parserConfig: ParserConfig = {
           return isNaN(date.getTime()) ? null : date;
         },
       },
+      // MM/DD/YY format (2-digit year) - assume 2000s
+      {
+        regex: /\b(\d{1,2})\/(\d{1,2})\/(\d{2})\b/g,
+        parser: (match) => {
+          const [, month, day, year] = match;
+          const fullYear = 2000 + parseInt(year); // Assume 2000s for 2-digit years
+          const date = new Date(fullYear, parseInt(month) - 1, parseInt(day));
+          return isNaN(date.getTime()) ? null : date;
+        },
+      },
+      // MM/DD format (no year) - smart year detection
+      {
+        regex: /\b(\d{1,2})\/(\d{1,2})\b/g,
+        parser: (match) => {
+          const [, month, day] = match;
+          const monthNum = parseInt(month);
+          const dayNum = parseInt(day);
+          
+          // Validate month and day ranges
+          if (monthNum < 1 || monthNum > 12 || dayNum < 1 || dayNum > 31) {
+            return null;
+          }
+          
+          const today = new Date();
+          const currentYear = today.getFullYear();
+          const parsedDate = new Date(currentYear, monthNum - 1, dayNum);
+          
+          // If the date has already passed this year, use next year
+          if (parsedDate < today) {
+            parsedDate.setFullYear(currentYear + 1);
+          }
+          
+          return isNaN(parsedDate.getTime()) ? null : parsedDate;
+        },
+      },
+      // YYYY-MM-DD format (ISO format)
       {
         regex: /\b(\d{4})-(\d{1,2})-(\d{1,2})\b/g,
         parser: (match) => {
