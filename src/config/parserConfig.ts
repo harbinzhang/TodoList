@@ -64,7 +64,11 @@ export const parserConfig: ParserConfig = {
   dates: {
     keywords: {
       'today': getToday,
+      'tod': getToday,
       'tomorrow': getTomorrow,
+      'tom': getTomorrow,
+      'tmr': getTomorrow,
+      'tmrw': getTomorrow,
       'next week': getNextWeek,
       'monday': () => getDayOfWeek('monday'),
       'tuesday': () => getDayOfWeek('tuesday'),
