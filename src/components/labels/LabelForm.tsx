@@ -34,10 +34,9 @@ const LabelForm = ({ isOpen, onClose }: LabelFormProps) => {
 
     setLoading(true);
     try {
-      const labelId = await labelService.createLabel({
+      const labelId = await labelService.createLabel(user.uid, {
         name: name.trim(),
         color: selectedColor,
-        userId: user.uid,
       });
 
       addLabel({
