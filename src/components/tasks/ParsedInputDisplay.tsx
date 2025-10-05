@@ -85,7 +85,7 @@ const ParsedInputDisplay = ({
           className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200"
         >
           <TagIcon className="w-3 h-3 mr-1" />
-          <span>@{label}</span>
+          <span>{label}</span>
           <button
             type="button"
             onClick={() => onRemoveLabel(label)}
