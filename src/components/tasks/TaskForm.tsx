@@ -25,7 +25,8 @@ const TaskForm = () => {
     e.preventDefault();
     if (!user) return;
 
-    const finalTitle = parsedInput?.cleanTitle.trim() || title.trim();
+  // Use safe optional chaining on cleanTitle
+  const finalTitle = parsedInput?.cleanTitle?.trim() || title.trim();
     if (!finalTitle) return;
 
     let finalLabels: string[] = [];
@@ -222,7 +223,7 @@ const TaskForm = () => {
         </button>
         <button
           type="submit"
-          disabled={!title.trim() && !parsedInput?.cleanTitle.trim()}
+          disabled={!title.trim() && !parsedInput?.cleanTitle?.trim()}
           className="px-4 py-2.5 text-sm text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed rounded min-h-[44px] touch-manipulation"
         >
           Add task
