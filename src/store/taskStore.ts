@@ -49,17 +49,34 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   setTasks: (tasks) => set({ tasks }),
   addTask: async (task) => {
     try {
-      const { id, createdAt, updatedAt, userId, ...taskData } = task;
+      const { id: tempId, createdAt, updatedAt, userId, ...taskData } = task;
       // Remove undefined values to prevent Firebase errors
       const sanitizedTaskData = Object.fromEntries(
         Object.entries(taskData).filter(([_, value]) => value !== undefined)
       );
-      
-      const newTaskId = await taskService.createTask(userId, sanitizedTaskData);
-      const newTask = { ...task, id: newTaskId };
-      set({ tasks: [...get().tasks, newTask] });
+
+      // Optimistically add task with its temporary id so UI feels instant
+      const existing = get().tasks.find(t => t.id === tempId);
+      if (!existing) {
+        set({ tasks: [...get().tasks, task] });
+      }
+
+      // Typescript can't infer after runtime sanitization; assert the shape
+      const newTaskId = await taskService.createTask(
+        userId,
+        sanitizedTaskData as Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
+      );
+
+      // Replace the temporary id with Firestore generated id in-place
+      set({
+        tasks: get().tasks.map(t =>
+          t.id === tempId ? { ...t, id: newTaskId } : t
+        )
+      });
     } catch (error) {
       console.error('Error adding task:', error);
+      // On failure, remove the optimistic task with temp id
+      set({ tasks: get().tasks.filter(t => t.id !== task.id) });
       throw error;
     }
   },

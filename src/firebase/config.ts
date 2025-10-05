@@ -19,19 +19,23 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const analytics = getAnalytics(app);
 
-// Connect to emulators in development
+// Connect to emulators in development. Avoid reaching into private SDK internals
+// because doing so can throw when running in certain build modes.
 if (import.meta.env.DEV && import.meta.env.VITE_USE_FIREBASE_EMULATOR !== 'false') {
   try {
-    // Check if emulators are already connected
-    if (!(auth as any)._delegate._config.emulator) {
-      connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+    // We only attempt to connect once per session. Firebase SDK will throw if we
+    // call these twice; swallow the error silently in that case.
+    connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+    connectFirestoreEmulator(db, '127.0.0.1', 8080);
+    console.log('✅ Using Firebase emulators (Auth:9099 Firestore:8080)');
+  } catch (e: any) {
+    const msg = String(e?.message || e);
+    if (msg.includes('already')) {
+      // Safe to ignore duplicate connection attempts
+      console.debug('Emulators already connected.');
+    } else {
+      console.warn('Failed to connect to emulators, falling back to prod:', e);
     }
-    if (!(db as any)._delegate._databaseId.projectId.includes('demo-')) {
-      connectFirestoreEmulator(db, '127.0.0.1', 8080);
-    }
-  } catch (error) {
-    // Emulators may already be connected or not available
-    console.warn('Firebase emulators not available or already connected:', error);
   }
 }
 
