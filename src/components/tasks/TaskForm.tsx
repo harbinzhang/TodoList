@@ -1,34 +1,59 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTaskStore } from '../../store/taskStore';
 import { useAuthStore } from '../../store/authStore';
 import { PlusIcon, CalendarIcon, FlagIcon } from '@heroicons/react/24/outline';
 import type { Task } from '../../types';
+import { taskInputParser, type ParsedInput } from '../../utils/taskInputParser';
+import ParsedInputDisplay from './ParsedInputDisplay';
 
 const TaskForm = () => {
   const { user } = useAuthStore();
-  const { addTask, currentView, currentProjectId } = useTaskStore();
+  const { addTask, currentView, currentProjectId, findOrCreateLabel } = useTaskStore();
   const [isExpanded, setIsExpanded] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [priority, setPriority] = useState<1 | 2 | 3 | 4>(4);
+  const [parsedInput, setParsedInput] = useState<ParsedInput | null>(null);
+  const [overriddenValues, setOverriddenValues] = useState<{
+    priority?: boolean;
+    date?: boolean;
+    labels?: string[];
+  }>({});
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !user) return;
+    if (!user) return;
+
+    const finalTitle = parsedInput?.cleanTitle.trim() || title.trim();
+    if (!finalTitle) return;
+
+    let finalLabels: string[] = [];
+    
+    if (parsedInput?.labels.length && !overriddenValues.labels?.length) {
+      try {
+        const labelPromises = parsedInput.labels.map(labelName => 
+          findOrCreateLabel(labelName, user.uid)
+        );
+        const createdLabels = await Promise.all(labelPromises);
+        finalLabels = createdLabels.map(label => label.id);
+      } catch (error) {
+        console.error('Error creating labels:', error);
+      }
+    }
 
     const newTask: Task = {
       id: crypto.randomUUID(),
-      title: title.trim(),
+      title: finalTitle,
       description: description.trim() || undefined,
       completed: false,
-      priority,
-      dueDate: dueDate ? new Date(dueDate) : undefined,
+      priority: (!overriddenValues.priority && parsedInput?.priority) ? parsedInput.priority : priority,
+      dueDate: (!overriddenValues.date && parsedInput?.dueDate) ? parsedInput.dueDate : (dueDate ? new Date(dueDate) : undefined),
       createdAt: new Date(),
       updatedAt: new Date(),
       userId: user.uid,
       projectId: currentView === 'project' ? currentProjectId : undefined,
-      labels: [],
+      labels: finalLabels,
       subtasks: [],
     };
 
@@ -41,11 +66,57 @@ const TaskForm = () => {
     setDescription('');
     setDueDate('');
     setPriority(4);
+    setParsedInput(null);
+    setOverriddenValues({});
     setIsExpanded(false);
   };
 
   const handleCancel = () => {
     resetForm();
+  };
+
+  // Parse input whenever title changes
+  useEffect(() => {
+    if (title.trim()) {
+      const parsed = taskInputParser.parseInput(title);
+      setParsedInput(parsed);
+    } else {
+      setParsedInput(null);
+    }
+  }, [title]);
+
+  // Handle removing parsed priority
+  const handleRemovePriority = () => {
+    setOverriddenValues(prev => ({ ...prev, priority: true }));
+  };
+
+  // Handle removing parsed date
+  const handleRemoveDate = () => {
+    setOverriddenValues(prev => ({ ...prev, date: true }));
+  };
+
+  // Handle removing parsed label
+  const handleRemoveLabel = (labelName: string) => {
+    setOverriddenValues(prev => ({
+      ...prev,
+      labels: [...(prev.labels || []), labelName]
+    }));
+  };
+
+  // Get effective parsed input for display (excluding overridden values)
+  const getEffectiveParsedInput = (): ParsedInput | null => {
+    if (!parsedInput) return null;
+
+    const effectiveLabels = parsedInput.labels.filter(
+      label => !overriddenValues.labels?.includes(label)
+    );
+
+    return {
+      ...parsedInput,
+      priority: overriddenValues.priority ? undefined : parsedInput.priority,
+      dueDate: overriddenValues.date ? undefined : parsedInput.dueDate,
+      labels: effectiveLabels,
+    };
   };
 
 
@@ -70,10 +141,20 @@ const TaskForm = () => {
         type="text"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        placeholder="Task name"
+        placeholder="Task name (try: p1 today @work fix bug)"
         className="w-full text-sm font-medium border-none outline-none placeholder-gray-400 mb-2"
         autoFocus
       />
+
+      {/* Parsed Input Display */}
+      {getEffectiveParsedInput() && (
+        <ParsedInputDisplay
+          parsedInput={getEffectiveParsedInput()!}
+          onRemovePriority={handleRemovePriority}
+          onRemoveDate={handleRemoveDate}
+          onRemoveLabel={handleRemoveLabel}
+        />
+      )}
 
       {/* Description Input */}
       <textarea
@@ -124,7 +205,7 @@ const TaskForm = () => {
         </button>
         <button
           type="submit"
-          disabled={!title.trim()}
+          disabled={!title.trim() && !parsedInput?.cleanTitle.trim()}
           className="px-3 py-1.5 text-sm text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed rounded"
         >
           Add task

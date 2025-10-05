@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import type { Task, Project, Label, TaskFilter, ViewType } from '../types';
+import { labelService } from '../services/labelService';
+import { parserConfig } from '../config/parserConfig';
 
 interface TaskState {
   tasks: Task[];
@@ -26,6 +28,8 @@ interface TaskState {
   addLabel: (label: Label) => void;
   updateLabel: (labelId: string, updates: Partial<Label>) => void;
   deleteLabel: (labelId: string) => void;
+  findLabelByName: (name: string) => Label | undefined;
+  findOrCreateLabel: (name: string, userId: string, defaultColor?: string) => Promise<Label>;
   
   setCurrentView: (view: ViewType, id?: string) => void;
   setFilter: (filter: Partial<TaskFilter>) => void;
@@ -72,6 +76,38 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   deleteLabel: (labelId) => set({
     labels: get().labels.filter(label => label.id !== labelId)
   }),
+
+  findLabelByName: (name) => {
+    return get().labels.find(label => label.name.toLowerCase() === name.toLowerCase());
+  },
+
+  findOrCreateLabel: async (name, userId, defaultColor = parserConfig.labels.defaultColor) => {
+    const existingLabel = get().findLabelByName(name);
+    if (existingLabel) {
+      return existingLabel;
+    }
+
+    try {
+      const labelId = await labelService.createLabel({
+        name,
+        color: defaultColor,
+        userId,
+      });
+
+      const newLabel: Label = {
+        id: labelId,
+        name,
+        color: defaultColor,
+        userId,
+      };
+
+      get().addLabel(newLabel);
+      return newLabel;
+    } catch (error) {
+      console.error('Error creating label:', error);
+      throw error;
+    }
+  },
 
   setCurrentView: (view, id) => set({ 
     currentView: view,
