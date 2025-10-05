@@ -50,7 +50,12 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   addTask: async (task) => {
     try {
       const { id, createdAt, updatedAt, ...taskData } = task;
-      const newTaskId = await taskService.createTask(taskData);
+      // Remove undefined values to prevent Firebase errors
+      const sanitizedTaskData = Object.fromEntries(
+        Object.entries(taskData).filter(([_, value]) => value !== undefined)
+      );
+      
+      const newTaskId = await taskService.createTask(sanitizedTaskData);
       const newTask = { ...task, id: newTaskId };
       set({ tasks: [...get().tasks, newTask] });
     } catch (error) {

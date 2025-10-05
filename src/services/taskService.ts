@@ -19,8 +19,13 @@ const COLLECTION_NAME = 'tasks';
 export const taskService = {
   // Create a new task
   async createTask(taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    // Remove undefined values to prevent Firebase errors
+    const sanitizedData = Object.fromEntries(
+      Object.entries(taskData).filter(([_, value]) => value !== undefined)
+    );
+    
     const docRef = await addDoc(collection(db, COLLECTION_NAME), {
-      ...taskData,
+      ...sanitizedData,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
@@ -30,8 +35,13 @@ export const taskService = {
   // Update an existing task
   async updateTask(taskId: string, updates: Partial<Omit<Task, 'id' | 'createdAt'>>): Promise<void> {
     const taskRef = doc(db, COLLECTION_NAME, taskId);
+    // Remove undefined values to prevent Firebase errors
+    const sanitizedUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, value]) => value !== undefined)
+    );
+    
     await updateDoc(taskRef, {
-      ...updates,
+      ...sanitizedUpdates,
       updatedAt: serverTimestamp(),
     });
   },

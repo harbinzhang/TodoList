@@ -57,8 +57,13 @@ const TaskForm = () => {
       subtasks: [],
     };
 
+    // Remove undefined values to prevent Firebase errors
+    const sanitizedTask = Object.fromEntries(
+      Object.entries(newTask).filter(([_, value]) => value !== undefined)
+    ) as Task;
+
     try {
-      await addTask(newTask);
+      await addTask(sanitizedTask);
       resetForm();
     } catch (error) {
       console.error('Failed to create task:', error);
@@ -77,6 +82,13 @@ const TaskForm = () => {
 
   const handleCancel = () => {
     resetForm();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e as any);
+    }
   };
 
   // Parse input whenever title changes
@@ -145,6 +157,7 @@ const TaskForm = () => {
         type="text"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={handleKeyDown}
         placeholder="Task name (try: p1 today @work fix bug)"
         className="w-full text-sm font-medium border-none outline-none placeholder-gray-400 mb-2"
         autoFocus

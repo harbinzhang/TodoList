@@ -20,13 +20,18 @@ export const db = getFirestore(app);
 export const analytics = getAnalytics(app);
 
 // Connect to emulators in development
-if (import.meta.env.DEV) {
+if (import.meta.env.DEV && import.meta.env.VITE_USE_FIREBASE_EMULATOR !== 'false') {
   try {
-    connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
-    connectFirestoreEmulator(db, '127.0.0.1', 8080);
+    // Check if emulators are already connected
+    if (!(auth as any)._delegate._config.emulator) {
+      connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+    }
+    if (!(db as any)._delegate._databaseId.projectId.includes('demo-')) {
+      connectFirestoreEmulator(db, '127.0.0.1', 8080);
+    }
   } catch (error) {
-    // Emulators may already be connected
-    console.log('Emulators already connected or not available');
+    // Emulators may already be connected or not available
+    console.warn('Firebase emulators not available or already connected:', error);
   }
 }
 
