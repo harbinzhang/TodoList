@@ -91,7 +91,7 @@ const TaskItem = ({ task }: TaskItemProps) => {
 
   return (
     <div
-      className={`group bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 border-l-4 ${getPriorityBorder(
+      className={`group bg-white border border-gray-200 rounded-lg p-3 md:p-4 hover:shadow-md transition-all duration-200 border-l-4 ${getPriorityBorder(
         task.priority
       )} ${task.completed ? 'opacity-60' : ''}`}
     >
@@ -99,12 +99,12 @@ const TaskItem = ({ task }: TaskItemProps) => {
         {/* Checkbox */}
         <button
           onClick={handleToggleComplete}
-          className="flex-shrink-0 mt-0.5"
+          className="flex-shrink-0 mt-0.5 p-1 touch-manipulation"
         >
           {task.completed ? (
-            <CheckCircleFilledIcon className="w-6 h-6 text-green-500" />
+            <CheckCircleFilledIcon className="w-6 h-6 md:w-7 md:h-7 text-green-500" />
           ) : (
-            <CheckCircleIcon className="w-6 h-6 text-gray-400 hover:text-green-500" />
+            <CheckCircleIcon className="w-6 h-6 md:w-7 md:h-7 text-gray-400 hover:text-green-500" />
           )}
         </button>
 
@@ -117,14 +117,14 @@ const TaskItem = ({ task }: TaskItemProps) => {
               onChange={(e) => setEditTitle(e.target.value)}
               onBlur={handleSaveEdit}
               onKeyDown={handleKeyPress}
-              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-sm md:text-base border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
               autoFocus
             />
           ) : (
             <h3
-              className={`text-sm font-medium ${
+              className={`text-sm md:text-base font-medium ${
                 task.completed ? 'line-through text-gray-500' : 'text-gray-900'
-              } cursor-pointer`}
+              } cursor-pointer py-2 -my-2 touch-manipulation`}
               onClick={() => setIsEditing(true)}
             >
               {task.title}
@@ -132,11 +132,11 @@ const TaskItem = ({ task }: TaskItemProps) => {
           )}
 
           {task.description && (
-            <p className="text-xs text-gray-500 mt-1">{task.description}</p>
+            <p className="text-xs md:text-sm text-gray-500 mt-1">{task.description}</p>
           )}
 
           {/* Task Meta */}
-          <div className="flex items-center space-x-4 mt-2">
+          <div className="flex flex-wrap items-center gap-3 md:gap-4 mt-2">
             {/* Priority */}
             {task.priority < 4 && (
               <div className="flex items-center space-x-1">
@@ -183,13 +183,13 @@ const TaskItem = ({ task }: TaskItemProps) => {
         </div>
 
         {/* Actions */}
-        <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex-shrink-0 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
           <div className="flex items-center space-x-1">
             <button
               onClick={() => setIsEditing(true)}
-              className="p-1 text-gray-400 hover:text-gray-600 rounded"
+              className="p-2 text-gray-400 hover:text-gray-600 rounded touch-manipulation"
             >
-              <PencilIcon className="w-4 h-4" />
+              <PencilIcon className="w-5 h-5 md:w-4 md:h-4" />
             </button>
             <button
               onClick={async () => {
@@ -199,9 +199,9 @@ const TaskItem = ({ task }: TaskItemProps) => {
                   console.error('Failed to delete task:', error);
                 }
               }}
-              className="p-1 text-gray-400 hover:text-red-500 rounded"
+              className="p-2 text-gray-400 hover:text-red-500 rounded touch-manipulation"
             >
-              <TrashIcon className="w-4 h-4" />
+              <TrashIcon className="w-5 h-5 md:w-4 md:h-4" />
             </button>
           </div>
         </div>

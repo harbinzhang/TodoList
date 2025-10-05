@@ -140,10 +140,10 @@ const TaskForm = () => {
     return (
       <button
         onClick={() => setIsExpanded(true)}
-        className="w-full flex items-center space-x-3 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200 group"
+        className="w-full flex items-center space-x-3 p-3 md:p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200 group touch-manipulation"
       >
         <PlusIcon className="w-5 h-5 text-red-500" />
-        <span className="text-gray-500 group-hover:text-gray-700">
+        <span className="text-gray-500 group-hover:text-gray-700 text-sm md:text-base">
           Add task
         </span>
       </button>
@@ -151,7 +151,7 @@ const TaskForm = () => {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-lg p-4 shadow-md">
+    <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-lg p-3 md:p-4 shadow-md">
       {/* Title Input */}
       <input
         type="text"
@@ -159,7 +159,7 @@ const TaskForm = () => {
         onChange={(e) => setTitle(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Task name (try: p1 today @work fix bug)"
-        className="w-full text-sm font-medium border-none outline-none placeholder-gray-400 mb-2"
+        className="w-full text-sm md:text-base font-medium border-none outline-none placeholder-gray-400 mb-2 min-h-[44px] flex items-center"
         autoFocus
       />
 
@@ -179,29 +179,29 @@ const TaskForm = () => {
         onChange={(e) => setDescription(e.target.value)}
         placeholder="Description"
         rows={2}
-        className="w-full text-sm border-none outline-none placeholder-gray-400 resize-none mb-3"
+        className="w-full text-sm md:text-base border-none outline-none placeholder-gray-400 resize-none mb-3 min-h-[44px]"
       />
 
       {/* Task Options */}
-      <div className="flex items-center space-x-4 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 mb-4">
         {/* Due Date */}
         <div className="flex items-center space-x-2">
-          <CalendarIcon className="w-4 h-4 text-gray-400" />
+          <CalendarIcon className="w-5 h-5 text-gray-400" />
           <input
             type="date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
-            className="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
           />
         </div>
 
         {/* Priority */}
         <div className="flex items-center space-x-2">
-          <FlagIcon className="w-4 h-4 text-gray-400" />
+          <FlagIcon className="w-5 h-5 text-gray-400" />
           <select
             value={priority}
             onChange={(e) => setPriority(Number(e.target.value) as 1 | 2 | 3 | 4)}
-            className="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
           >
             <option value={4}>Priority 4</option>
             <option value={3}>Priority 3</option>
@@ -212,18 +212,18 @@ const TaskForm = () => {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex items-center justify-end space-x-2">
+      <div className="flex items-center justify-end space-x-3">
         <button
           type="button"
           onClick={handleCancel}
-          className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 rounded border border-gray-300 hover:bg-gray-50"
+          className="px-4 py-2.5 text-sm text-gray-600 hover:text-gray-800 rounded border border-gray-300 hover:bg-gray-50 min-h-[44px] touch-manipulation"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={!title.trim() && !parsedInput?.cleanTitle.trim()}
-          className="px-3 py-1.5 text-sm text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed rounded"
+          className="px-4 py-2.5 text-sm text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed rounded min-h-[44px] touch-manipulation"
         >
           Add task
         </button>

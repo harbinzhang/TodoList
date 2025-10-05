@@ -98,12 +98,12 @@ const TaskList = () => {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
       {/* Quick Add Form */}
       <TaskForm />
       
       {/* Tasks */}
-      <div className="mt-6 space-y-2">
+      <div className="mt-4 md:mt-6 space-y-3 md:space-y-2">
         {filteredTasks.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-gray-400 text-lg mb-2">

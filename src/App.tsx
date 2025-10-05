@@ -3,6 +3,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase/config';
 import { useAuthStore } from './store/authStore';
 import { useTaskStore } from './store/taskStore';
+import { useMobile } from './hooks/useMobile';
 import { taskService } from './services/taskService';
 import { projectService } from './services/projectService';
 import { labelService } from './services/labelService';
@@ -13,6 +14,7 @@ import MainContent from './components/layout/MainContent';
 function App() {
   const { user, loading, setUser, setLoading } = useAuthStore();
   const { setTasks, setProjects, setLabels } = useTaskStore();
+  const { isMobile, sidebarOpen, toggleSidebar, closeSidebar } = useMobile();
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
@@ -88,9 +90,24 @@ function App() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar />
-      <MainContent />
+    <div className="flex h-screen bg-gray-50 safe-area-top safe-area-bottom">
+      {/* Mobile backdrop overlay */}
+      {isMobile && sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={closeSidebar}
+        />
+      )}
+      
+      <Sidebar 
+        isMobile={isMobile}
+        sidebarOpen={sidebarOpen}
+        closeSidebar={closeSidebar}
+      />
+      <MainContent 
+        isMobile={isMobile}
+        toggleSidebar={toggleSidebar}
+      />
     </div>
   );
 }
