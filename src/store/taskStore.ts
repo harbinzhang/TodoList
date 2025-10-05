@@ -49,13 +49,13 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   setTasks: (tasks) => set({ tasks }),
   addTask: async (task) => {
     try {
-      const { id, createdAt, updatedAt, ...taskData } = task;
+      const { id, createdAt, updatedAt, userId, ...taskData } = task;
       // Remove undefined values to prevent Firebase errors
       const sanitizedTaskData = Object.fromEntries(
         Object.entries(taskData).filter(([_, value]) => value !== undefined)
       );
       
-      const newTaskId = await taskService.createTask(sanitizedTaskData);
+      const newTaskId = await taskService.createTask(userId, sanitizedTaskData);
       const newTask = { ...task, id: newTaskId };
       set({ tasks: [...get().tasks, newTask] });
     } catch (error) {
@@ -65,9 +65,13 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   },
   updateTask: async (taskId, updates) => {
     try {
-      await taskService.updateTask(taskId, updates);
+      const tasks = get().tasks;
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) throw new Error('Task not found');
+      
+      await taskService.updateTask(task.userId, taskId, updates);
       set({
-        tasks: get().tasks.map(task => 
+        tasks: tasks.map(task => 
           task.id === taskId ? { ...task, ...updates, updatedAt: new Date() } : task
         )
       });
@@ -78,9 +82,13 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   },
   deleteTask: async (taskId) => {
     try {
-      await taskService.deleteTask(taskId);
+      const tasks = get().tasks;
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) throw new Error('Task not found');
+      
+      await taskService.deleteTask(task.userId, taskId);
       set({
-        tasks: get().tasks.filter(task => task.id !== taskId)
+        tasks: tasks.filter(task => task.id !== taskId)
       });
     } catch (error) {
       console.error('Error deleting task:', error);
@@ -125,10 +133,9 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     }
 
     try {
-      const labelId = await labelService.createLabel({
+      const labelId = await labelService.createLabel(userId, {
         name,
         color: defaultColor,
-        userId,
       });
 
       const newLabel: Label = {
