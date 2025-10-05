@@ -57,8 +57,12 @@ const TaskForm = () => {
       subtasks: [],
     };
 
-    addTask(newTask);
-    resetForm();
+    try {
+      await addTask(newTask);
+      resetForm();
+    } catch (error) {
+      console.error('Failed to create task:', error);
+    }
   };
 
   const resetForm = () => {

@@ -16,23 +16,32 @@ interface TaskItemProps {
 }
 
 const TaskItem = ({ task }: TaskItemProps) => {
-  const { updateTask, deleteTask } = useTaskStore();
+  const { updateTask, deleteTask, labels } = useTaskStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
 
-  const handleToggleComplete = () => {
-    updateTask(task.id, { 
-      completed: !task.completed,
-      updatedAt: new Date()
-    });
-  };
-
-  const handleSaveEdit = () => {
-    if (editTitle.trim()) {
-      updateTask(task.id, { 
-        title: editTitle.trim(),
+  const handleToggleComplete = async () => {
+    try {
+      await updateTask(task.id, { 
+        completed: !task.completed,
         updatedAt: new Date()
       });
+    } catch (error) {
+      console.error('Failed to update task:', error);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (editTitle.trim()) {
+      try {
+        await updateTask(task.id, { 
+          title: editTitle.trim(),
+          updatedAt: new Date()
+        });
+      } catch (error) {
+        console.error('Failed to update task:', error);
+        setEditTitle(task.title);
+      }
     } else {
       setEditTitle(task.title);
     }
@@ -148,17 +157,21 @@ const TaskItem = ({ task }: TaskItemProps) => {
               </div>
             )}
 
-            {/* Labels */}
-            {task.labels.length > 0 && (
+            {/* Labels (convert stored label IDs to their display names) */}
+            {task.labels.length > 0 && labels.length > 0 && (
               <div className="flex items-center space-x-1">
-                {task.labels.slice(0, 2).map((label, index) => (
-                  <span
-                    key={index}
-                    className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded"
-                  >
-                    {label}
-                  </span>
-                ))}
+                {task.labels.slice(0, 2).map((labelId, index) => {
+                  const labelObj = labels.find(l => l.id === labelId);
+                  const displayName = labelObj ? labelObj.name : labelId; // fallback to id if not loaded yet
+                  return (
+                    <span
+                      key={index}
+                      className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded"
+                    >
+                      {displayName}
+                    </span>
+                  );
+                })}
                 {task.labels.length > 2 && (
                   <span className="text-xs text-gray-400">
                     +{task.labels.length - 2}
@@ -179,7 +192,13 @@ const TaskItem = ({ task }: TaskItemProps) => {
               <PencilIcon className="w-4 h-4" />
             </button>
             <button
-              onClick={() => deleteTask(task.id)}
+              onClick={async () => {
+                try {
+                  await deleteTask(task.id);
+                } catch (error) {
+                  console.error('Failed to delete task:', error);
+                }
+              }}
               className="p-1 text-gray-400 hover:text-red-500 rounded"
             >
               <TrashIcon className="w-4 h-4" />
