@@ -13,7 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const Sidebar = () => {
-  const { currentView, projects, labels, tasks, setCurrentView } = useTaskStore();
+  const { currentView, currentProjectId, currentLabelId, projects, labels, tasks, setCurrentView } = useTaskStore();
   const [isProjectsOpen, setIsProjectsOpen] = useState(true);
   const [isLabelsOpen, setIsLabelsOpen] = useState(false);
   const [showProjectForm, setShowProjectForm] = useState(false);
@@ -137,7 +137,7 @@ const Sidebar = () => {
                   key={project.id}
                   onClick={() => setCurrentView('project', project.id)}
                   className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 ${
-                    currentView === 'project' && project.id === project.id
+                    currentView === 'project' && currentProjectId === project.id
                       ? 'bg-red-50 text-red-700'
                       : 'text-gray-700'
                   }`}
@@ -188,7 +188,7 @@ const Sidebar = () => {
                   key={label.id}
                   onClick={() => setCurrentView('label', label.id)}
                   className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 ${
-                    currentView === 'label' && label.id === label.id
+                    currentView === 'label' && currentLabelId === label.id
                       ? 'bg-red-50 text-red-700'
                       : 'text-gray-700'
                   }`}
