@@ -34,10 +34,9 @@ const ProjectForm = ({ isOpen, onClose }: ProjectFormProps) => {
 
     setLoading(true);
     try {
-      const projectId = await projectService.createProject({
+      const projectId = await projectService.createProject(user.uid, {
         name: name.trim(),
         color: selectedColor,
-        userId: user.uid,
       });
 
       addProject({

@@ -1,8 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase/config';
 import { useAuthStore } from './store/authStore';
 import { useTaskStore } from './store/taskStore';
+import { useMobile } from './hooks/useMobile';
+import { taskService } from './services/taskService';
+import { projectService } from './services/projectService';
+import { labelService } from './services/labelService';
 import AuthForm from './components/auth/AuthForm';
 import Sidebar from './components/layout/Sidebar';
 import MainContent from './components/layout/MainContent';
@@ -10,9 +14,18 @@ import MainContent from './components/layout/MainContent';
 function App() {
   const { user, loading, setUser, setLoading } = useAuthStore();
   const { setTasks, setProjects, setLabels } = useTaskStore();
+  const { isMobile, sidebarOpen, toggleSidebar, closeSidebar } = useMobile();
+
+  // Track initial data readiness to avoid duplicate fetch and show consistent loading state
+  const [dataReady, setDataReady] = useState({ tasks: false, projects: false, labels: false });
+  const mountedRef = useRef(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUser({
           uid: user.uid,
@@ -20,104 +33,49 @@ function App() {
           displayName: user.displayName || undefined,
           photoURL: user.photoURL || undefined,
         });
-        // Load user data here (tasks, projects, labels)
-        loadUserData(user.uid);
+        // Real-time subscriptions will populate data; no manual fetch to prevent duplication
       } else {
         setUser(null);
         // Clear data when user logs out
         setTasks([]);
         setProjects([]);
         setLabels([]);
+        setDataReady({ tasks: false, projects: false, labels: false });
       }
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => unsubscribeAuth();
   }, [setUser, setLoading, setTasks, setProjects, setLabels]);
 
-  const loadUserData = async (userId: string) => {
-    // Mock data for now - will be replaced with Firebase queries
-    const mockTasks = [
-      {
-        id: '1',
-        title: 'Complete project proposal',
-        description: 'Write and submit the Q4 project proposal',
-        completed: false,
-        priority: 1 as const,
-        dueDate: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        userId,
-        labels: ['work'],
-        subtasks: [],
-      },
-      {
-        id: '2',
-        title: 'Buy groceries',
-        description: 'Milk, bread, eggs, fruits',
-        completed: false,
-        priority: 3 as const,
-        dueDate: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        userId,
-        labels: ['personal'],
-        subtasks: [],
-      },
-      {
-        id: '3',
-        title: 'Review team performance',
-        completed: true,
-        priority: 2 as const,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        userId,
-        labels: ['work'],
-        subtasks: [],
-      },
-    ];
+  // Set up real-time subscriptions when user is logged in
+  useEffect(() => {
+    if (!user) return;
 
-    const mockProjects = [
-      {
-        id: '1',
-        name: 'Work Projects',
-        color: '#3b82f6',
-        userId,
-        createdAt: new Date(),
-        taskCount: 2,
-      },
-      {
-        id: '2',
-        name: 'Personal',
-        color: '#10b981',
-        userId,
-        createdAt: new Date(),
-        taskCount: 1,
-      },
-    ];
+    const unsubscribeTasks = taskService.subscribeToUserTasks(user.uid, (tasks) => {
+      setTasks(tasks);
+      if (!dataReady.tasks) setDataReady(prev => ({ ...prev, tasks: true }));
+    });
+    const unsubscribeProjects = projectService.subscribeToUserProjects(user.uid, (projects) => {
+      setProjects(projects);
+      if (!dataReady.projects) setDataReady(prev => ({ ...prev, projects: true }));
+    });
+    const unsubscribeLabels = labelService.subscribeToUserLabels(user.uid, (labels) => {
+      setLabels(labels);
+      if (!dataReady.labels) setDataReady(prev => ({ ...prev, labels: true }));
+    });
 
-    const mockLabels = [
-      {
-        id: '1',
-        name: 'work',
-        color: '#3b82f6',
-        userId,
-      },
-      {
-        id: '2',
-        name: 'personal',
-        color: '#10b981',
-        userId,
-      },
-    ];
+    return () => {
+      unsubscribeTasks();
+      unsubscribeProjects();
+      unsubscribeLabels();
+    };
+  }, [user, setTasks, setProjects, setLabels, dataReady.tasks, dataReady.projects, dataReady.labels]);
 
-    setTasks(mockTasks);
-    setProjects(mockProjects);
-    setLabels(mockLabels);
-  };
+  const allDataReady = user && dataReady.tasks && dataReady.projects && dataReady.labels;
 
 
-  if (loading) {
+  if (loading || (user && !allDataReady)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -130,9 +88,24 @@ function App() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar />
-      <MainContent />
+    <div className="flex h-screen bg-gray-50 safe-area-top safe-area-bottom">
+      {/* Mobile backdrop overlay */}
+      {isMobile && sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={closeSidebar}
+        />
+      )}
+      
+      <Sidebar 
+        isMobile={isMobile}
+        sidebarOpen={sidebarOpen}
+        closeSidebar={closeSidebar}
+      />
+      <MainContent 
+        isMobile={isMobile}
+        toggleSidebar={toggleSidebar}
+      />
     </div>
   );
 }

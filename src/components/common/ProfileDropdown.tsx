@@ -114,21 +114,21 @@ const ProfileDropdown = () => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+        className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors touch-manipulation min-h-[44px]"
       >
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2 md:space-x-3">
           {user?.photoURL ? (
             <img
               src={user.photoURL}
               alt="Profile"
-              className="w-8 h-8 rounded-full"
+              className="w-8 h-8 md:w-9 md:h-9 rounded-full"
             />
           ) : (
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+            <div className="w-8 h-8 md:w-9 md:h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
               {getInitials()}
             </div>
           )}
-          <span className="hidden sm:block font-medium text-gray-900">
+          <span className="hidden sm:block font-medium text-gray-900 text-sm md:text-base">
             {user?.displayName?.split(' ')[0] || 'Haibin'}
           </span>
         </div>
@@ -138,7 +138,7 @@ const ProfileDropdown = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+        <div className="absolute right-0 mt-2 w-64 md:w-72 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
           {menuItems.map((item, index) => {
             if (item.type === 'divider') {
               return <div key={index} className="my-1 border-t border-gray-100" />;
@@ -173,7 +173,7 @@ const ProfileDropdown = () => {
               <button
                 key={index}
                 onClick={item.onClick}
-                className={`w-full flex items-center justify-between px-4 py-2 text-left hover:bg-gray-50 transition-colors ${
+                className={`w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors touch-manipulation ${
                   item.danger ? 'text-red-600 hover:bg-red-50' : 'text-gray-700'
                 }`}
               >

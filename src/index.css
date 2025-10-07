@@ -6,4 +6,45 @@
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Mobile-specific improvements */
+@layer base {
+  /* Better touch targets on mobile */
+  input, button, select, textarea {
+    @apply touch-manipulation;
+  }
+  
+  /* Prevent zoom on input focus on iOS */
+  input[type="text"], 
+  input[type="email"], 
+  input[type="password"], 
+  input[type="date"], 
+  select, 
+  textarea {
+    font-size: 16px;
+  }
+  
+  /* Better scrolling on mobile */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@layer utilities {
+  /* Custom utility for better mobile interactions */
+  .touch-action-manipulation {
+    touch-action: manipulation;
+  }
+  
+  /* Safe area insets for mobile devices */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
