@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase/config';
 import { useAuthStore } from './store/authStore';
@@ -16,6 +16,14 @@ function App() {
   const { setTasks, setProjects, setLabels } = useTaskStore();
   const { isMobile, sidebarOpen, toggleSidebar, closeSidebar } = useMobile();
 
+  // Track initial data readiness to avoid duplicate fetch and show consistent loading state
+  const [dataReady, setDataReady] = useState({ tasks: false, projects: false, labels: false });
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => { mountedRef.current = false; };
+  }, []);
+
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -25,14 +33,14 @@ function App() {
           displayName: user.displayName || undefined,
           photoURL: user.photoURL || undefined,
         });
-        // Load user data here (tasks, projects, labels)
-        loadUserData(user.uid);
+        // Real-time subscriptions will populate data; no manual fetch to prevent duplication
       } else {
         setUser(null);
         // Clear data when user logs out
         setTasks([]);
         setProjects([]);
         setLabels([]);
+        setDataReady({ tasks: false, projects: false, labels: false });
       }
       setLoading(false);
     });
@@ -44,40 +52,30 @@ function App() {
   useEffect(() => {
     if (!user) return;
 
-    const unsubscribeTasks = taskService.subscribeToUserTasks(user.uid, setTasks);
-    const unsubscribeProjects = projectService.subscribeToUserProjects(user.uid, setProjects);
-    const unsubscribeLabels = labelService.subscribeToUserLabels(user.uid, setLabels);
+    const unsubscribeTasks = taskService.subscribeToUserTasks(user.uid, (tasks) => {
+      setTasks(tasks);
+      if (!dataReady.tasks) setDataReady(prev => ({ ...prev, tasks: true }));
+    });
+    const unsubscribeProjects = projectService.subscribeToUserProjects(user.uid, (projects) => {
+      setProjects(projects);
+      if (!dataReady.projects) setDataReady(prev => ({ ...prev, projects: true }));
+    });
+    const unsubscribeLabels = labelService.subscribeToUserLabels(user.uid, (labels) => {
+      setLabels(labels);
+      if (!dataReady.labels) setDataReady(prev => ({ ...prev, labels: true }));
+    });
 
     return () => {
       unsubscribeTasks();
       unsubscribeProjects();
       unsubscribeLabels();
     };
-  }, [user, setTasks, setProjects, setLabels]);
+  }, [user, setTasks, setProjects, setLabels, dataReady.tasks, dataReady.projects, dataReady.labels]);
 
-  const loadUserData = async (userId: string) => {
-    try {
-      // Load data from Firestore
-      const [tasks, projects, labels] = await Promise.all([
-        taskService.getUserTasks(userId),
-        projectService.getUserProjects(userId),
-        labelService.getUserLabels(userId)
-      ]);
-
-      setTasks(tasks);
-      setProjects(projects);
-      setLabels(labels);
-    } catch (error) {
-      console.error('Error loading user data:', error);
-      // Set empty arrays as fallback
-      setTasks([]);
-      setProjects([]);
-      setLabels([]);
-    }
-  };
+  const allDataReady = user && dataReady.tasks && dataReady.projects && dataReady.labels;
 
 
-  if (loading) {
+  if (loading || (user && !allDataReady)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
