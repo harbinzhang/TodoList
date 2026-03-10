@@ -1,39 +1,42 @@
 import { useState } from 'react';
 import { useTaskStore } from '../../store/taskStore';
 import { useAuthStore } from '../../store/authStore';
+import { taskService } from '../../services/taskService';
 import { PlusIcon, CalendarIcon, FlagIcon } from '@heroicons/react/24/outline';
-import type { Task } from '../../types';
 
 const TaskForm = () => {
   const { user } = useAuthStore();
-  const { addTask, currentView, currentProjectId } = useTaskStore();
+  const { currentView, currentProjectId } = useTaskStore();
   const [isExpanded, setIsExpanded] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [priority, setPriority] = useState<1 | 2 | 3 | 4>(4);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !user) return;
 
-    const newTask: Task = {
-      id: crypto.randomUUID(),
-      title: title.trim(),
-      description: description.trim() || undefined,
-      completed: false,
-      priority,
-      dueDate: dueDate ? new Date(dueDate) : undefined,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      userId: user.uid,
-      projectId: currentView === 'project' ? currentProjectId : undefined,
-      labels: [],
-      subtasks: [],
-    };
-
-    addTask(newTask);
-    resetForm();
+    setLoading(true);
+    try {
+      await taskService.createTask({
+        title: title.trim(),
+        description: description.trim() || undefined,
+        completed: false,
+        priority,
+        dueDate: dueDate ? new Date(dueDate) : undefined,
+        userId: user.uid,
+        projectId: currentView === 'project' ? currentProjectId : undefined,
+        labels: [],
+        subtasks: [],
+      });
+      resetForm();
+    } catch (error) {
+      console.error('Error creating task:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const resetForm = () => {
@@ -124,10 +127,10 @@ const TaskForm = () => {
         </button>
         <button
           type="submit"
-          disabled={!title.trim()}
+          disabled={!title.trim() || loading}
           className="px-3 py-1.5 text-sm text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed rounded"
         >
-          Add task
+          {loading ? 'Adding...' : 'Add task'}
         </button>
       </div>
     </form>

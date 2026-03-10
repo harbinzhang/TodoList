@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useTaskStore } from '../../store/taskStore';
 import { useAuthStore } from '../../store/authStore';
 import { labelService } from '../../services/labelService';
 import { XMarkIcon } from '@heroicons/react/24/outline';
@@ -23,7 +22,6 @@ const colors = [
 
 const LabelForm = ({ isOpen, onClose }: LabelFormProps) => {
   const { user } = useAuthStore();
-  const { addLabel } = useTaskStore();
   const [name, setName] = useState('');
   const [selectedColor, setSelectedColor] = useState(colors[0]);
   const [loading, setLoading] = useState(false);
@@ -34,14 +32,7 @@ const LabelForm = ({ isOpen, onClose }: LabelFormProps) => {
 
     setLoading(true);
     try {
-      const labelId = await labelService.createLabel({
-        name: name.trim(),
-        color: selectedColor,
-        userId: user.uid,
-      });
-
-      addLabel({
-        id: labelId,
+      await labelService.createLabel({
         name: name.trim(),
         color: selectedColor,
         userId: user.uid,

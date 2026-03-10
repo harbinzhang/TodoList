@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useTaskStore } from '../../store/taskStore';
 import { useAuthStore } from '../../store/authStore';
 import { projectService } from '../../services/projectService';
 import { XMarkIcon } from '@heroicons/react/24/outline';
@@ -23,7 +22,6 @@ const colors = [
 
 const ProjectForm = ({ isOpen, onClose }: ProjectFormProps) => {
   const { user } = useAuthStore();
-  const { addProject } = useTaskStore();
   const [name, setName] = useState('');
   const [selectedColor, setSelectedColor] = useState(colors[0]);
   const [loading, setLoading] = useState(false);
@@ -34,19 +32,10 @@ const ProjectForm = ({ isOpen, onClose }: ProjectFormProps) => {
 
     setLoading(true);
     try {
-      const projectId = await projectService.createProject({
+      await projectService.createProject({
         name: name.trim(),
         color: selectedColor,
         userId: user.uid,
-      });
-
-      addProject({
-        id: projectId,
-        name: name.trim(),
-        color: selectedColor,
-        userId: user.uid,
-        createdAt: new Date(),
-        taskCount: 0,
       });
 
       handleClose();

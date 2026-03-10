@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useTaskStore } from '../../store/taskStore';
+import { taskService } from '../../services/taskService';
 import type { Task } from '../../types';
 import { format, isToday, isTomorrow, isPast } from 'date-fns';
 import {
@@ -16,23 +16,25 @@ interface TaskItemProps {
 }
 
 const TaskItem = ({ task }: TaskItemProps) => {
-  const { updateTask, deleteTask } = useTaskStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
 
-  const handleToggleComplete = () => {
-    updateTask(task.id, { 
-      completed: !task.completed,
-      updatedAt: new Date()
-    });
+  const handleToggleComplete = async () => {
+    try {
+      await taskService.toggleTaskCompletion(task.id, !task.completed);
+    } catch (error) {
+      console.error('Error toggling task:', error);
+    }
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (editTitle.trim()) {
-      updateTask(task.id, { 
-        title: editTitle.trim(),
-        updatedAt: new Date()
-      });
+      try {
+        await taskService.updateTask(task.id, { title: editTitle.trim() });
+      } catch (error) {
+        console.error('Error updating task:', error);
+        setEditTitle(task.title);
+      }
     } else {
       setEditTitle(task.title);
     }
@@ -179,7 +181,13 @@ const TaskItem = ({ task }: TaskItemProps) => {
               <PencilIcon className="w-4 h-4" />
             </button>
             <button
-              onClick={() => deleteTask(task.id)}
+              onClick={async () => {
+                try {
+                  await taskService.deleteTask(task.id);
+                } catch (error) {
+                  console.error('Error deleting task:', error);
+                }
+              }}
               className="p-1 text-gray-400 hover:text-red-500 rounded"
             >
               <TrashIcon className="w-4 h-4" />
