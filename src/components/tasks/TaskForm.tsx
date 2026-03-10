@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useTaskStore } from '../../store/taskStore';
 import { useAuthStore } from '../../store/authStore';
+import { useSettingsStore } from '../../store/settingsStore';
 import { taskService } from '../../services/taskService';
 import { PlusIcon, CalendarIcon, FlagIcon } from '@heroicons/react/24/outline';
+import { getTodayStringInTz } from '../../utils/dateUtils';
 
 interface TaskFormProps {
   sectionId?: string;
@@ -10,7 +12,8 @@ interface TaskFormProps {
 
 const TaskForm = ({ sectionId }: TaskFormProps) => {
   const { user } = useAuthStore();
-  const { currentView, currentProjectId } = useTaskStore();
+  const { currentView, currentProjectId, currentLabelId } = useTaskStore();
+  const { timezone } = useSettingsStore();
   const [isExpanded, setIsExpanded] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -29,11 +32,11 @@ const TaskForm = ({ sectionId }: TaskFormProps) => {
         description: description.trim() || undefined,
         completed: false,
         priority,
-        dueDate: dueDate ? new Date(dueDate) : undefined,
+        dueDate: dueDate ? new Date(dueDate + 'T00:00:00') : undefined,
         userId: user.uid,
         projectId: currentView === 'project' ? currentProjectId : undefined,
         sectionId,
-        labels: [],
+        labels: currentView === 'label' && currentLabelId ? [currentLabelId] : [],
         subtasks: [],
       });
       resetForm();
@@ -43,6 +46,7 @@ const TaskForm = ({ sectionId }: TaskFormProps) => {
       setLoading(false);
     }
   };
+
 
   const resetForm = () => {
     setTitle('');
@@ -60,7 +64,12 @@ const TaskForm = ({ sectionId }: TaskFormProps) => {
   if (!isExpanded) {
     return (
       <button
-        onClick={() => setIsExpanded(true)}
+        onClick={() => {
+          if (currentView === 'today') {
+            setDueDate(getTodayStringInTz(timezone));
+          }
+          setIsExpanded(true);
+        }}
         className="w-full flex items-center space-x-3 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition-all duration-200 group"
       >
         <PlusIcon className="w-5 h-5 text-red-500" />

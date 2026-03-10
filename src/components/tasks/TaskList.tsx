@@ -21,7 +21,8 @@ import SectionHeader from '../sections/SectionHeader';
 import SectionForm from '../sections/SectionForm';
 import { taskService } from '../../services/taskService';
 import type { Task } from '../../types';
-import { isToday } from 'date-fns';
+import { useSettingsStore } from '../../store/settingsStore';
+import { isDateTodayInTz } from '../../utils/dateUtils';
 
 const TaskList = () => {
   const { user } = useAuthStore();
@@ -34,6 +35,7 @@ const TaskList = () => {
     filter,
     loading 
   } = useTaskStore();
+  const { timezone } = useSettingsStore();
 
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
@@ -95,13 +97,13 @@ const TaskList = () => {
     // Filter by view
     switch (currentView) {
       case 'inbox':
-        result = result.filter(task => !task.projectId);
+        // Show all tasks
         break;
       case 'today':
         result = result.filter(task => {
           if (!task.dueDate) return false;
           const dueDate = task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate);
-          return isToday(dueDate);
+          return isDateTodayInTz(dueDate, timezone);
         });
         break;
       case 'upcoming':

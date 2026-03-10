@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { taskService } from '../../services/taskService';
+import { useTaskStore } from '../../store/taskStore';
 import type { Task } from '../../types';
-import { format, isToday, isTomorrow, isPast } from 'date-fns';
+import { format } from 'date-fns';
+import { useSettingsStore } from '../../store/settingsStore';
+import { isDateTodayInTz, isDateTomorrowInTz, isDatePastInTz } from '../../utils/dateUtils';
 import {
   CheckCircleIcon,
   PencilIcon,
@@ -19,6 +22,8 @@ interface TaskItemProps {
 }
 
 const TaskItem = ({ task, dragHandleProps }: TaskItemProps) => {
+  const { timezone } = useSettingsStore();
+  const { labels: allLabels, projects: allProjects } = useTaskStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
   const [showSubtaskInput, setShowSubtaskInput] = useState(false);
@@ -113,14 +118,14 @@ const TaskItem = ({ task, dragHandleProps }: TaskItemProps) => {
   };
 
   const formatDueDate = (date: Date) => {
-    if (isToday(date)) return 'Today';
-    if (isTomorrow(date)) return 'Tomorrow';
+    if (isDateTodayInTz(date, timezone)) return 'Today';
+    if (isDateTomorrowInTz(date, timezone)) return 'Tomorrow';
     return format(date, 'MMM d');
   };
 
   const getDueDateColor = (date: Date) => {
-    if (isPast(date) && !isToday(date)) return 'text-red-500';
-    if (isToday(date)) return 'text-orange-500';
+    if (isDatePastInTz(date, timezone) && !isDateTodayInTz(date, timezone)) return 'text-red-500';
+    if (isDateTodayInTz(date, timezone)) return 'text-orange-500';
     return 'text-gray-500 dark:text-gray-400';
   };
 
@@ -214,17 +219,37 @@ const TaskItem = ({ task, dragHandleProps }: TaskItemProps) => {
               </div>
             )}
 
+            {/* Project */}
+            {task.projectId && (() => {
+              const project = allProjects.find(p => p.id === task.projectId);
+              return project ? (
+                <div className="flex items-center space-x-1">
+                  <span
+                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: project.color }}
+                  />
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {project.name}
+                  </span>
+                </div>
+              ) : null;
+            })()}
+
             {/* Labels */}
             {task.labels.length > 0 && (
               <div className="flex items-center space-x-1">
-                {task.labels.slice(0, 2).map((label, index) => (
-                  <span
-                    key={index}
-                    className="inline-block px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded"
-                  >
-                    {label}
-                  </span>
-                ))}
+                {task.labels.slice(0, 2).map((labelId, index) => {
+                  const labelObj = allLabels.find(l => l.id === labelId);
+                  return (
+                    <span
+                      key={index}
+                      className="inline-block px-2 py-1 text-xs rounded text-white"
+                      style={{ backgroundColor: labelObj?.color || '#6b7280' }}
+                    >
+                      {labelObj?.name || labelId}
+                    </span>
+                  );
+                })}
                 {task.labels.length > 2 && (
                   <span className="text-xs text-gray-400">
                     +{task.labels.length - 2}

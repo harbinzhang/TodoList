@@ -3,6 +3,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase/config';
 import { useAuthStore } from '../../store/authStore';
 import { useTaskStore } from '../../store/taskStore';
+import { useSettingsStore } from '../../store/settingsStore';
 import {
   UserIcon,
   Cog6ToothIcon,
@@ -17,6 +18,7 @@ import {
 const ProfileDropdown = () => {
   const { user } = useAuthStore();
   const { tasks } = useTaskStore();
+  const { openSettings } = useSettingsStore();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -61,7 +63,7 @@ const ProfileDropdown = () => {
       label: 'Settings',
       shortcut: 'O then S',
       onClick: () => {
-        // Settings functionality
+        openSettings();
         setIsOpen(false);
       },
     },
