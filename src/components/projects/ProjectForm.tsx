@@ -56,12 +56,12 @@ const ProjectForm = ({ isOpen, onClose }: ProjectFormProps) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Add Project</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Add Project</h2>
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
           >
             <XMarkIcon className="w-6 h-6" />
           </button>
@@ -69,7 +69,7 @@ const ProjectForm = ({ isOpen, onClose }: ProjectFormProps) => {
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label htmlFor="projectName" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="projectName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Name
             </label>
             <input
@@ -78,13 +78,13 @@ const ProjectForm = ({ isOpen, onClose }: ProjectFormProps) => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter project name"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
               autoFocus
             />
           </div>
 
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Color
             </label>
             <div className="flex space-x-2">
@@ -94,7 +94,7 @@ const ProjectForm = ({ isOpen, onClose }: ProjectFormProps) => {
                   type="button"
                   onClick={() => setSelectedColor(color)}
                   className={`w-8 h-8 rounded-full border-2 ${
-                    selectedColor === color ? 'border-gray-400' : 'border-gray-200'
+                    selectedColor === color ? 'border-gray-400 dark:border-gray-200' : 'border-gray-200 dark:border-gray-600'
                   }`}
                   style={{ backgroundColor: color }}
                 />
@@ -106,7 +106,7 @@ const ProjectForm = ({ isOpen, onClose }: ProjectFormProps) => {
             <button
               type="button"
               onClick={handleClose}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md"
+              className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-md"
             >
               Cancel
             </button>

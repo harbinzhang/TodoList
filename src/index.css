@@ -7,3 +7,11 @@
 body {
   font-family: 'Inter', system-ui, sans-serif;
 }
+
+/* Smooth theme transitions — class added briefly by useTheme hook */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease !important;
+}

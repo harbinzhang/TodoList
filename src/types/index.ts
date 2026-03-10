@@ -16,6 +16,8 @@ export interface Task {
   updatedAt: Date;
   userId: string;
   projectId?: string;
+  sectionId?: string;
+  sortOrder?: number;
   labels: string[];
   subtasks: Subtask[];
 }
@@ -54,4 +56,13 @@ export interface TaskFilter {
     end?: Date;
   };
   search?: string;
+}
+
+export interface Section {
+  id: string;
+  name: string;
+  projectId: string;
+  userId: string;
+  sortOrder: number;
+  createdAt: Date;
 }

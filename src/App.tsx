@@ -6,13 +6,16 @@ import { useTaskStore } from './store/taskStore';
 import { taskService } from './services/taskService';
 import { projectService } from './services/projectService';
 import { labelService } from './services/labelService';
+import { sectionService } from './services/sectionService';
+import { useTheme } from './hooks/useTheme';
 import AuthForm from './components/auth/AuthForm';
 import Sidebar from './components/layout/Sidebar';
 import MainContent from './components/layout/MainContent';
 
 function App() {
   const { user, loading, setUser, setLoading } = useAuthStore();
-  const { setTasks, setProjects, setLabels } = useTaskStore();
+  useTheme(); // Activate theme management
+  const { setTasks, setProjects, setLabels, setSections } = useTaskStore();
   const unsubscribersRef = useRef<(() => void)[]>([]);
 
   useEffect(() => {
@@ -29,7 +32,8 @@ function App() {
         const unsubTasks = taskService.subscribeToUserTasks(firebaseUser.uid, setTasks);
         const unsubProjects = projectService.subscribeToUserProjects(firebaseUser.uid, setProjects);
         const unsubLabels = labelService.subscribeToUserLabels(firebaseUser.uid, setLabels);
-        unsubscribersRef.current = [unsubTasks, unsubProjects, unsubLabels];
+        const unsubSections = sectionService.subscribeToUserSections(firebaseUser.uid, setSections);
+        unsubscribersRef.current = [unsubTasks, unsubProjects, unsubLabels, unsubSections];
       } else {
         // Clean up subscriptions on logout
         unsubscribersRef.current.forEach((unsub) => unsub());
@@ -38,6 +42,7 @@ function App() {
         setTasks([]);
         setProjects([]);
         setLabels([]);
+        setSections([]);
       }
       setLoading(false);
     });
@@ -50,8 +55,8 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 dark:border-blue-400"></div>
       </div>
     );
   }
@@ -61,7 +66,7 @@ function App() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       <Sidebar />
       <MainContent />
     </div>

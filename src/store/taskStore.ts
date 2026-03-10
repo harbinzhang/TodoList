@@ -1,10 +1,11 @@
 import { create } from 'zustand';
-import type { Task, Project, Label, TaskFilter, ViewType } from '../types';
+import type { Task, Project, Label, Section, TaskFilter, ViewType } from '../types';
 
 interface TaskState {
   tasks: Task[];
   projects: Project[];
   labels: Label[];
+  sections: Section[];
   currentView: ViewType;
   currentProjectId?: string;
   currentLabelId?: string;
@@ -27,6 +28,11 @@ interface TaskState {
   updateLabel: (labelId: string, updates: Partial<Label>) => void;
   deleteLabel: (labelId: string) => void;
   
+  setSections: (sections: Section[]) => void;
+  addSection: (section: Section) => void;
+  updateSection: (sectionId: string, updates: Partial<Section>) => void;
+  deleteSection: (sectionId: string) => void;
+  
   setCurrentView: (view: ViewType, id?: string) => void;
   setFilter: (filter: Partial<TaskFilter>) => void;
   setLoading: (loading: boolean) => void;
@@ -36,6 +42,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   tasks: [],
   projects: [],
   labels: [],
+  sections: [],
   currentView: 'inbox',
   filter: {},
   loading: false,
@@ -71,6 +78,17 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   }),
   deleteLabel: (labelId) => set({
     labels: get().labels.filter(label => label.id !== labelId)
+  }),
+
+  setSections: (sections) => set({ sections }),
+  addSection: (section) => set({ sections: [...get().sections, section] }),
+  updateSection: (sectionId, updates) => set({
+    sections: get().sections.map(section => 
+      section.id === sectionId ? { ...section, ...updates } : section
+    )
+  }),
+  deleteSection: (sectionId) => set({
+    sections: get().sections.filter(section => section.id !== sectionId)
   }),
 
   setCurrentView: (view, id) => set({ 

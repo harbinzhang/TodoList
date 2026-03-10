@@ -1,18 +1,42 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import TaskList from '../TaskList';
 import { useTaskStore } from '../../../store/taskStore';
 import type { Task } from '../../../types';
 
-// Mock TaskForm and TaskItem to isolate TaskList logic
+// Mock DnD kit
+vi.mock('@dnd-kit/core', () => ({
+  DndContext: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  closestCenter: vi.fn(),
+  KeyboardSensor: vi.fn(),
+  PointerSensor: vi.fn(),
+  useSensor: vi.fn(() => ({})),
+  useSensors: vi.fn(() => []),
+}));
+
+vi.mock('@dnd-kit/sortable', () => ({
+  SortableContext: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  sortableKeyboardCoordinates: vi.fn(),
+  verticalListSortingStrategy: vi.fn(),
+}));
+
+// Mock TaskForm and SortableTaskItem to isolate TaskList logic
 vi.mock('../TaskForm', () => ({
   default: () => <div data-testid="task-form">TaskForm</div>,
 }));
 
-vi.mock('../TaskItem', () => ({
+vi.mock('../SortableTaskItem', () => ({
   default: ({ task }: { task: Task }) => (
     <div data-testid={`task-item-${task.id}`}>{task.title}</div>
   ),
+}));
+
+vi.mock('../../sections/SectionHeader', () => ({
+  default: () => <div data-testid="section-header">SectionHeader</div>,
+}));
+
+vi.mock('../../sections/SectionForm', () => ({
+  default: () => <div data-testid="section-form">SectionForm</div>,
 }));
 
 const createMockTask = (overrides: Partial<Task> = {}): Task => ({

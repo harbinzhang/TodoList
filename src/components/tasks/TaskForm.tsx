@@ -4,7 +4,11 @@ import { useAuthStore } from '../../store/authStore';
 import { taskService } from '../../services/taskService';
 import { PlusIcon, CalendarIcon, FlagIcon } from '@heroicons/react/24/outline';
 
-const TaskForm = () => {
+interface TaskFormProps {
+  sectionId?: string;
+}
+
+const TaskForm = ({ sectionId }: TaskFormProps) => {
   const { user } = useAuthStore();
   const { currentView, currentProjectId } = useTaskStore();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -28,6 +32,7 @@ const TaskForm = () => {
         dueDate: dueDate ? new Date(dueDate) : undefined,
         userId: user.uid,
         projectId: currentView === 'project' ? currentProjectId : undefined,
+        sectionId,
         labels: [],
         subtasks: [],
       });
@@ -56,10 +61,10 @@ const TaskForm = () => {
     return (
       <button
         onClick={() => setIsExpanded(true)}
-        className="w-full flex items-center space-x-3 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200 group"
+        className="w-full flex items-center space-x-3 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition-all duration-200 group"
       >
         <PlusIcon className="w-5 h-5 text-red-500" />
-        <span className="text-gray-500 group-hover:text-gray-700">
+        <span className="text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200">
           Add task
         </span>
       </button>
@@ -67,14 +72,14 @@ const TaskForm = () => {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-lg p-4 shadow-md">
+    <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-md">
       {/* Title Input */}
       <input
         type="text"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Task name"
-        className="w-full text-sm font-medium border-none outline-none placeholder-gray-400 mb-2"
+        className="w-full text-sm font-medium border-none outline-none placeholder-gray-400 dark:placeholder-gray-500 mb-2 bg-transparent dark:text-white"
         autoFocus
       />
 
@@ -84,7 +89,7 @@ const TaskForm = () => {
         onChange={(e) => setDescription(e.target.value)}
         placeholder="Description"
         rows={2}
-        className="w-full text-sm border-none outline-none placeholder-gray-400 resize-none mb-3"
+        className="w-full text-sm border-none outline-none placeholder-gray-400 dark:placeholder-gray-500 resize-none mb-3 bg-transparent dark:text-white"
       />
 
       {/* Task Options */}
@@ -96,7 +101,7 @@ const TaskForm = () => {
             type="date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
-            className="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
           />
         </div>
 
@@ -106,7 +111,7 @@ const TaskForm = () => {
           <select
             value={priority}
             onChange={(e) => setPriority(Number(e.target.value) as 1 | 2 | 3 | 4)}
-            className="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
           >
             <option value={4}>Priority 4</option>
             <option value={3}>Priority 3</option>
@@ -121,7 +126,7 @@ const TaskForm = () => {
         <button
           type="button"
           onClick={handleCancel}
-          className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 rounded border border-gray-300 hover:bg-gray-50"
+          className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
         >
           Cancel
         </button>

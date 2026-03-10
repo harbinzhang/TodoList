@@ -51,11 +51,11 @@ const Sidebar = () => {
 
 
   return (
-    <div className="w-64 bg-gray-50 border-r border-gray-200 h-screen flex flex-col">
+    <div className="w-64 bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 h-screen flex flex-col">
 
       {/* Quick Add */}
-      <div className="p-4 border-b border-gray-200 mt-4">
-        <button className="w-full flex items-center space-x-2 text-red-500 hover:bg-red-50 rounded-lg p-2">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700 mt-4">
+        <button className="w-full flex items-center space-x-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg p-2">
           <PlusIcon className="w-5 h-5" />
           <span className="font-medium">Add task</span>
         </button>
@@ -67,43 +67,43 @@ const Sidebar = () => {
           {/* Inbox */}
           <button
             onClick={() => setCurrentView('inbox')}
-            className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 ${
-              currentView === 'inbox' ? 'bg-red-50 text-red-700' : 'text-gray-700'
+            className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 ${
+              currentView === 'inbox' ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'
             }`}
           >
             <div className="flex items-center space-x-3">
               <HomeIcon className="w-5 h-5" />
               <span>Inbox</span>
             </div>
-            <span className="text-sm text-gray-500">{getTaskCount('inbox')}</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{getTaskCount('inbox')}</span>
           </button>
 
           {/* Today */}
           <button
             onClick={() => setCurrentView('today')}
-            className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 ${
-              currentView === 'today' ? 'bg-red-50 text-red-700' : 'text-gray-700'
+            className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 ${
+              currentView === 'today' ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'
             }`}
           >
             <div className="flex items-center space-x-3">
               <CalendarIcon className="w-5 h-5" />
               <span>Today</span>
             </div>
-            <span className="text-sm text-gray-500">{getTaskCount('today')}</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{getTaskCount('today')}</span>
           </button>
 
           {/* Upcoming */}
           <button
             onClick={() => setCurrentView('upcoming')}
-            className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 ${
-              currentView === 'upcoming' ? 'bg-red-50 text-red-700' : 'text-gray-700'
+            className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 ${
+              currentView === 'upcoming' ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'
             }`}
           >
             <div className="flex items-center space-x-3">
               <ClockIcon className="w-5 h-5" />
               <span>Upcoming</span>
             </div>
-            <span className="text-sm text-gray-500">{getTaskCount('upcoming')}</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{getTaskCount('upcoming')}</span>
           </button>
         </nav>
 
@@ -111,7 +111,7 @@ const Sidebar = () => {
         <div className="p-2 mt-4">
           <button
             onClick={() => setIsProjectsOpen(!isProjectsOpen)}
-            className="w-full flex items-center justify-between p-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+            className="w-full flex items-center justify-between p-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
           >
             <div className="flex items-center space-x-2">
               {isProjectsOpen ? (
@@ -136,10 +136,10 @@ const Sidebar = () => {
                 <button
                   key={project.id}
                   onClick={() => setCurrentView('project', project.id)}
-                  className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 ${
+                  className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 ${
                     currentView === 'project' && currentProjectId === project.id
-                      ? 'bg-red-50 text-red-700'
-                      : 'text-gray-700'
+                      ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                      : 'text-gray-700 dark:text-gray-300'
                   }`}
                 >
                   <div className="flex items-center space-x-3">
@@ -149,7 +149,7 @@ const Sidebar = () => {
                     />
                     <span className="truncate">{project.name}</span>
                   </div>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
                     {getTaskCount('project', project.id)}
                   </span>
                 </button>
@@ -162,7 +162,7 @@ const Sidebar = () => {
         <div className="p-2">
           <button
             onClick={() => setIsLabelsOpen(!isLabelsOpen)}
-            className="w-full flex items-center justify-between p-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+            className="w-full flex items-center justify-between p-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
           >
             <div className="flex items-center space-x-2">
               {isLabelsOpen ? (
@@ -187,17 +187,17 @@ const Sidebar = () => {
                 <button
                   key={label.id}
                   onClick={() => setCurrentView('label', label.id)}
-                  className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 ${
+                  className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 ${
                     currentView === 'label' && currentLabelId === label.id
-                      ? 'bg-red-50 text-red-700'
-                      : 'text-gray-700'
+                      ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                      : 'text-gray-700 dark:text-gray-300'
                   }`}
                 >
                   <div className="flex items-center space-x-3">
                     <TagIcon className="w-4 h-4" style={{ color: label.color }} />
                     <span className="truncate">{label.name}</span>
                   </div>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
                     {getTaskCount('label', label.id)}
                   </span>
                 </button>

@@ -2,6 +2,7 @@ import { useTaskStore } from '../../store/taskStore';
 import TaskList from '../tasks/TaskList';
 import SearchBar from '../common/SearchBar';
 import ProfileDropdown from '../common/ProfileDropdown';
+import ThemeToggle from '../common/ThemeToggle';
 import { format } from 'date-fns';
 
 const MainContent = () => {
@@ -40,25 +41,26 @@ const MainContent = () => {
   return (
     <div className="flex-1 flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200 bg-white">
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{getViewTitle()}</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{getViewTitle()}</h1>
             {getViewSubtitle() && (
-              <p className="text-sm text-gray-500 mt-1">{getViewSubtitle()}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{getViewSubtitle()}</p>
             )}
           </div>
           <div className="flex items-center space-x-4">
             <div className="w-64">
               <SearchBar />
             </div>
+            <ThemeToggle />
             <ProfileDropdown />
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 bg-gray-50">
+      <div className="flex-1 bg-gray-50 dark:bg-gray-900">
         <TaskList />
       </div>
     </div>

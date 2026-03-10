@@ -7,6 +7,16 @@
     <title>todolist-app</title>
   </head>
   <body>
+    <script>
+      // Prevent flash of wrong theme — runs synchronously before React mounts
+      (function() {
+        var theme = localStorage.getItem('theme');
+        var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (theme === 'dark' || (!theme && prefersDark) || (theme === 'system' && prefersDark)) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
