@@ -23,6 +23,7 @@ import { taskService } from '../../services/taskService';
 import type { Task } from '../../types';
 import { useSettingsStore } from '../../store/settingsStore';
 import { isDateTodayInTz } from '../../utils/dateUtils';
+import { applyFilters } from '../../utils/filterEngine';
 
 const TaskList = () => {
   const { user } = useAuthStore();
@@ -31,7 +32,11 @@ const TaskList = () => {
     sections,
     currentView, 
     currentProjectId, 
-    currentLabelId, 
+    currentLabelId,
+    currentFilterId,
+    savedFilters,
+    projects,
+    labels,
     filter,
     loading 
   } = useTaskStore();
@@ -119,6 +124,13 @@ const TaskList = () => {
       case 'label':
         result = result.filter(task => task.labels.includes(currentLabelId!));
         break;
+      case 'filter': {
+        const activeFilter = savedFilters.find(f => f.id === currentFilterId);
+        if (activeFilter) {
+          result = applyFilters(result, activeFilter.conditions, { projects, labels });
+        }
+        break;
+      }
     }
 
     // Apply additional filters

@@ -4,10 +4,12 @@ import TaskDetailPanel from '../tasks/TaskDetailPanel';
 import SearchBar from '../common/SearchBar';
 import ProfileDropdown from '../common/ProfileDropdown';
 import ThemeToggle from '../common/ThemeToggle';
+import CompletedList from '../archive/CompletedList';
+import ArchiveStats from '../archive/ArchiveStats';
 import { format } from 'date-fns';
 
 const MainContent = () => {
-  const { currentView, currentProjectId, currentLabelId, projects, labels } = useTaskStore();
+  const { currentView, currentProjectId, currentLabelId, currentFilterId, projects, labels, savedFilters } = useTaskStore();
 
   const getViewTitle = () => {
     switch (currentView) {
@@ -23,6 +25,11 @@ const MainContent = () => {
       case 'label':
         const label = labels.find(l => l.id === currentLabelId);
         return label?.name || 'Label';
+      case 'completed':
+        return 'Completed';
+      case 'filter':
+        const filter = savedFilters?.find(f => f.id === currentFilterId);
+        return filter?.name || 'Filter';
       default:
         return 'Tasks';
     }
@@ -62,7 +69,14 @@ const MainContent = () => {
 
       {/* Content */}
       <div className="flex-1 bg-gray-50 dark:bg-gray-900 overflow-y-auto">
-        <TaskList />
+        {currentView === 'completed' ? (
+          <>
+            <ArchiveStats />
+            <CompletedList />
+          </>
+        ) : (
+          <TaskList />
+        )}
       </div>
 
       {/* Task Detail Panel */}

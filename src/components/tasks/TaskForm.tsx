@@ -5,6 +5,8 @@ import { useSettingsStore } from '../../store/settingsStore';
 import { taskService } from '../../services/taskService';
 import { PlusIcon, CalendarIcon, FlagIcon } from '@heroicons/react/24/outline';
 import { getTodayStringInTz } from '../../utils/dateUtils';
+import RecurrencePicker from './RecurrencePicker';
+import type { RecurrenceRule } from '../../types';
 
 interface TaskFormProps {
   sectionId?: string;
@@ -19,6 +21,7 @@ const TaskForm = ({ sectionId }: TaskFormProps) => {
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [priority, setPriority] = useState<1 | 2 | 3 | 4>(4);
+  const [recurrence, setRecurrence] = useState<RecurrenceRule | undefined>(undefined);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,6 +41,7 @@ const TaskForm = ({ sectionId }: TaskFormProps) => {
         sectionId,
         labels: currentView === 'label' && currentLabelId ? [currentLabelId] : [],
         subtasks: [],
+        recurrence,
       });
       resetForm();
     } catch (error) {
@@ -53,6 +57,7 @@ const TaskForm = ({ sectionId }: TaskFormProps) => {
     setDescription('');
     setDueDate('');
     setPriority(4);
+    setRecurrence(undefined);
     setIsExpanded(false);
   };
 
@@ -128,6 +133,9 @@ const TaskForm = ({ sectionId }: TaskFormProps) => {
             <option value={1}>Priority 1</option>
           </select>
         </div>
+
+        {/* Recurrence */}
+        <RecurrencePicker value={recurrence} onChange={setRecurrence} />
       </div>
 
       {/* Action Buttons */}

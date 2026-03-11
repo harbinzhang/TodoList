@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTaskStore } from '../../store/taskStore';
 import ProjectForm from '../projects/ProjectForm';
 import LabelForm from '../labels/LabelForm';
+import FilterForm from '../filters/FilterForm';
 import {
   HomeIcon,
   CalendarIcon,
@@ -10,14 +11,19 @@ import {
   PlusIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  ArchiveBoxIcon,
+  FunnelIcon,
 } from '@heroicons/react/24/outline';
+import CompletionSpark from '../common/CompletionSpark';
 
 const Sidebar = () => {
-  const { currentView, currentProjectId, currentLabelId, projects, labels, tasks, setCurrentView } = useTaskStore();
+  const { currentView, currentProjectId, currentLabelId, currentFilterId, projects, labels, tasks, savedFilters, setCurrentView } = useTaskStore();
   const [isProjectsOpen, setIsProjectsOpen] = useState(true);
   const [isLabelsOpen, setIsLabelsOpen] = useState(false);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(true);
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [showLabelForm, setShowLabelForm] = useState(false);
+  const [showFilterForm, setShowFilterForm] = useState(false);
 
   const getTaskCount = (type: string, id?: string) => {
     switch (type) {
@@ -44,6 +50,8 @@ const Sidebar = () => {
         return tasks.filter(task => !task.completed && task.projectId === id).length;
       case 'label':
         return tasks.filter(task => !task.completed && task.labels.includes(id!)).length;
+      case 'completed':
+        return tasks.filter(task => task.completed).length;
       default:
         return 0;
     }
@@ -104,6 +112,20 @@ const Sidebar = () => {
               <span>Upcoming</span>
             </div>
             <span className="text-sm text-gray-500 dark:text-gray-400">{getTaskCount('upcoming')}</span>
+          </button>
+
+          {/* Completed */}
+          <button
+            onClick={() => setCurrentView('completed')}
+            className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 ${
+              currentView === 'completed' ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <ArchiveBoxIcon className="w-5 h-5" />
+              <span>Completed</span>
+            </div>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{getTaskCount('completed')}</span>
           </button>
         </nav>
 
@@ -207,6 +229,47 @@ const Sidebar = () => {
         </div>
       </div>
 
+      {/* Saved Filters Section */}
+      <div className="px-4 mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <button
+            onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+            className="flex items-center space-x-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hover:text-gray-700 dark:hover:text-gray-200"
+          >
+            {isFiltersOpen ? <ChevronDownIcon className="w-3 h-3" /> : <ChevronRightIcon className="w-3 h-3" />}
+            <span>Filters</span>
+          </button>
+          <button
+            onClick={() => setShowFilterForm(true)}
+            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+          >
+            <PlusIcon className="w-4 h-4" />
+          </button>
+        </div>
+        {isFiltersOpen && savedFilters.length > 0 && (
+          <div className="space-y-0.5">
+            {savedFilters.map((filter) => (
+              <button
+                key={filter.id}
+                onClick={() => setCurrentView('filter', filter.id)}
+                className={`w-full flex items-center justify-between p-2 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                  currentView === 'filter' && currentFilterId === filter.id
+                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                    : 'text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <FunnelIcon className="w-4 h-4" style={{ color: filter.color }} />
+                  <span className="truncate">{filter.name}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      {/* Sparkline widget */}
+      <CompletionSpark />
+
       {/* Modals */}
       <ProjectForm 
         isOpen={showProjectForm} 
@@ -215,6 +278,10 @@ const Sidebar = () => {
       <LabelForm 
         isOpen={showLabelForm} 
         onClose={() => setShowLabelForm(false)} 
+      />
+      <FilterForm
+        isOpen={showFilterForm}
+        onClose={() => setShowFilterForm(false)}
       />
     </div>
   );

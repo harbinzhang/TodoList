@@ -1,15 +1,18 @@
+import { useContext } from 'react';
 import { useTaskStore } from '../../store/taskStore';
 import { taskService } from '../../services/taskService';
 import type { Task } from '../../types';
 import { format } from 'date-fns';
 import { useSettingsStore } from '../../store/settingsStore';
 import { isDateTodayInTz, isDateTomorrowInTz, isDatePastInTz } from '../../utils/dateUtils';
+import { formatRecurrenceLabel } from '../../utils/recurrence';
 import {
   CheckCircleIcon,
   CalendarIcon,
   FlagIcon,
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleFilledIcon } from '@heroicons/react/24/solid';
+import { UndoQueueContext } from '../../App';
 
 interface TaskItemProps {
   task: Task;
@@ -19,11 +22,21 @@ interface TaskItemProps {
 const TaskItem = ({ task, dragHandleProps }: TaskItemProps) => {
   const { timezone } = useSettingsStore();
   const { labels: allLabels, projects: allProjects, setSelectedTaskId } = useTaskStore();
+  const { enqueue } = useContext(UndoQueueContext);
 
   const handleToggleComplete = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Don't open detail panel
     try {
-      await taskService.toggleTaskCompletion(task.id, !task.completed);
+      if (task.recurrence && !task.completed) {
+        // Recurring task: complete current + create next instance (no undo)
+        await taskService.completeRecurringTask(task);
+      } else if (!task.completed) {
+        // Non-recurring: use undo queue for 5s delay
+        enqueue(task.id, task.title);
+      } else {
+        // Uncompleting a task
+        await taskService.toggleTaskCompletion(task.id, false);
+      }
     } catch (error) {
       console.error('Error toggling task:', error);
     }
@@ -136,6 +149,16 @@ const TaskItem = ({ task, dragHandleProps }: TaskItemProps) => {
                 <CalendarIcon className="w-4 h-4 text-gray-400" />
                 <span className={`text-xs ${getDueDateColor(task.dueDate)}`}>
                   {formatDueDate(task.dueDate)}
+                </span>
+              </div>
+            )}
+
+            {/* Recurrence Badge */}
+            {task.recurrence && (
+              <div className="flex items-center space-x-1">
+                <span className="text-xs text-purple-500 dark:text-purple-400">🔁</span>
+                <span className="text-xs text-purple-500 dark:text-purple-400">
+                  {formatRecurrenceLabel(task.recurrence)}
                 </span>
               </div>
             )}

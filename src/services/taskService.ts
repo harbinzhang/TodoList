@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import type { Task } from '../types';
+import { getNextDueDate, isRecurrenceComplete } from '../utils/recurrence';
 
 const COLLECTION_NAME = 'tasks';
 
@@ -81,6 +82,11 @@ export const taskService = {
         createdAt: doc.data().createdAt?.toDate() || new Date(),
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
         dueDate: doc.data().dueDate?.toDate(),
+        completedAt: doc.data().completedAt?.toDate(),
+        recurrence: doc.data().recurrence ? {
+          ...doc.data().recurrence,
+          endDate: doc.data().recurrence.endDate?.toDate?.() || doc.data().recurrence.endDate,
+        } : undefined,
       } as Task));
       callback(tasks);
     });
@@ -88,7 +94,67 @@ export const taskService = {
 
   // Toggle task completion
   async toggleTaskCompletion(taskId: string, completed: boolean): Promise<void> {
-    await this.updateTask(taskId, { completed });
+    await this.updateTask(taskId, {
+      completed,
+      completedAt: completed ? new Date() : undefined,
+    } as Partial<Omit<Task, 'id' | 'createdAt'>>);
+  },
+
+  // Complete a recurring task: mark current done + create next instance
+  async completeRecurringTask(task: Task): Promise<void> {
+    if (!task.recurrence || !task.dueDate) {
+      // Fallback: just toggle
+      await this.toggleTaskCompletion(task.id, true);
+      return;
+    }
+
+    const updatedRule = {
+      ...task.recurrence,
+      completedCount: (task.recurrence.completedCount || 0) + 1,
+    };
+
+    const batch = writeBatch(db);
+
+    // 1. Mark current task as completed
+    const currentRef = doc(db, COLLECTION_NAME, task.id);
+    batch.update(currentRef, {
+      completed: true,
+      completedAt: new Date(),
+      recurrence: updatedRule,
+      updatedAt: serverTimestamp(),
+    });
+
+    // 2. Check if recurrence should continue
+    const ruleForCheck = { ...updatedRule };
+    if (!isRecurrenceComplete(ruleForCheck)) {
+      const nextDue = getNextDueDate(task.dueDate, task.recurrence);
+      if (nextDue) {
+        // Create the next instance
+        const nextTaskData: Record<string, unknown> = {
+          title: task.title,
+          description: task.description || null,
+          completed: false,
+          priority: task.priority,
+          dueDate: nextDue,
+          userId: task.userId,
+          projectId: task.projectId || null,
+          sectionId: task.sectionId || null,
+          labels: task.labels,
+          subtasks: task.subtasks.map(st => ({ ...st, completed: false })),
+          recurrence: updatedRule,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+        // Remove null/undefined values
+        const cleanedData = Object.fromEntries(
+          Object.entries(nextTaskData).filter(([, v]) => v !== undefined && v !== null)
+        );
+        const nextRef = doc(collection(db, COLLECTION_NAME));
+        batch.set(nextRef, cleanedData);
+      }
+    }
+
+    await batch.commit();
   },
 
   // Update task priority

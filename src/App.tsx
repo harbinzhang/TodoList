@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, createContext } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase/config';
 import { useAuthStore } from './store/authStore';
@@ -7,17 +7,32 @@ import { taskService } from './services/taskService';
 import { projectService } from './services/projectService';
 import { labelService } from './services/labelService';
 import { sectionService } from './services/sectionService';
+import { filterService } from './services/filterService';
 import { useTheme } from './hooks/useTheme';
+import { useUndoQueue } from './hooks/useUndoQueue';
+import type { UndoQueueItem } from './hooks/useUndoQueue';
 import AuthForm from './components/auth/AuthForm';
 import Sidebar from './components/layout/Sidebar';
 import MainContent from './components/layout/MainContent';
 import SettingsModal from './components/common/SettingsModal';
+import UndoToast from './components/common/UndoToast';
+
+// Context for undo queue so child components can enqueue
+interface UndoQueueContextType {
+  enqueue: (taskId: string, taskTitle: string) => void;
+  pendingItems: UndoQueueItem[];
+}
+export const UndoQueueContext = createContext<UndoQueueContextType>({
+  enqueue: () => {},
+  pendingItems: [],
+});
 
 function App() {
   const { user, loading, setUser, setLoading } = useAuthStore();
   useTheme(); // Activate theme management
-  const { setTasks, setProjects, setLabels, setSections } = useTaskStore();
+  const { setTasks, setProjects, setLabels, setSections, setSavedFilters } = useTaskStore();
   const unsubscribersRef = useRef<(() => void)[]>([]);
+  const undoQueue = useUndoQueue();
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
@@ -34,7 +49,8 @@ function App() {
         const unsubProjects = projectService.subscribeToUserProjects(firebaseUser.uid, setProjects);
         const unsubLabels = labelService.subscribeToUserLabels(firebaseUser.uid, setLabels);
         const unsubSections = sectionService.subscribeToUserSections(firebaseUser.uid, setSections);
-        unsubscribersRef.current = [unsubTasks, unsubProjects, unsubLabels, unsubSections];
+        const unsubFilters = filterService.subscribeToUserFilters(firebaseUser.uid, setSavedFilters);
+        unsubscribersRef.current = [unsubTasks, unsubProjects, unsubLabels, unsubSections, unsubFilters];
       } else {
         // Clean up subscriptions on logout
         unsubscribersRef.current.forEach((unsub) => unsub());
@@ -44,6 +60,7 @@ function App() {
         setProjects([]);
         setLabels([]);
         setSections([]);
+        setSavedFilters([]);
       }
       setLoading(false);
     });
@@ -67,11 +84,18 @@ function App() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <Sidebar />
-      <MainContent />
-      <SettingsModal />
-    </div>
+    <UndoQueueContext.Provider value={undoQueue}>
+      <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+        <Sidebar />
+        <MainContent />
+        <SettingsModal />
+        <UndoToast
+          items={undoQueue.pendingItems}
+          onUndo={undoQueue.undo}
+          onDismiss={undoQueue.dismiss}
+        />
+      </div>
+    </UndoQueueContext.Provider>
   );
 }
 

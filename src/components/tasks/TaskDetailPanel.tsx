@@ -16,6 +16,8 @@ import {
   TagIcon,
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleFilledIcon } from '@heroicons/react/24/solid';
+import RecurrencePicker from './RecurrencePicker';
+import type { RecurrenceRule, Task } from '../../types';
 
 const TaskDetailPanel = () => {
   const { selectedTaskId, setSelectedTaskId, tasks, projects, labels: allLabels } = useTaskStore();
@@ -31,6 +33,7 @@ const TaskDetailPanel = () => {
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
   const [showSubtaskInput, setShowSubtaskInput] = useState(false);
   const [subtasksExpanded, setSubtasksExpanded] = useState(true);
+  const [recurrence, setRecurrence] = useState<RecurrenceRule | undefined>(undefined);
 
   const panelRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
@@ -46,6 +49,7 @@ const TaskDetailPanel = () => {
       setNewSubtaskTitle('');
       setShowSubtaskInput(false);
       setSubtasksExpanded(true);
+      setRecurrence(task.recurrence);
     }
   }, [task?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -357,6 +361,26 @@ const TaskDetailPanel = () => {
                   ))}
                 </select>
               </div>
+            </div>
+
+            {/* Recurrence */}
+            <div className="col-span-2">
+              <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 block">
+                Recurrence
+              </label>
+              <RecurrencePicker
+                value={recurrence}
+                onChange={async (rule) => {
+                  setRecurrence(rule);
+                  if (task) {
+                    try {
+                      await taskService.updateTask(task.id, { recurrence: rule } as Partial<Omit<Task, 'id' | 'createdAt'>>);
+                    } catch (error) {
+                      console.error('Error updating recurrence:', error);
+                    }
+                  }
+                }}
+              />
             </div>
 
             {/* Labels */}
