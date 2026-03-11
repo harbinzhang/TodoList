@@ -1,5 +1,6 @@
 import { useTaskStore } from '../../store/taskStore';
 import TaskList from '../tasks/TaskList';
+import TaskDetailPanel from '../tasks/TaskDetailPanel';
 import SearchBar from '../common/SearchBar';
 import ProfileDropdown from '../common/ProfileDropdown';
 import ThemeToggle from '../common/ThemeToggle';
@@ -60,9 +61,12 @@ const MainContent = () => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <div className="flex-1 bg-gray-50 dark:bg-gray-900 overflow-y-auto">
         <TaskList />
       </div>
+
+      {/* Task Detail Panel */}
+      <TaskDetailPanel />
     </div>
   );
 };

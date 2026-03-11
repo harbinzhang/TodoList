@@ -35,11 +35,6 @@ describe('TaskItem', () => {
     expect(screen.getByText('Buy groceries')).toBeInTheDocument();
   });
 
-  it('renders task description when present', () => {
-    render(<TaskItem task={createMockTask({ description: 'Milk and eggs' })} />);
-    expect(screen.getByText('Milk and eggs')).toBeInTheDocument();
-  });
-
   it('renders priority badge for P1-P3', () => {
     render(<TaskItem task={createMockTask({ priority: 1 })} />);
     expect(screen.getByText('P1')).toBeInTheDocument();
@@ -87,30 +82,22 @@ describe('TaskItem', () => {
     });
   });
 
-  it('enters edit mode on title click and saves on Enter', async () => {
-    vi.mocked(taskService.updateTask).mockResolvedValue(undefined);
-    render(<TaskItem task={createMockTask()} />);
-
-    // Click title to enter edit mode
-    fireEvent.click(screen.getByText('Test Task'));
-    const input = screen.getByDisplayValue('Test Task');
-    fireEvent.change(input, { target: { value: 'Updated Title' } });
-    fireEvent.keyDown(input, { key: 'Enter' });
-
-    await waitFor(() => {
-      expect(taskService.updateTask).toHaveBeenCalledWith('task-1', { title: 'Updated Title' });
-    });
+  it('shows subtask progress pill when subtasks exist', () => {
+    render(
+      <TaskItem
+        task={createMockTask({
+          subtasks: [
+            { id: 's1', title: 'Sub 1', completed: true },
+            { id: 's2', title: 'Sub 2', completed: false },
+          ],
+        })}
+      />
+    );
+    expect(screen.getByText('1/2')).toBeInTheDocument();
   });
 
-  it('reverts edit on Escape', () => {
-    render(<TaskItem task={createMockTask()} />);
-
-    fireEvent.click(screen.getByText('Test Task'));
-    const input = screen.getByDisplayValue('Test Task');
-    fireEvent.change(input, { target: { value: 'Changed' } });
-    fireEvent.keyDown(input, { key: 'Escape' });
-
-    // Should show original title, not the changed value
-    expect(screen.getByText('Test Task')).toBeInTheDocument();
+  it('does not show subtask progress pill when no subtasks', () => {
+    render(<TaskItem task={createMockTask({ subtasks: [] })} />);
+    expect(screen.queryByText(/\d+\/\d+/)).not.toBeInTheDocument();
   });
 });

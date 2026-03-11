@@ -15,3 +15,17 @@ html.theme-transition *::before,
 html.theme-transition *::after {
   transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease !important;
 }
+
+/* Slide-in animation for task detail panel */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.25s ease-out;
+}

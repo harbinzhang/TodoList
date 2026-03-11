@@ -9,6 +9,7 @@ interface TaskState {
   currentView: ViewType;
   currentProjectId?: string;
   currentLabelId?: string;
+  selectedTaskId: string | null;
   filter: TaskFilter;
   loading: boolean;
   
@@ -33,6 +34,7 @@ interface TaskState {
   updateSection: (sectionId: string, updates: Partial<Section>) => void;
   deleteSection: (sectionId: string) => void;
   
+  setSelectedTaskId: (taskId: string | null) => void;
   setCurrentView: (view: ViewType, id?: string) => void;
   setFilter: (filter: Partial<TaskFilter>) => void;
   setLoading: (loading: boolean) => void;
@@ -44,6 +46,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   labels: [],
   sections: [],
   currentView: 'inbox',
+  selectedTaskId: null,
   filter: {},
   loading: false,
 
@@ -91,6 +94,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     sections: get().sections.filter(section => section.id !== sectionId)
   }),
 
+  setSelectedTaskId: (taskId) => set({ selectedTaskId: taskId }),
   setCurrentView: (view, id) => set({ 
     currentView: view,
     currentProjectId: view === 'project' ? id : undefined,
