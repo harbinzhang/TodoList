@@ -172,6 +172,27 @@ describe('taskParser', () => {
       expect(dToken).toBeDefined();
       expect(dToken!.text).toBe('tomorrow');
     });
+
+    it('parses "tod" as today', () => {
+      const result = parseTaskInput('Submit form tod', [], [], REF_DATE);
+      expect(result.dueDate).toBeDefined();
+      expect(result.dueDate!.getDate()).toBe(REF_DATE.getDate());
+      expect(result.cleanTitle).toBe('Submit form');
+    });
+
+    it('parses "tom" as tomorrow', () => {
+      const result = parseTaskInput('Buy milk tom', [], [], REF_DATE);
+      expect(result.dueDate).toBeDefined();
+      expect(result.dueDate!.getDate()).toBe(12); // tomorrow
+      expect(result.cleanTitle).toBe('Buy milk');
+    });
+
+    it('does not match "tod" inside a word like "today"', () => {
+      // "today" should be parsed by chrono, not our shorthand
+      const result = parseTaskInput('Buy milk today', [], [], REF_DATE);
+      expect(result.dueDate).toBeDefined();
+      expect(result.dueDate!.getDate()).toBe(REF_DATE.getDate());
+    });
   });
 
   // ──────────── Combined parsing ────────────

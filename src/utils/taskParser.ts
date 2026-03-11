@@ -36,6 +36,23 @@ const PRIORITY_PATTERNS: { pattern: RegExp; value: 1 | 2 | 3 | 4 }[] = [
 
 const DATE_SHORTHANDS: { pattern: RegExp; resolve: (now: Date) => Date }[] = [
   {
+    pattern: /\btod\b/i,
+    resolve: (now) => {
+      const d = new Date(now);
+      d.setHours(23, 59, 0, 0);
+      return d;
+    },
+  },
+  {
+    pattern: /\btom\b/i,
+    resolve: (now) => {
+      const d = new Date(now);
+      d.setDate(d.getDate() + 1);
+      d.setHours(23, 59, 0, 0);
+      return d;
+    },
+  },
+  {
     pattern: /\b(?:eod|end\s+of\s+day)\b/i,
     resolve: (now) => {
       const d = new Date(now);

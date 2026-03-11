@@ -69,8 +69,8 @@ Todoist uses inline syntax markers (`p1`, `#Project`, `@label`). This works for 
 
 | User types | Parsed as |
 |------------|-----------|
-| `today` | Today's date |
-| `tomorrow` / `tmr` | Tomorrow |
+| `today` / `tod` | Today's date |
+| `tomorrow` / `tmr` / `tom` | Tomorrow |
 | `monday` / `mon` / `next monday` | Next occurrence of that weekday |
 | `jan 15` / `january 15` / `1/15` | January 15 (current or next year) |
 | `next week` | Next Monday |
