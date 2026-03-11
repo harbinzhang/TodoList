@@ -13,6 +13,7 @@ import {
   PlusSmallIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  TagIcon,
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleFilledIcon } from '@heroicons/react/24/solid';
 
@@ -116,6 +117,19 @@ const TaskDetailPanel = () => {
       await taskService.updateTask(task.id, { projectId: value || undefined });
     } catch (error) {
       console.error('Error updating project:', error);
+    }
+  };
+
+  const handleToggleLabel = async (labelId: string) => {
+    if (!task) return;
+    const currentLabels = task.labels || [];
+    const newLabels = currentLabels.includes(labelId)
+      ? currentLabels.filter((id) => id !== labelId)
+      : [...currentLabels, labelId];
+    try {
+      await taskService.updateTask(task.id, { labels: newLabels });
+    } catch (error) {
+      console.error('Error updating labels:', error);
     }
   };
 
@@ -346,27 +360,39 @@ const TaskDetailPanel = () => {
             </div>
 
             {/* Labels */}
-            {task.labels.length > 0 && (
-              <div>
-                <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 block">
-                  Labels
-                </label>
+            <div>
+              <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 flex items-center space-x-1">
+                <TagIcon className="w-3.5 h-3.5" />
+                <span>Labels</span>
+              </label>
+              {allLabels.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
-                  {task.labels.map((labelId) => {
-                    const labelObj = allLabels.find((l) => l.id === labelId);
+                  {allLabels.map((label) => {
+                    const isSelected = task.labels.includes(label.id);
                     return (
-                      <span
-                        key={labelId}
-                        className="inline-block px-2.5 py-1 text-xs rounded-full text-white font-medium"
-                        style={{ backgroundColor: labelObj?.color || '#6b7280' }}
+                      <button
+                        key={label.id}
+                        onClick={() => handleToggleLabel(label.id)}
+                        className={`inline-flex items-center px-2.5 py-1 text-xs rounded-full font-medium transition-all duration-150 border ${
+                          isSelected
+                            ? 'text-white border-transparent shadow-sm'
+                            : 'bg-transparent border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500'
+                        }`}
+                        style={
+                          isSelected
+                            ? { backgroundColor: label.color || '#6b7280' }
+                            : undefined
+                        }
                       >
-                        {labelObj?.name || labelId}
-                      </span>
+                        {label.name}
+                      </button>
                     );
                   })}
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className="text-xs text-gray-400 dark:text-gray-500">No labels created yet</p>
+              )}
+            </div>
 
             {/* Divider */}
             <hr className="border-gray-200 dark:border-gray-700" />
@@ -410,7 +436,39 @@ const TaskDetailPanel = () => {
 
               {subtasksExpanded && (
                 <div className="space-y-1.5 ml-6">
-                  {task.subtasks.map((subtask) => (
+                  {/* Add Subtask */}
+                  {showSubtaskInput ? (
+                    <div className="flex items-center space-x-2.5 py-1.5 px-2">
+                      <CheckCircleIcon className="w-5 h-5 text-gray-300 dark:text-gray-600 flex-shrink-0" />
+                      <input
+                        type="text"
+                        value={newSubtaskTitle}
+                        onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                        onKeyDown={handleSubtaskKeyDown}
+                        onBlur={() => {
+                          if (!newSubtaskTitle.trim()) {
+                            setShowSubtaskInput(false);
+                          }
+                        }}
+                        className="flex-1 text-sm px-2 py-1 bg-transparent border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:text-white dark:placeholder-gray-400"
+                        placeholder="Subtask name"
+                        autoFocus
+                      />
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowSubtaskInput(true)}
+                      className="flex items-center space-x-2 text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 py-1.5 px-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors w-full"
+                    >
+                      <PlusSmallIcon className="w-5 h-5" />
+                      <span>Add sub-task</span>
+                    </button>
+                  )}
+
+                  {[...task.subtasks]
+                    .reverse()
+                    .sort((a, b) => Number(a.completed) - Number(b.completed))
+                    .map((subtask) => (
                     <div
                       key={subtask.id}
                       className="group/subtask flex items-center space-x-2.5 py-1.5 px-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
@@ -442,35 +500,6 @@ const TaskDetailPanel = () => {
                       </button>
                     </div>
                   ))}
-
-                  {/* Add Subtask */}
-                  {showSubtaskInput ? (
-                    <div className="flex items-center space-x-2.5 py-1.5 px-2">
-                      <CheckCircleIcon className="w-5 h-5 text-gray-300 dark:text-gray-600 flex-shrink-0" />
-                      <input
-                        type="text"
-                        value={newSubtaskTitle}
-                        onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                        onKeyDown={handleSubtaskKeyDown}
-                        onBlur={() => {
-                          if (!newSubtaskTitle.trim()) {
-                            setShowSubtaskInput(false);
-                          }
-                        }}
-                        className="flex-1 text-sm px-2 py-1 bg-transparent border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 dark:text-white dark:placeholder-gray-400"
-                        placeholder="Subtask name"
-                        autoFocus
-                      />
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setShowSubtaskInput(true)}
-                      className="flex items-center space-x-2 text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 py-1.5 px-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors w-full"
-                    >
-                      <PlusSmallIcon className="w-5 h-5" />
-                      <span>Add sub-task</span>
-                    </button>
-                  )}
                 </div>
               )}
             </div>
