@@ -27,12 +27,9 @@ const TaskItem = ({ task, dragHandleProps }: TaskItemProps) => {
   const handleToggleComplete = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Don't open detail panel
     try {
-      if (task.recurrence && !task.completed) {
-        // Recurring task: complete current + create next instance (no undo)
-        await taskService.completeRecurringTask(task);
-      } else if (!task.completed) {
-        // Non-recurring: use undo queue for 5s delay
-        enqueue(task.id, task.title);
+      if (!task.completed) {
+        // Both recurring and non-recurring: use undo queue for 5s delay
+        enqueue(task);
       } else {
         // Uncompleting a task
         await taskService.toggleTaskCompletion(task.id, false);

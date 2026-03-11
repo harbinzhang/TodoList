@@ -105,13 +105,15 @@ const RecurrencePicker = ({ value, onChange }: RecurrencePickerProps) => {
         {value && (
           <>
             <span>{formatRecurrenceLabel(value)}</span>
-            <button
-              type="button"
+            <span
+              role="button"
+              tabIndex={0}
               onClick={handleClear}
-              className="ml-1 hover:text-red-500"
+              onKeyDown={(e) => { if (e.key === 'Enter') handleClear(e as unknown as React.MouseEvent); }}
+              className="ml-1 hover:text-red-500 cursor-pointer"
             >
               <XMarkIcon className="w-3 h-3" />
-            </button>
+            </span>
           </>
         )}
       </button>

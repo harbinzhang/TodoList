@@ -17,9 +17,11 @@ import MainContent from './components/layout/MainContent';
 import SettingsModal from './components/common/SettingsModal';
 import UndoToast from './components/common/UndoToast';
 
+import type { Task } from './types';
+
 // Context for undo queue so child components can enqueue
 interface UndoQueueContextType {
-  enqueue: (taskId: string, taskTitle: string) => void;
+  enqueue: (task: Task) => void;
   pendingItems: UndoQueueItem[];
 }
 export const UndoQueueContext = createContext<UndoQueueContextType>({

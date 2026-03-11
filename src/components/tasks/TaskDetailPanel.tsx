@@ -374,7 +374,14 @@ const TaskDetailPanel = () => {
                   setRecurrence(rule);
                   if (task) {
                     try {
-                      await taskService.updateTask(task.id, { recurrence: rule } as Partial<Omit<Task, 'id' | 'createdAt'>>);
+                      if (rule) {
+                        await taskService.updateTask(task.id, { recurrence: rule } as Partial<Omit<Task, 'id' | 'createdAt'>>);
+                      } else {
+                        // Use deleteField() to remove the recurrence field from Firestore
+                        const { doc, updateDoc, deleteField } = await import('firebase/firestore');
+                        const { db } = await import('../../firebase/config');
+                        await updateDoc(doc(db, 'tasks', task.id), { recurrence: deleteField() });
+                      }
                     } catch (error) {
                       console.error('Error updating recurrence:', error);
                     }
