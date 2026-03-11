@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   DndContext,
   PointerSensor,
@@ -65,10 +65,10 @@ const UpcomingView = () => {
     }
   }, [addingForDate]);
 
-  // Derived data
-  const overdueTasks = getOverdueTasks(tasks);
-  const undatedTasks = getUndatedTasks(tasks);
-  const dayGroups = groupTasksByDay(tasks, scope);
+  // Derived data — memoised with scope so switching 7/14/30 days recalculates
+  const overdueTasks = useMemo(() => getOverdueTasks(tasks), [tasks]);
+  const undatedTasks = useMemo(() => getUndatedTasks(tasks), [tasks]);
+  const dayGroups = useMemo(() => groupTasksByDay(tasks, scope), [tasks, scope]);
 
   // DnD sensors
   const pointerSensor = useSensor(PointerSensor, {

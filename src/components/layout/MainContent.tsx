@@ -62,8 +62,6 @@ const MainContent = () => {
     switch (currentView) {
       case 'today':
         return format(new Date(), 'EEEE, MMMM d');
-      case 'upcoming':
-        return 'Next 7 days';
       default:
         return null;
     }
