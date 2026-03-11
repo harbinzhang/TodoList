@@ -3,9 +3,10 @@ import { useTaskStore } from '../../store/taskStore';
 import { useAuthStore } from '../../store/authStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { taskService } from '../../services/taskService';
-import { PlusIcon, CalendarIcon, FlagIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, CalendarIcon, FlagIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { getTodayStringInTz } from '../../utils/dateUtils';
 import RecurrencePicker from './RecurrencePicker';
+import QuickAdd from './QuickAdd';
 import type { RecurrenceRule } from '../../types';
 
 interface TaskFormProps {
@@ -17,6 +18,7 @@ const TaskForm = ({ sectionId }: TaskFormProps) => {
   const { currentView, currentProjectId, currentLabelId } = useTaskStore();
   const { timezone } = useSettingsStore();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showDetailedForm, setShowDetailedForm] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -59,6 +61,7 @@ const TaskForm = ({ sectionId }: TaskFormProps) => {
     setPriority(4);
     setRecurrence(undefined);
     setIsExpanded(false);
+    setShowDetailedForm(false);
   };
 
   const handleCancel = () => {
@@ -85,77 +88,108 @@ const TaskForm = ({ sectionId }: TaskFormProps) => {
     );
   }
 
-  return (
-    <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-md">
-      {/* Title Input */}
-      <input
-        type="text"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Task name"
-        className="w-full text-sm font-medium border-none outline-none placeholder-gray-400 dark:placeholder-gray-500 mb-2 bg-transparent dark:text-white"
-        autoFocus
-      />
-
-      {/* Description Input */}
-      <textarea
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        placeholder="Description"
-        rows={2}
-        className="w-full text-sm border-none outline-none placeholder-gray-400 dark:placeholder-gray-500 resize-none mb-3 bg-transparent dark:text-white"
-      />
-
-      {/* Task Options */}
-      <div className="flex items-center space-x-4 mb-4">
-        {/* Due Date */}
-        <div className="flex items-center space-x-2">
-          <CalendarIcon className="w-4 h-4 text-gray-400" />
-          <input
-            type="date"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-            className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-          />
-        </div>
-
-        {/* Priority */}
-        <div className="flex items-center space-x-2">
-          <FlagIcon className="w-4 h-4 text-gray-400" />
-          <select
-            value={priority}
-            onChange={(e) => setPriority(Number(e.target.value) as 1 | 2 | 3 | 4)}
-            className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-          >
-            <option value={4}>Priority 4</option>
-            <option value={3}>Priority 3</option>
-            <option value={2}>Priority 2</option>
-            <option value={1}>Priority 1</option>
-          </select>
-        </div>
-
-        {/* Recurrence */}
-        <RecurrencePicker value={recurrence} onChange={setRecurrence} />
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex items-center justify-end space-x-2">
+  // Expanded: show Quick Add by default, with toggle to detailed form
+  if (!showDetailedForm) {
+    return (
+      <div>
+        <QuickAdd
+          variant="inline"
+          onClose={() => setIsExpanded(false)}
+          sectionId={sectionId}
+        />
         <button
           type="button"
-          onClick={handleCancel}
-          className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+          onClick={() => setShowDetailedForm(true)}
+          className="mt-2 flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
         >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={!title.trim() || loading}
-          className="px-3 py-1.5 text-sm text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed rounded"
-        >
-          {loading ? 'Adding...' : 'Add task'}
+          <ChevronDownIcon className="w-3.5 h-3.5" />
+          Detailed mode
         </button>
       </div>
-    </form>
+    );
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setShowDetailedForm(false)}
+        className="mb-2 flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+      >
+        <ChevronUpIcon className="w-3.5 h-3.5" />
+        Quick mode
+      </button>
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-md">
+        {/* Title Input */}
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Task name"
+          className="w-full text-sm font-medium border-none outline-none placeholder-gray-400 dark:placeholder-gray-500 mb-2 bg-transparent dark:text-white"
+          autoFocus
+        />
+
+        {/* Description Input */}
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Description"
+          rows={2}
+          className="w-full text-sm border-none outline-none placeholder-gray-400 dark:placeholder-gray-500 resize-none mb-3 bg-transparent dark:text-white"
+        />
+
+        {/* Task Options */}
+        <div className="flex items-center space-x-4 mb-4">
+          {/* Due Date */}
+          <div className="flex items-center space-x-2">
+            <CalendarIcon className="w-4 h-4 text-gray-400" />
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+
+          {/* Priority */}
+          <div className="flex items-center space-x-2">
+            <FlagIcon className="w-4 h-4 text-gray-400" />
+            <select
+              value={priority}
+              onChange={(e) => setPriority(Number(e.target.value) as 1 | 2 | 3 | 4)}
+              className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+            >
+              <option value={4}>Priority 4</option>
+              <option value={3}>Priority 3</option>
+              <option value={2}>Priority 2</option>
+              <option value={1}>Priority 1</option>
+            </select>
+          </div>
+
+          {/* Recurrence */}
+          <RecurrencePicker value={recurrence} onChange={setRecurrence} />
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center justify-end space-x-2">
+          <button
+            type="button"
+            onClick={handleCancel}
+            className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={!title.trim() || loading}
+            className="px-3 py-1.5 text-sm text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed rounded"
+          >
+            {loading ? 'Adding...' : 'Add task'}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 };
 

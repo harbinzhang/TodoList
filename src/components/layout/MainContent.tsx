@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useTaskStore } from '../../store/taskStore';
 import { useViewPreference } from '../../hooks/useViewPreference';
 import TaskList from '../tasks/TaskList';
@@ -8,9 +9,9 @@ import ThemeToggle from '../common/ThemeToggle';
 import CompletedList from '../archive/CompletedList';
 import ArchiveStats from '../archive/ArchiveStats';
 import ViewSwitcher from './ViewSwitcher';
+import QuickAdd from '../tasks/QuickAdd';
 import { format } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
-import { lazy, Suspense } from 'react';
 
 // Lazy load view components
 const UpcomingView = lazy(() => import('../views/UpcomingView'));
@@ -33,6 +34,30 @@ const ViewFallback = () => (
 const MainContent = () => {
   const { currentView, currentProjectId, currentLabelId, currentFilterId, projects, labels, savedFilters } = useTaskStore();
   const { currentViewMode, setViewMode, availableViews } = useViewPreference();
+  const [showQuickAddModal, setShowQuickAddModal] = useState(false);
+
+  // Global Q hotkey
+  const handleGlobalHotkey = useCallback((e: KeyboardEvent) => {
+    // Don't trigger if user is typing in an input/textarea
+    const target = e.target as HTMLElement;
+    if (
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.tagName === 'SELECT' ||
+      target.isContentEditable
+    ) {
+      return;
+    }
+    if (e.key === 'q' || e.key === 'Q') {
+      e.preventDefault();
+      setShowQuickAddModal(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleGlobalHotkey);
+    return () => document.removeEventListener('keydown', handleGlobalHotkey);
+  }, [handleGlobalHotkey]);
 
   const getViewTitle = () => {
     switch (currentView) {
@@ -157,6 +182,16 @@ const MainContent = () => {
 
       {/* Task Detail Panel */}
       <TaskDetailPanel />
+
+      {/* Quick Add Modal (global Q hotkey) */}
+      <AnimatePresence>
+        {showQuickAddModal && (
+          <QuickAdd
+            variant="modal"
+            onClose={() => setShowQuickAddModal(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

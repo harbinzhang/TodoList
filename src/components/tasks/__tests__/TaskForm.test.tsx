@@ -11,6 +11,11 @@ vi.mock('../../../services/taskService', () => ({
   },
 }));
 
+// Mock chrono-node to avoid issues in test environment
+vi.mock('chrono-node', () => ({
+  parse: vi.fn(() => []),
+}));
+
 describe('TaskForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -21,6 +26,8 @@ describe('TaskForm', () => {
     useTaskStore.setState({
       currentView: 'inbox',
       currentProjectId: undefined,
+      projects: [],
+      labels: [],
     });
   });
 
@@ -29,24 +36,35 @@ describe('TaskForm', () => {
     expect(screen.getByText('Add task')).toBeInTheDocument();
   });
 
-  it('expands form when "Add task" button is clicked', () => {
+  it('expands to Quick Add when "Add task" button is clicked', () => {
     render(<TaskForm />);
     fireEvent.click(screen.getByText('Add task'));
+    // Quick Add mode shows a text input and a "Detailed mode" toggle
+    expect(screen.getByRole('textbox')).toBeInTheDocument();
+    expect(screen.getByText('Detailed mode')).toBeInTheDocument();
+  });
+
+  it('expands to detailed form when "Detailed mode" is clicked', () => {
+    render(<TaskForm />);
+    fireEvent.click(screen.getByText('Add task'));
+    fireEvent.click(screen.getByText('Detailed mode'));
     expect(screen.getByPlaceholderText('Task name')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Description')).toBeInTheDocument();
   });
 
-  it('has submit button disabled when title is empty', () => {
+  it('has submit button disabled when title is empty in detailed mode', () => {
     render(<TaskForm />);
     fireEvent.click(screen.getByText('Add task'));
+    fireEvent.click(screen.getByText('Detailed mode'));
     // After expansion, the "Add task" button is the submit button
     const submitBtn = screen.getByRole('button', { name: 'Add task' });
     expect(submitBtn).toBeDisabled();
   });
 
-  it('enables submit button when title is entered', () => {
+  it('enables submit button when title is entered in detailed mode', () => {
     render(<TaskForm />);
     fireEvent.click(screen.getByText('Add task'));
+    fireEvent.click(screen.getByText('Detailed mode'));
     fireEvent.change(screen.getByPlaceholderText('Task name'), {
       target: { value: 'New Task' },
     });
@@ -54,11 +72,12 @@ describe('TaskForm', () => {
     expect(submitBtn).not.toBeDisabled();
   });
 
-  it('calls taskService.createTask on form submit', async () => {
+  it('calls taskService.createTask on detailed form submit', async () => {
     vi.mocked(taskService.createTask).mockResolvedValue('new-id');
     render(<TaskForm />);
 
     fireEvent.click(screen.getByText('Add task'));
+    fireEvent.click(screen.getByText('Detailed mode'));
     fireEvent.change(screen.getByPlaceholderText('Task name'), {
       target: { value: 'My New Task' },
     });
@@ -73,11 +92,12 @@ describe('TaskForm', () => {
     });
   });
 
-  it('resets form after successful submission', async () => {
+  it('resets form after successful submission in detailed mode', async () => {
     vi.mocked(taskService.createTask).mockResolvedValue('new-id');
     render(<TaskForm />);
 
     fireEvent.click(screen.getByText('Add task'));
+    fireEvent.click(screen.getByText('Detailed mode'));
     fireEvent.change(screen.getByPlaceholderText('Task name'), {
       target: { value: 'Task' },
     });
@@ -89,9 +109,10 @@ describe('TaskForm', () => {
     });
   });
 
-  it('collapses form on Cancel', () => {
+  it('collapses form on Cancel in detailed mode', () => {
     render(<TaskForm />);
     fireEvent.click(screen.getByText('Add task'));
+    fireEvent.click(screen.getByText('Detailed mode'));
     expect(screen.getByPlaceholderText('Task name')).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('Cancel'));
@@ -103,11 +124,14 @@ describe('TaskForm', () => {
     useTaskStore.setState({
       currentView: 'project',
       currentProjectId: 'proj-42',
+      projects: [],
+      labels: [],
     });
     vi.mocked(taskService.createTask).mockResolvedValue('new-id');
 
     render(<TaskForm />);
     fireEvent.click(screen.getByText('Add task'));
+    fireEvent.click(screen.getByText('Detailed mode'));
     fireEvent.change(screen.getByPlaceholderText('Task name'), {
       target: { value: 'Project Task' },
     });
