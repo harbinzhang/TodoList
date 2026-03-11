@@ -59,6 +59,8 @@ export interface Label {
 
 export type ViewType = 'inbox' | 'today' | 'upcoming' | 'project' | 'label' | 'filter' | 'completed';
 
+export type TaskViewMode = 'list' | 'board' | 'calendar';
+
 export interface TaskFilter {
   projectId?: string;
   labelId?: string;

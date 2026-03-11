@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Task, Project, Label, Section, SavedFilter, TaskFilter, ViewType } from '../types';
+import type { Task, Project, Label, Section, SavedFilter, TaskFilter, ViewType, TaskViewMode } from '../types';
 
 interface TaskState {
   tasks: Task[];
@@ -12,6 +12,8 @@ interface TaskState {
   currentLabelId?: string;
   currentFilterId?: string;
   selectedTaskId: string | null;
+  currentViewMode: TaskViewMode;
+  boardColumnSource: 'section' | 'priority' | 'status';
   filter: TaskFilter;
   loading: boolean;
   
@@ -40,6 +42,8 @@ interface TaskState {
   setCurrentFilterId: (filterId: string | undefined) => void;
   
   setSelectedTaskId: (taskId: string | null) => void;
+  setCurrentViewMode: (mode: TaskViewMode) => void;
+  setBoardColumnSource: (source: 'section' | 'priority' | 'status') => void;
   setCurrentView: (view: ViewType, id?: string) => void;
   setFilter: (filter: Partial<TaskFilter>) => void;
   setLoading: (loading: boolean) => void;
@@ -53,6 +57,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   savedFilters: [],
   currentView: 'inbox',
   selectedTaskId: null,
+  currentViewMode: 'list',
+  boardColumnSource: 'section',
   filter: {},
   loading: false,
 
@@ -104,6 +110,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   setCurrentFilterId: (currentFilterId) => set({ currentFilterId }),
 
   setSelectedTaskId: (taskId) => set({ selectedTaskId: taskId }),
+  setCurrentViewMode: (currentViewMode) => set({ currentViewMode }),
+  setBoardColumnSource: (boardColumnSource) => set({ boardColumnSource }),
   setCurrentView: (view, id) => set({ 
     currentView: view,
     currentProjectId: view === 'project' ? id : undefined,

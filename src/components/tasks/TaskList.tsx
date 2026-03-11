@@ -180,13 +180,27 @@ const TaskList = () => {
     }
   }, [filteredTasks]);
 
-  // Group tasks by section when in project view
+  // Group tasks by section — applies in project view, and also in other views
+  // if the filtered tasks happen to have sectionIds
   const isProjectView = currentView === 'project';
-  const projectSections = isProjectView
+  const projectSections = isProjectView && currentProjectId
     ? sections.filter(s => s.projectId === currentProjectId).sort((a, b) => a.sortOrder - b.sortOrder)
     : [];
 
-  const unsectionedTasks = isProjectView
+  // For non-project views, gather sections from the filtered tasks
+  const viewSections = useMemo(() => {
+    if (isProjectView) return projectSections;
+    // Collect unique sectionIds from filtered tasks
+    const sectionIds = new Set(filteredTasks.map(t => t.sectionId).filter(Boolean) as string[]);
+    if (sectionIds.size === 0) return [];
+    return sections
+      .filter(s => sectionIds.has(s.id))
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+  }, [isProjectView, projectSections, filteredTasks, sections]);
+
+  const hasSections = viewSections.length > 0;
+
+  const unsectionedTasks = hasSections
     ? filteredTasks.filter(t => !t.sectionId)
     : filteredTasks;
 
@@ -227,7 +241,7 @@ const TaskList = () => {
       
       {/* Tasks */}
       <div className="mt-6">
-        {filteredTasks.length === 0 && projectSections.length === 0 ? (
+        {filteredTasks.length === 0 && viewSections.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-gray-400 dark:text-gray-500 text-lg mb-2">
               {currentView === 'today' ? '🎉' : '📝'}
@@ -238,12 +252,12 @@ const TaskList = () => {
                 : 'No tasks yet. Add one above to get started.'}
             </p>
           </div>
-        ) : isProjectView ? (
+        ) : hasSections ? (
           <>
             {/* Unsectioned tasks */}
             {unsectionedTasks.length > 0 && (
               <div>
-                {projectSections.length > 0 && (
+                {viewSections.length > 0 && (
                   <h4 className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider px-1 py-1">
                     No section
                   </h4>
@@ -253,7 +267,7 @@ const TaskList = () => {
             )}
 
             {/* Sectioned tasks */}
-            {projectSections.map((section) => {
+            {viewSections.map((section) => {
               const sectionTasks = getTasksForSection(section.id);
               const completedCount = sectionTasks.filter(t => t.completed).length;
               const isCollapsed = collapsedSections.has(section.id);
@@ -288,8 +302,8 @@ const TaskList = () => {
               );
             })}
 
-            {/* Add Section */}
-            {currentProjectId && (
+            {/* Add Section — in project view */}
+            {isProjectView && currentProjectId && (
               <SectionForm projectId={currentProjectId} />
             )}
           </>

@@ -43,8 +43,7 @@ const Sidebar = () => {
       case 'upcoming':
         return tasks.filter(task => 
           !task.completed && 
-          task.dueDate && 
-          task.dueDate > new Date()
+          task.dueDate != null
         ).length;
       case 'project':
         return tasks.filter(task => !task.completed && task.projectId === id).length;
