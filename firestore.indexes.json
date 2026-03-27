@@ -24,6 +24,23 @@
         { "fieldPath": "name", "order": "ASCENDING" }
       ]
     }
+    ,
+    {
+      "collectionGroup": "mindmaps",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "mindmapNodes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "mindmapId", "order": "ASCENDING" },
+        { "fieldPath": "sortOrder", "order": "ASCENDING" }
+      ]
+    }
   ],
   "fieldOverrides": []
 }

@@ -14,6 +14,19 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let auth: any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let db: any;
+
+try {
+  auth = getAuth(app);
+  db = getFirestore(app);
+} catch {
+  // Firebase init may fail in demo/dev mode without valid config
+  auth = {} as ReturnType<typeof getAuth>;
+  db = {} as ReturnType<typeof getFirestore>;
+}
+
+export { auth, db };
 export default app;

@@ -42,7 +42,32 @@ export interface Label {
   userId: string;
 }
 
-export type ViewType = 'inbox' | 'today' | 'upcoming' | 'project' | 'label';
+export type ViewType = 'inbox' | 'today' | 'upcoming' | 'project' | 'label' | 'mindmap';
+
+export interface Mindmap {
+  id: string;
+  name: string;
+  color: string;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MindmapNode {
+  id: string;
+  mindmapId: string;
+  userId: string;
+  parentId: string | null;
+  sortOrder: number;
+
+  title: string;
+  description?: string;
+  completed: boolean;
+  priority: 1 | 2 | 3 | 4;
+
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export interface TaskFilter {
   projectId?: string;

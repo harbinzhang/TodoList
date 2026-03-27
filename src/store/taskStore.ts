@@ -8,6 +8,7 @@ interface TaskState {
   currentView: ViewType;
   currentProjectId?: string;
   currentLabelId?: string;
+  currentMindmapId?: string;
   filter: TaskFilter;
   loading: boolean;
   
@@ -73,10 +74,11 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     labels: get().labels.filter(label => label.id !== labelId)
   }),
 
-  setCurrentView: (view, id) => set({ 
+  setCurrentView: (view, id) => set({
     currentView: view,
     currentProjectId: view === 'project' ? id : undefined,
-    currentLabelId: view === 'label' ? id : undefined
+    currentLabelId: view === 'label' ? id : undefined,
+    currentMindmapId: view === 'mindmap' ? id : undefined,
   }),
   setFilter: (filter) => set({ filter: { ...get().filter, ...filter } }),
   setLoading: (loading) => set({ loading }),
