@@ -1,9 +1,8 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 
 const firebaseConfig = {
-  // You'll need to replace these with your actual Firebase config
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
@@ -22,6 +21,13 @@ let db: any;
 try {
   auth = getAuth(app);
   db = getFirestore(app);
+
+  // Connect to emulators in development when VITE_USE_EMULATORS is set
+  if (import.meta.env.VITE_USE_EMULATORS === 'true') {
+    connectAuthEmulator(auth, 'http://localhost:9199', { disableWarnings: true });
+    connectFirestoreEmulator(db, 'localhost', 8180);
+    console.log('🔧 Using Firebase Emulators');
+  }
 } catch {
   // Firebase init may fail in demo/dev mode without valid config
   auth = {} as ReturnType<typeof getAuth>;

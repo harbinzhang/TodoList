@@ -107,10 +107,11 @@ export const mindmapNodeService = {
     await batch.commit();
   },
 
-  async getMindmapNodes(mindmapId: string): Promise<MindmapNode[]> {
+  async getMindmapNodes(mindmapId: string, userId: string): Promise<MindmapNode[]> {
     const q = query(
       collection(db, COLLECTION_NAME),
       where('mindmapId', '==', mindmapId),
+      where('userId', '==', userId),
       orderBy('sortOrder', 'asc')
     );
     const snapshot = await getDocs(q);
@@ -124,11 +125,13 @@ export const mindmapNodeService = {
 
   subscribeToMindmapNodes(
     mindmapId: string,
+    userId: string,
     callback: (nodes: MindmapNode[]) => void
   ): () => void {
     const q = query(
       collection(db, COLLECTION_NAME),
       where('mindmapId', '==', mindmapId),
+      where('userId', '==', userId),
       orderBy('sortOrder', 'asc')
     );
     return onSnapshot(q, (snapshot) => {

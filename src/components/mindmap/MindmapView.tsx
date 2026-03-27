@@ -1,22 +1,23 @@
 import { useEffect, useRef } from 'react';
 import { useTaskStore } from '../../store/taskStore';
 import { useMindmapStore } from '../../store/mindmapStore';
+import { useAuthStore } from '../../store/authStore';
 import { mindmapNodeService } from '../../services/mindmapNodeService';
 import MindmapCanvas from './MindmapCanvas';
 
 const MindmapView = () => {
   const { currentMindmapId } = useTaskStore();
   const { setNodes, setCurrentMindmapId, setLoading, loading } = useMindmapStore();
+  const { user } = useAuthStore();
   const unsubRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    // Clean up previous subscription
     if (unsubRef.current) {
       unsubRef.current();
       unsubRef.current = null;
     }
 
-    if (!currentMindmapId) {
+    if (!currentMindmapId || !user) {
       setNodes([]);
       setCurrentMindmapId(null);
       return;
@@ -27,6 +28,7 @@ const MindmapView = () => {
 
     unsubRef.current = mindmapNodeService.subscribeToMindmapNodes(
       currentMindmapId,
+      user.uid,
       (nodes) => {
         setNodes(nodes);
         setLoading(false);
@@ -39,7 +41,7 @@ const MindmapView = () => {
         unsubRef.current = null;
       }
     };
-  }, [currentMindmapId, setNodes, setCurrentMindmapId, setLoading]);
+  }, [currentMindmapId, user, setNodes, setCurrentMindmapId, setLoading]);
 
   if (loading) {
     return (

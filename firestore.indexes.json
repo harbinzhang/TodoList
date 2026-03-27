@@ -38,6 +38,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "mindmapId", "order": "ASCENDING" },
+        { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "sortOrder", "order": "ASCENDING" }
       ]
     }
