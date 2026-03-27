@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useTaskStore } from '../taskStore';
-import type { Task, Project, Label } from '../../types';
+import type { Item, Project, Label } from '../../types';
 
-const createMockTask = (overrides: Partial<Task> = {}): Task => ({
+const createMockTask = (overrides: Partial<Item> = {}): Item => ({
   id: '1',
   title: 'Test Task',
   completed: false,
@@ -11,7 +11,7 @@ const createMockTask = (overrides: Partial<Task> = {}): Task => ({
   updatedAt: new Date(),
   userId: 'user1',
   labels: [],
-  subtasks: [],
+
   ...overrides,
 });
 

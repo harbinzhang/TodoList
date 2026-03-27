@@ -1,9 +1,9 @@
 import { create } from 'zustand';
-import type { Mindmap, MindmapNode } from '../types';
+import type { Mindmap, Item } from '../types';
 
 interface MindmapState {
   mindmaps: Mindmap[];
-  nodes: MindmapNode[];
+  nodes: Item[];
   currentMindmapId: string | null;
   selectedNodeId: string | null;
   collapsedNodeIds: Set<string>;
@@ -15,9 +15,9 @@ interface MindmapState {
   updateMindmap: (id: string, updates: Partial<Mindmap>) => void;
   deleteMindmap: (id: string) => void;
 
-  setNodes: (nodes: MindmapNode[]) => void;
-  addNode: (node: MindmapNode) => void;
-  updateNode: (id: string, updates: Partial<MindmapNode>) => void;
+  setNodes: (nodes: Item[]) => void;
+  addNode: (node: Item) => void;
+  updateNode: (id: string, updates: Partial<Item>) => void;
   deleteNode: (id: string) => void;
 
   setCurrentMindmapId: (id: string | null) => void;
@@ -74,7 +74,7 @@ export const useMindmapStore = create<MindmapState>((set, get) => ({
   collapseAll: () => {
     const nodesWithChildren = new Set<string>();
     for (const node of get().nodes) {
-      if (node.parentId) nodesWithChildren.add(node.parentId);
+      if (node.parentId != null) nodesWithChildren.add(node.parentId);
     }
     set({ collapsedNodeIds: nodesWithChildren });
   },

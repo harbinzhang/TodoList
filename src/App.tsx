@@ -3,7 +3,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase/config';
 import { useAuthStore } from './store/authStore';
 import { useTaskStore } from './store/taskStore';
-import { taskService } from './services/taskService';
+import { itemService } from './services/itemService';
 import { projectService } from './services/projectService';
 import { labelService } from './services/labelService';
 import { mindmapService } from './services/mindmapService';
@@ -29,7 +29,7 @@ function App() {
         });
 
         // Subscribe to real-time Firestore data
-        const unsubTasks = taskService.subscribeToUserTasks(firebaseUser.uid, setTasks);
+        const unsubTasks = itemService.subscribeToUserTasks(firebaseUser.uid, setTasks);
         const unsubProjects = projectService.subscribeToUserProjects(firebaseUser.uid, setProjects);
         const unsubLabels = labelService.subscribeToUserLabels(firebaseUser.uid, setLabels);
         const unsubMindmaps = mindmapService.subscribeToUserMindmaps(firebaseUser.uid, setMindmaps);

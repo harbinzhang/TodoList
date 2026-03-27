@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { taskService } from '../../services/taskService';
-import type { Task } from '../../types';
+import { itemService } from '../../services/itemService';
+import type { Item } from '../../types';
 import { format, isToday, isTomorrow, isPast } from 'date-fns';
 import {
   CheckCircleIcon,
@@ -12,7 +12,7 @@ import {
 import { CheckCircleIcon as CheckCircleFilledIcon } from '@heroicons/react/24/solid';
 
 interface TaskItemProps {
-  task: Task;
+  task: Item;
 }
 
 const TaskItem = ({ task }: TaskItemProps) => {
@@ -21,7 +21,7 @@ const TaskItem = ({ task }: TaskItemProps) => {
 
   const handleToggleComplete = async () => {
     try {
-      await taskService.toggleTaskCompletion(task.id, !task.completed);
+      await itemService.toggleCompletion('task', task.id, !task.completed);
     } catch (error) {
       console.error('Error toggling task:', error);
     }
@@ -30,7 +30,7 @@ const TaskItem = ({ task }: TaskItemProps) => {
   const handleSaveEdit = async () => {
     if (editTitle.trim()) {
       try {
-        await taskService.updateTask(task.id, { title: editTitle.trim() });
+        await itemService.update('task', task.id, { title: editTitle.trim() });
       } catch (error) {
         console.error('Error updating task:', error);
         setEditTitle(task.title);
@@ -151,9 +151,9 @@ const TaskItem = ({ task }: TaskItemProps) => {
             )}
 
             {/* Labels */}
-            {task.labels.length > 0 && (
+            {(task.labels ?? []).length > 0 && (
               <div className="flex items-center space-x-1">
-                {task.labels.slice(0, 2).map((label, index) => (
+                {(task.labels ?? []).slice(0, 2).map((label, index) => (
                   <span
                     key={index}
                     className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded"
@@ -161,9 +161,9 @@ const TaskItem = ({ task }: TaskItemProps) => {
                     {label}
                   </span>
                 ))}
-                {task.labels.length > 2 && (
+                {(task.labels ?? []).length > 2 && (
                   <span className="text-xs text-gray-400">
-                    +{task.labels.length - 2}
+                    +{(task.labels ?? []).length - 2}
                   </span>
                 )}
               </div>
@@ -183,7 +183,7 @@ const TaskItem = ({ task }: TaskItemProps) => {
             <button
               onClick={async () => {
                 try {
-                  await taskService.deleteTask(task.id);
+                  await itemService.delete('task', task.id);
                 } catch (error) {
                   console.error('Error deleting task:', error);
                 }
@@ -196,29 +196,6 @@ const TaskItem = ({ task }: TaskItemProps) => {
         </div>
       </div>
 
-      {/* Subtasks */}
-      {task.subtasks.length > 0 && (
-        <div className="ml-9 mt-3 space-y-2">
-          {task.subtasks.map((subtask) => (
-            <div key={subtask.id} className="flex items-center space-x-2">
-              <button className="flex-shrink-0">
-                {subtask.completed ? (
-                  <CheckCircleFilledIcon className="w-4 h-4 text-green-500" />
-                ) : (
-                  <CheckCircleIcon className="w-4 h-4 text-gray-400 hover:text-green-500" />
-                )}
-              </button>
-              <span
-                className={`text-xs ${
-                  subtask.completed ? 'line-through text-gray-500' : 'text-gray-700'
-                }`}
-              >
-                {subtask.title}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 };

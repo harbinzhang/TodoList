@@ -49,7 +49,7 @@ const Sidebar = () => {
       case 'project':
         return tasks.filter(task => !task.completed && task.projectId === id).length;
       case 'label':
-        return tasks.filter(task => !task.completed && task.labels.includes(id!)).length;
+        return tasks.filter(task => !task.completed && (task.labels ?? []).includes(id!)).length;
       default:
         return 0;
     }

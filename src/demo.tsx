@@ -4,34 +4,43 @@ import './index.css';
 import { useMindmapStore } from './store/mindmapStore';
 import { useTaskStore } from './store/taskStore';
 import { useAuthStore } from './store/authStore';
-import { mindmapNodeService } from './services/mindmapNodeService';
+import { itemService } from './services/itemService';
 import MindmapCanvas from './components/mindmap/MindmapCanvas';
-import type { MindmapNode, Mindmap } from './types';
+import type { Item, Mindmap } from './types';
 
 // Monkey-patch the service to work on local store (no Firestore)
 let nodeIdCounter = 100;
 
-mindmapNodeService.toggleNodeCompletion = async (nodeId: string, completed: boolean) => {
-  useMindmapStore.getState().updateNode(nodeId, { completed });
-};
-
-mindmapNodeService.updateNode = async (nodeId: string, updates: Partial<MindmapNode>) => {
-  useMindmapStore.getState().updateNode(nodeId, updates);
-};
-
-mindmapNodeService.createNode = async (data: Omit<MindmapNode, 'id' | 'createdAt' | 'updatedAt'>) => {
+const originalCreate = itemService.create;
+itemService.create = async (ctx, data) => {
+  if (ctx !== 'mindmap') return originalCreate.call(itemService, ctx, data);
   const id = `node-${++nodeIdCounter}`;
   useMindmapStore.getState().addNode({
     ...data,
     id,
     createdAt: new Date(),
     updatedAt: new Date(),
-  } as MindmapNode);
+  } as Item);
   return id;
 };
 
-mindmapNodeService.deleteNode = async (nodeId: string, allNodes: MindmapNode[]) => {
-  // Cascade delete: find all descendants
+const originalUpdate = itemService.update;
+itemService.update = async (ctx, nodeId, updates) => {
+  if (ctx !== 'mindmap') return originalUpdate.call(itemService, ctx, nodeId, updates);
+  useMindmapStore.getState().updateNode(nodeId, updates);
+};
+
+const originalToggle = itemService.toggleCompletion;
+itemService.toggleCompletion = async (ctx, nodeId, completed) => {
+  if (ctx !== 'mindmap') return originalToggle.call(itemService, ctx, nodeId, completed);
+  useMindmapStore.getState().updateNode(nodeId, { completed });
+};
+
+// Patch treeService for demo
+import { treeService } from './services/treeService';
+const originalDeleteNode = treeService.deleteNode;
+treeService.deleteNode = async (nodeId, allNodes) => {
+  void originalDeleteNode; // suppress unused warning
   const idsToDelete = new Set<string>([nodeId]);
   let changed = true;
   while (changed) {
@@ -57,7 +66,7 @@ const MOCK_MINDMAP: Mindmap = {
   updatedAt: new Date(),
 };
 
-const MOCK_NODES: MindmapNode[] = [
+const MOCK_NODES: Item[] = [
   {
     id: 'root',
     mindmapId: 'demo-mindmap-1',

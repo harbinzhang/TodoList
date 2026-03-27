@@ -1,7 +1,7 @@
 import { useTaskStore } from '../../store/taskStore';
 import TaskItem from './TaskItem';
 import TaskForm from './TaskForm';
-import type { Task } from '../../types';
+import type { Item } from '../../types';
 import { isToday } from 'date-fns';
 
 const TaskList = () => {
@@ -14,7 +14,7 @@ const TaskList = () => {
     loading 
   } = useTaskStore();
 
-  const getFilteredTasks = (): Task[] => {
+  const getFilteredTasks = (): Item[] => {
     let filteredTasks = [...tasks];
 
     // Filter by view
@@ -40,7 +40,7 @@ const TaskList = () => {
         filteredTasks = filteredTasks.filter(task => task.projectId === currentProjectId);
         break;
       case 'label':
-        filteredTasks = filteredTasks.filter(task => task.labels.includes(currentLabelId!));
+        filteredTasks = filteredTasks.filter(task => (task.labels ?? []).includes(currentLabelId!));
         break;
     }
 

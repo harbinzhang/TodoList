@@ -1,10 +1,10 @@
-import type { MindmapNode } from '../types';
+import type { Item } from '../types';
 
-export interface TreeNode extends MindmapNode {
+export interface TreeNode extends Item {
   children: TreeNode[];
 }
 
-export function buildTree(nodes: MindmapNode[]): TreeNode | null {
+export function buildTree(nodes: Item[]): TreeNode | null {
   if (nodes.length === 0) return null;
 
   const map = new Map<string, TreeNode>();
@@ -16,7 +16,7 @@ export function buildTree(nodes: MindmapNode[]): TreeNode | null {
 
   for (const node of nodes) {
     const treeNode = map.get(node.id)!;
-    if (node.parentId === null) {
+    if (node.parentId == null) {
       root = treeNode;
     } else {
       const parent = map.get(node.parentId);
@@ -27,7 +27,7 @@ export function buildTree(nodes: MindmapNode[]): TreeNode | null {
   }
 
   for (const treeNode of map.values()) {
-    treeNode.children.sort((a, b) => a.sortOrder - b.sortOrder);
+    treeNode.children.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   }
 
   return root;

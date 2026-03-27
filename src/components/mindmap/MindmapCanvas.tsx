@@ -2,7 +2,7 @@ import { useRef, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useMindmapStore } from '../../store/mindmapStore';
 import { useAuthStore } from '../../store/authStore';
-import { mindmapNodeService } from '../../services/mindmapNodeService';
+import { itemService } from '../../services/itemService';
 import { buildTree } from '../../utils/mindmapTree';
 import { useTreeLayout } from './hooks/useTreeLayout';
 import { usePanZoom } from './hooks/usePanZoom';
@@ -36,10 +36,10 @@ const MindmapCanvas = () => {
     if (!currentMindmapId || !user) return;
     const siblings = nodes.filter((n) => n.parentId === parentId);
     const maxSort = siblings.length > 0
-      ? Math.max(...siblings.map((s) => s.sortOrder))
+      ? Math.max(...siblings.map((s) => s.sortOrder ?? 0))
       : -1;
 
-    const newId = await mindmapNodeService.createNode({
+    const newId = await itemService.create('mindmap', {
       mindmapId: currentMindmapId,
       userId: user.uid,
       parentId,

@@ -8,7 +8,9 @@ import {
   TrashIcon,
 } from '@heroicons/react/24/outline';
 import { useMindmapStore } from '../../store/mindmapStore';
-import { mindmapNodeService } from '../../services/mindmapNodeService';
+import { useAuthStore } from '../../store/authStore';
+import { itemService } from '../../services/itemService';
+import { treeService } from '../../services/treeService';
 import type { LayoutNode } from './hooks/useTreeLayout';
 
 interface MindmapNodeComponentProps {
@@ -28,12 +30,13 @@ const MindmapNodeComponent = ({ layoutNode, onAddChild }: MindmapNodeComponentPr
   const { selectedNodeId, setSelectedNodeId, editingNodeId, setEditingNode, collapsedNodeIds, toggleNodeExpanded, nodes } = useMindmapStore();
   const [editTitle, setEditTitle] = useState(node.title);
   const inputRef = useRef<HTMLInputElement>(null);
+  const savingRef = useRef(false);
 
   const isSelected = selectedNodeId === node.id;
   const isEditing = editingNodeId === node.id;
   const isCollapsed = collapsedNodeIds.has(node.id);
   const hasChildren = node.children.length > 0;
-  const isRoot = node.parentId === null;
+  const isRoot = node.parentId == null;
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -44,32 +47,71 @@ const MindmapNodeComponent = ({ layoutNode, onAddChild }: MindmapNodeComponentPr
 
   const handleToggleComplete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    await mindmapNodeService.toggleNodeCompletion(node.id, !node.completed);
+    await itemService.toggleCompletion('mindmap', node.id, !node.completed);
   };
 
   const handleSaveEdit = async () => {
+    if (savingRef.current) return;
+    savingRef.current = true;
     const trimmed = editTitle.trim();
     if (trimmed && trimmed !== node.title) {
-      await mindmapNodeService.updateNode(node.id, { title: trimmed });
+      await itemService.update('mindmap', node.id, { title: trimmed });
     } else {
       setEditTitle(node.title);
     }
     setEditingNode(null);
+    savingRef.current = false;
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = async (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSaveEdit();
     } else if (e.key === 'Escape') {
       setEditTitle(node.title);
       setEditingNode(null);
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      // Save edit
+      savingRef.current = true;
+      const trimmed = editTitle.trim();
+      if (trimmed && trimmed !== node.title) {
+        await itemService.update('mindmap', node.id, { title: trimmed });
+      }
+      setEditingNode(null);
+      savingRef.current = false;
+
+      // Create child node
+      const { currentMindmapId, nodes: storeNodes, collapsedNodeIds, toggleNodeExpanded } = useMindmapStore.getState();
+      const { user } = useAuthStore.getState();
+      if (!currentMindmapId || !user) return;
+
+      const childSiblings = storeNodes.filter((n) => n.parentId === node.id);
+      const maxSort = childSiblings.length > 0
+        ? Math.max(...childSiblings.map((s) => s.sortOrder ?? 0))
+        : -1;
+      const newId = await itemService.create('mindmap', {
+        mindmapId: currentMindmapId,
+        userId: user.uid,
+        parentId: node.id,
+        sortOrder: maxSort + 1,
+        title: 'New node',
+        completed: false,
+        priority: 4,
+      });
+      if (collapsedNodeIds.has(node.id)) {
+        toggleNodeExpanded(node.id);
+      }
+      setTimeout(() => {
+        useMindmapStore.getState().setSelectedNodeId(newId);
+        useMindmapStore.getState().setEditingNode(newId);
+      }, 300);
     }
   };
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isRoot) return;
-    await mindmapNodeService.deleteNode(node.id, nodes, 'cascade');
+    await treeService.deleteNode(node.id, nodes, 'cascade');
   };
 
   const handleClick = () => {

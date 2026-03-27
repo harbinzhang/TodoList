@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useTaskStore } from '../../store/taskStore';
 import { useMindmapStore } from '../../store/mindmapStore';
 import { useAuthStore } from '../../store/authStore';
-import { mindmapNodeService } from '../../services/mindmapNodeService';
+import { itemService } from '../../services/itemService';
 import MindmapCanvas from './MindmapCanvas';
 
 const MindmapView = () => {
@@ -26,7 +26,7 @@ const MindmapView = () => {
     setCurrentMindmapId(currentMindmapId);
     setLoading(true);
 
-    unsubRef.current = mindmapNodeService.subscribeToMindmapNodes(
+    unsubRef.current = itemService.subscribeToMindmapNodes(
       currentMindmapId,
       user.uid,
       (nodes) => {

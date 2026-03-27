@@ -1,7 +1,8 @@
 import { useCallback, useEffect } from 'react';
 import { useMindmapStore } from '../../../store/mindmapStore';
 import { useAuthStore } from '../../../store/authStore';
-import { mindmapNodeService } from '../../../services/mindmapNodeService';
+import { itemService } from '../../../services/itemService';
+import { treeService } from '../../../services/treeService';
 import { buildTree, findNode, getParentNode, getSiblings } from '../../../utils/mindmapTree';
 
 export function useMindmapKeyboard(containerRef: React.RefObject<HTMLDivElement | null>) {
@@ -63,7 +64,7 @@ export function useMindmapKeyboard(containerRef: React.RefObject<HTMLDivElement 
       }
       case ' ': {
         e.preventDefault();
-        await mindmapNodeService.toggleNodeCompletion(selectedNodeId, !selected.completed);
+        await itemService.toggleCompletion('mindmap', selectedNodeId, !selected.completed);
         break;
       }
       case 'F2': {
@@ -81,9 +82,9 @@ export function useMindmapKeyboard(containerRef: React.RefObject<HTMLDivElement 
         if (!currentMindmapId || !user) break;
         const childSiblings = nodes.filter((n) => n.parentId === selectedNodeId);
         const maxSort = childSiblings.length > 0
-          ? Math.max(...childSiblings.map((s) => s.sortOrder))
+          ? Math.max(...childSiblings.map((s) => s.sortOrder ?? 0))
           : -1;
-        const newId = await mindmapNodeService.createNode({
+        const newId = await itemService.create('mindmap', {
           mindmapId: currentMindmapId,
           userId: user.uid,
           parentId: selectedNodeId,
@@ -103,17 +104,21 @@ export function useMindmapKeyboard(containerRef: React.RefObject<HTMLDivElement 
       }
       case 'Enter': {
         e.preventDefault();
+        if (e.shiftKey) {
+          setEditingNode(selectedNodeId);
+          break;
+        }
         if (!currentMindmapId || !user) break;
         const parent = getParentNode(tree, selectedNodeId);
         if (!parent) break; // Can't add sibling to root
         const parentSiblings = nodes.filter((n) => n.parentId === parent.id);
-        const currentSort = selected.sortOrder;
+        const currentSort = selected.sortOrder ?? 0;
         // Shift siblings after current
-        const toShift = parentSiblings.filter((s) => s.sortOrder > currentSort);
+        const toShift = parentSiblings.filter((s) => (s.sortOrder ?? 0) > currentSort);
         for (const s of toShift) {
-          await mindmapNodeService.updateNode(s.id, { sortOrder: s.sortOrder + 1 });
+          await itemService.update('mindmap', s.id, { sortOrder: (s.sortOrder ?? 0) + 1 });
         }
-        const newId = await mindmapNodeService.createNode({
+        const newId = await itemService.create('mindmap', {
           mindmapId: currentMindmapId,
           userId: user.uid,
           parentId: parent.id,
@@ -131,9 +136,9 @@ export function useMindmapKeyboard(containerRef: React.RefObject<HTMLDivElement 
       case 'Delete':
       case 'Backspace': {
         e.preventDefault();
-        if (selected.parentId === null) break; // Don't delete root
+        if (selected.parentId == null) break; // Don't delete root
         const parent = getParentNode(tree, selectedNodeId);
-        await mindmapNodeService.deleteNode(selectedNodeId, nodes, 'cascade');
+        await treeService.deleteNode(selectedNodeId, nodes, 'cascade');
         if (parent) setSelectedNodeId(parent.id);
         break;
       }

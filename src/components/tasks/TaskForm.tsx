@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTaskStore } from '../../store/taskStore';
 import { useAuthStore } from '../../store/authStore';
-import { taskService } from '../../services/taskService';
+import { itemService } from '../../services/itemService';
 import { PlusIcon, CalendarIcon, FlagIcon } from '@heroicons/react/24/outline';
 
 const TaskForm = () => {
@@ -20,7 +20,7 @@ const TaskForm = () => {
 
     setLoading(true);
     try {
-      await taskService.createTask({
+      await itemService.create('task', {
         title: title.trim(),
         description: description.trim() || undefined,
         completed: false,
@@ -29,7 +29,6 @@ const TaskForm = () => {
         userId: user.uid,
         projectId: currentView === 'project' ? currentProjectId : undefined,
         labels: [],
-        subtasks: [],
       });
       resetForm();
     } catch (error) {

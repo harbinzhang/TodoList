@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import TaskForm from '../TaskForm';
-import { taskService } from '../../../services/taskService';
+import { itemService } from '../../../services/itemService';
 import { useAuthStore } from '../../../store/authStore';
 import { useTaskStore } from '../../../store/taskStore';
 
-vi.mock('../../../services/taskService', () => ({
-  taskService: {
-    createTask: vi.fn(),
+vi.mock('../../../services/itemService', () => ({
+  itemService: {
+    create: vi.fn(),
   },
 }));
 
@@ -54,8 +54,8 @@ describe('TaskForm', () => {
     expect(submitBtn).not.toBeDisabled();
   });
 
-  it('calls taskService.createTask on form submit', async () => {
-    vi.mocked(taskService.createTask).mockResolvedValue('new-id');
+  it('calls itemService.create on form submit', async () => {
+    vi.mocked(itemService.create).mockResolvedValue('new-id');
     render(<TaskForm />);
 
     fireEvent.click(screen.getByText('Add task'));
@@ -65,16 +65,17 @@ describe('TaskForm', () => {
     fireEvent.submit(screen.getByRole('button', { name: 'Add task' }).closest('form')!);
 
     await waitFor(() => {
-      expect(taskService.createTask).toHaveBeenCalledOnce();
-      const callArgs = vi.mocked(taskService.createTask).mock.calls[0][0];
-      expect(callArgs.title).toBe('My New Task');
-      expect(callArgs.userId).toBe('user1');
-      expect(callArgs.completed).toBe(false);
+      expect(itemService.create).toHaveBeenCalledOnce();
+      const callArgs = vi.mocked(itemService.create).mock.calls[0];
+      expect(callArgs[0]).toBe('task');
+      expect(callArgs[1].title).toBe('My New Task');
+      expect(callArgs[1].userId).toBe('user1');
+      expect(callArgs[1].completed).toBe(false);
     });
   });
 
   it('resets form after successful submission', async () => {
-    vi.mocked(taskService.createTask).mockResolvedValue('new-id');
+    vi.mocked(itemService.create).mockResolvedValue('new-id');
     render(<TaskForm />);
 
     fireEvent.click(screen.getByText('Add task'));
@@ -104,7 +105,7 @@ describe('TaskForm', () => {
       currentView: 'project',
       currentProjectId: 'proj-42',
     });
-    vi.mocked(taskService.createTask).mockResolvedValue('new-id');
+    vi.mocked(itemService.create).mockResolvedValue('new-id');
 
     render(<TaskForm />);
     fireEvent.click(screen.getByText('Add task'));
@@ -114,8 +115,8 @@ describe('TaskForm', () => {
     fireEvent.submit(screen.getByRole('button', { name: 'Add task' }).closest('form')!);
 
     await waitFor(() => {
-      const callArgs = vi.mocked(taskService.createTask).mock.calls[0][0];
-      expect(callArgs.projectId).toBe('proj-42');
+      const callArgs = vi.mocked(itemService.create).mock.calls[0];
+      expect(callArgs[1].projectId).toBe('proj-42');
     });
   });
 });
