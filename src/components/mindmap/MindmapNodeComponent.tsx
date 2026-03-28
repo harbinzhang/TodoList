@@ -9,6 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useMindmapStore } from '../../store/mindmapStore';
 import { useAuthStore } from '../../store/authStore';
+import { useUndoStore } from '../../store/undoStore';
 import { itemService } from '../../services/itemService';
 import { treeService } from '../../services/treeService';
 import type { LayoutNode } from './hooks/useTreeLayout';
@@ -47,7 +48,13 @@ const MindmapNodeComponent = ({ layoutNode, onAddChild }: MindmapNodeComponentPr
 
   const handleToggleComplete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    await itemService.toggleCompletion('mindmap', node.id, !node.completed);
+    const prevCompleted = node.completed;
+    await itemService.toggleCompletion('mindmap', node.id, !prevCompleted);
+    useUndoStore.getState().push({
+      description: 'Toggle completion',
+      undo: () => itemService.toggleCompletion('mindmap', node.id, prevCompleted),
+      redo: () => itemService.toggleCompletion('mindmap', node.id, !prevCompleted),
+    });
   };
 
   const handleSaveEdit = async () => {
@@ -55,7 +62,14 @@ const MindmapNodeComponent = ({ layoutNode, onAddChild }: MindmapNodeComponentPr
     savingRef.current = true;
     const trimmed = editTitle.trim();
     if (trimmed && trimmed !== node.title) {
-      await itemService.update('mindmap', node.id, { title: trimmed });
+      const oldTitle = node.title;
+      const nodeId = node.id;
+      await itemService.update('mindmap', nodeId, { title: trimmed });
+      useUndoStore.getState().push({
+        description: 'Edit title',
+        undo: () => itemService.update('mindmap', nodeId, { title: oldTitle }),
+        redo: () => itemService.update('mindmap', nodeId, { title: trimmed }),
+      });
     } else {
       setEditTitle(node.title);
     }
@@ -74,7 +88,9 @@ const MindmapNodeComponent = ({ layoutNode, onAddChild }: MindmapNodeComponentPr
       // Save edit
       savingRef.current = true;
       const trimmed = editTitle.trim();
-      if (trimmed && trimmed !== node.title) {
+      const oldTitle = node.title;
+      const titleChanged = trimmed && trimmed !== oldTitle;
+      if (titleChanged) {
         await itemService.update('mindmap', node.id, { title: trimmed });
       }
       setEditingNode(null);
@@ -89,29 +105,66 @@ const MindmapNodeComponent = ({ layoutNode, onAddChild }: MindmapNodeComponentPr
       const maxSort = childSiblings.length > 0
         ? Math.max(...childSiblings.map((s) => s.sortOrder ?? 0))
         : -1;
-      const newId = await itemService.create('mindmap', {
+      const newNodeData = {
         mindmapId: currentMindmapId,
         userId: user.uid,
         parentId: node.id,
         sortOrder: maxSort + 1,
         title: 'New node',
-        completed: false,
-        priority: 4,
-      });
+        completed: false as const,
+        priority: 4 as const,
+      };
+      const newId = await itemService.create('mindmap', newNodeData);
       if (collapsedNodeIds.has(node.id)) {
         toggleNodeExpanded(node.id);
       }
+      const parentNodeId = node.id;
       setTimeout(() => {
         useMindmapStore.getState().setSelectedNodeId(newId);
         useMindmapStore.getState().setEditingNode(newId);
       }, 300);
+
+      useUndoStore.getState().push({
+        description: 'Tab: save + add child',
+        undo: async () => {
+          await itemService.delete('mindmap', newId);
+          if (titleChanged) {
+            await itemService.update('mindmap', parentNodeId, { title: oldTitle });
+          }
+          useMindmapStore.getState().setSelectedNodeId(parentNodeId);
+        },
+        redo: async () => {
+          if (titleChanged) {
+            await itemService.update('mindmap', parentNodeId, { title: trimmed });
+          }
+          await itemService.createWithId('mindmap', newId, newNodeData);
+          useMindmapStore.getState().setSelectedNodeId(newId);
+        },
+      });
     }
   };
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isRoot) return;
-    await treeService.deleteNode(node.id, nodes, 'cascade');
+    const nodeId = node.id;
+    const parentId = node.parentId;
+    const descendantIds = treeService.getDescendantIds(nodeId, nodes);
+    const deletedIds = [nodeId, ...descendantIds];
+    const deletedNodes = nodes.filter((n) => deletedIds.includes(n.id));
+    await treeService.deleteNode(nodeId, nodes, 'cascade');
+    useUndoStore.getState().push({
+      description: 'Delete node',
+      undo: async () => {
+        await treeService.recreateNodes(deletedNodes);
+        useMindmapStore.getState().setSelectedNodeId(nodeId);
+      },
+      redo: async () => {
+        const currentNodes = useMindmapStore.getState().nodes;
+        await treeService.deleteNode(nodeId, currentNodes, 'cascade');
+        if (parentId) useMindmapStore.getState().setSelectedNodeId(parentId);
+      },
+    });
   };
 
   const handleClick = () => {

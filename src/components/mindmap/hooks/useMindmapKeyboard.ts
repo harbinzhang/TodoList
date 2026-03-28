@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { useMindmapStore } from '../../../store/mindmapStore';
 import { useAuthStore } from '../../../store/authStore';
+import { useUndoStore } from '../../../store/undoStore';
 import { itemService } from '../../../services/itemService';
 import { treeService } from '../../../services/treeService';
 import { buildTree, findNode, getParentNode, getSiblings } from '../../../utils/mindmapTree';
@@ -9,10 +10,27 @@ export function useMindmapKeyboard(containerRef: React.RefObject<HTMLDivElement 
   const handleKeyDown = useCallback(async (e: KeyboardEvent) => {
     const {
       nodes, selectedNodeId, editingNodeId,
-      setSelectedNodeId, setEditingNode, toggleNodeExpanded, collapsedNodeIds,
+      setSelectedNodeId, setEditingNode, collapsedNodeIds, toggleNodeExpanded,
       currentMindmapId,
     } = useMindmapStore.getState();
     const { user } = useAuthStore.getState();
+
+    // Undo/redo works regardless of editing or selection state
+    const isCtrlOrMeta = e.ctrlKey || e.metaKey;
+    if (isCtrlOrMeta && e.key === 'z') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        await useUndoStore.getState().redo();
+      } else {
+        await useUndoStore.getState().undo();
+      }
+      return;
+    }
+    if (isCtrlOrMeta && e.key === 'y') {
+      e.preventDefault();
+      await useUndoStore.getState().redo();
+      return;
+    }
 
     // Don't handle keys when editing
     if (editingNodeId) return;
@@ -27,21 +45,15 @@ export function useMindmapKeyboard(containerRef: React.RefObject<HTMLDivElement 
     switch (e.key) {
       case 'ArrowRight': {
         e.preventDefault();
-        if (collapsedNodeIds.has(selectedNodeId)) {
-          toggleNodeExpanded(selectedNodeId);
-        } else if (selected.children.length > 0) {
+        if (selected.children.length > 0 && !collapsedNodeIds.has(selectedNodeId)) {
           setSelectedNodeId(selected.children[0].id);
         }
         break;
       }
       case 'ArrowLeft': {
         e.preventDefault();
-        if (!collapsedNodeIds.has(selectedNodeId) && selected.children.length > 0) {
-          toggleNodeExpanded(selectedNodeId);
-        } else {
-          const parent = getParentNode(tree, selectedNodeId);
-          if (parent) setSelectedNodeId(parent.id);
-        }
+        const parent = getParentNode(tree, selectedNodeId);
+        if (parent) setSelectedNodeId(parent.id);
         break;
       }
       case 'ArrowDown': {
@@ -64,7 +76,14 @@ export function useMindmapKeyboard(containerRef: React.RefObject<HTMLDivElement 
       }
       case ' ': {
         e.preventDefault();
-        await itemService.toggleCompletion('mindmap', selectedNodeId, !selected.completed);
+        const prevCompleted = selected.completed;
+        const nodeId = selectedNodeId;
+        await itemService.toggleCompletion('mindmap', nodeId, !prevCompleted);
+        useUndoStore.getState().push({
+          description: 'Toggle completion',
+          undo: () => itemService.toggleCompletion('mindmap', nodeId, prevCompleted),
+          redo: () => itemService.toggleCompletion('mindmap', nodeId, !prevCompleted),
+        });
         break;
       }
       case 'F2': {
@@ -84,22 +103,35 @@ export function useMindmapKeyboard(containerRef: React.RefObject<HTMLDivElement 
         const maxSort = childSiblings.length > 0
           ? Math.max(...childSiblings.map((s) => s.sortOrder ?? 0))
           : -1;
-        const newId = await itemService.create('mindmap', {
+        const newNodeData = {
           mindmapId: currentMindmapId,
           userId: user.uid,
           parentId: selectedNodeId,
           sortOrder: maxSort + 1,
           title: 'New node',
-          completed: false,
-          priority: 4,
-        });
+          completed: false as const,
+          priority: 4 as const,
+        };
+        const newId = await itemService.create('mindmap', newNodeData);
         if (collapsedNodeIds.has(selectedNodeId)) {
           toggleNodeExpanded(selectedNodeId);
         }
+        const parentId = selectedNodeId;
         setTimeout(() => {
           useMindmapStore.getState().setSelectedNodeId(newId);
           useMindmapStore.getState().setEditingNode(newId);
         }, 300);
+        useUndoStore.getState().push({
+          description: 'Add child node',
+          undo: async () => {
+            await itemService.delete('mindmap', newId);
+            useMindmapStore.getState().setSelectedNodeId(parentId);
+          },
+          redo: async () => {
+            await itemService.createWithId('mindmap', newId, newNodeData);
+            useMindmapStore.getState().setSelectedNodeId(newId);
+          },
+        });
         break;
       }
       case 'Enter': {
@@ -113,24 +145,43 @@ export function useMindmapKeyboard(containerRef: React.RefObject<HTMLDivElement 
         if (!parent) break; // Can't add sibling to root
         const parentSiblings = nodes.filter((n) => n.parentId === parent.id);
         const currentSort = selected.sortOrder ?? 0;
-        // Shift siblings after current
         const toShift = parentSiblings.filter((s) => (s.sortOrder ?? 0) > currentSort);
+        const originalSorts = toShift.map((s) => ({ id: s.id, sortOrder: s.sortOrder ?? 0 }));
         for (const s of toShift) {
           await itemService.update('mindmap', s.id, { sortOrder: (s.sortOrder ?? 0) + 1 });
         }
-        const newId = await itemService.create('mindmap', {
+        const newNodeData = {
           mindmapId: currentMindmapId,
           userId: user.uid,
           parentId: parent.id,
           sortOrder: currentSort + 1,
           title: 'New node',
-          completed: false,
-          priority: 4,
-        });
+          completed: false as const,
+          priority: 4 as const,
+        };
+        const newId = await itemService.create('mindmap', newNodeData);
+        const prevSelectedId = selectedNodeId;
         setTimeout(() => {
           useMindmapStore.getState().setSelectedNodeId(newId);
           useMindmapStore.getState().setEditingNode(newId);
         }, 300);
+        useUndoStore.getState().push({
+          description: 'Add sibling node',
+          undo: async () => {
+            await itemService.delete('mindmap', newId);
+            for (const s of originalSorts) {
+              await itemService.update('mindmap', s.id, { sortOrder: s.sortOrder });
+            }
+            useMindmapStore.getState().setSelectedNodeId(prevSelectedId);
+          },
+          redo: async () => {
+            for (const s of originalSorts) {
+              await itemService.update('mindmap', s.id, { sortOrder: s.sortOrder + 1 });
+            }
+            await itemService.createWithId('mindmap', newId, newNodeData);
+            useMindmapStore.getState().setSelectedNodeId(newId);
+          },
+        });
         break;
       }
       case 'Delete':
@@ -138,8 +189,25 @@ export function useMindmapKeyboard(containerRef: React.RefObject<HTMLDivElement 
         e.preventDefault();
         if (selected.parentId == null) break; // Don't delete root
         const parent = getParentNode(tree, selectedNodeId);
-        await treeService.deleteNode(selectedNodeId, nodes, 'cascade');
+        const descendantIds = treeService.getDescendantIds(selectedNodeId, nodes);
+        const deletedIds = [selectedNodeId, ...descendantIds];
+        const deletedNodes = nodes.filter((n) => deletedIds.includes(n.id));
+        const nodeId = selectedNodeId;
+        await treeService.deleteNode(nodeId, nodes, 'cascade');
         if (parent) setSelectedNodeId(parent.id);
+        const parentId = parent?.id ?? null;
+        useUndoStore.getState().push({
+          description: 'Delete node',
+          undo: async () => {
+            await treeService.recreateNodes(deletedNodes);
+            useMindmapStore.getState().setSelectedNodeId(nodeId);
+          },
+          redo: async () => {
+            const currentNodes = useMindmapStore.getState().nodes;
+            await treeService.deleteNode(nodeId, currentNodes, 'cascade');
+            if (parentId) useMindmapStore.getState().setSelectedNodeId(parentId);
+          },
+        });
         break;
       }
     }

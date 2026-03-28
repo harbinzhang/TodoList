@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useMindmapStore } from '../../store/mindmapStore';
 import { useAuthStore } from '../../store/authStore';
@@ -12,10 +12,17 @@ import MindmapToolbar from './MindmapToolbar';
 import { useMindmapKeyboard } from './hooks/useMindmapKeyboard';
 
 const MindmapCanvas = () => {
-  const { nodes, collapsedNodeIds, currentMindmapId } = useMindmapStore();
+  const { nodes, collapsedNodeIds, currentMindmapId, editingNodeId } = useMindmapStore();
   const { user } = useAuthStore();
   const containerRef = useRef<HTMLDivElement>(null);
   useMindmapKeyboard(containerRef);
+
+  // Refocus container when editing ends so keyboard shortcuts keep working
+  useEffect(() => {
+    if (!editingNodeId && containerRef.current) {
+      containerRef.current.focus();
+    }
+  }, [editingNodeId]);
 
   const tree = buildTree(nodes);
   const { nodes: layoutNodes, edges } = useTreeLayout(tree, collapsedNodeIds);

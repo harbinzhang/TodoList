@@ -2,6 +2,7 @@ import {
   doc,
   writeBatch,
   serverTimestamp,
+  setDoc,
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import type { Item } from '../types';
@@ -46,6 +47,22 @@ export const treeService = {
       });
     }
 
+    await batch.commit();
+  },
+
+  async recreateNodes(items: Item[]): Promise<void> {
+    const batch = writeBatch(db);
+    for (const item of items) {
+      const { id, createdAt, updatedAt, ...data } = item;
+      const cleaned = Object.fromEntries(
+        Object.entries(data).filter(([, v]) => v !== undefined)
+      );
+      batch.set(doc(db, COLLECTION_NAME, id), {
+        ...cleaned,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    }
     await batch.commit();
   },
 

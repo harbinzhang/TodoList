@@ -2,6 +2,7 @@ import {
   collection,
   doc,
   addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   getDocs,
@@ -36,6 +37,18 @@ export const itemService = {
       updatedAt: serverTimestamp(),
     });
     return docRef.id;
+  },
+
+  async createWithId(
+    ctx: ItemContext,
+    id: string,
+    data: Omit<Item, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<void> {
+    await setDoc(doc(db, COLLECTIONS[ctx], id), {
+      ...stripUndefined(data as Record<string, unknown>),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
   },
 
   async update(
