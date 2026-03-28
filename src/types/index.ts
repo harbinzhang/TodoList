@@ -5,26 +5,29 @@ export interface User {
   photoURL?: string;
 }
 
-export interface Task {
+export interface Item {
   id: string;
   title: string;
   description?: string;
   completed: boolean;
   priority: 1 | 2 | 3 | 4;
-  dueDate?: Date;
   createdAt: Date;
   updatedAt: Date;
   userId: string;
+
+  // Task-context fields
+  dueDate?: Date;
   projectId?: string;
-  labels: string[];
-  subtasks: Subtask[];
+  labels?: string[];
+
+  // Tree/hierarchy fields
+  parentId?: string | null;
+  sortOrder?: number;
+  mindmapId?: string;
 }
 
-export interface Subtask {
-  id: string;
-  title: string;
-  completed: boolean;
-}
+export type Task = Item;
+export type MindmapNode = Item;
 
 export interface Project {
   id: string;
@@ -42,7 +45,17 @@ export interface Label {
   userId: string;
 }
 
-export type ViewType = 'inbox' | 'today' | 'upcoming' | 'project' | 'label';
+export type ViewType = 'inbox' | 'today' | 'upcoming' | 'project' | 'label' | 'mindmap';
+
+export interface Mindmap {
+  id: string;
+  name: string;
+  color: string;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 
 export interface TaskFilter {
   projectId?: string;

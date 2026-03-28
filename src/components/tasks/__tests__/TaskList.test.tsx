@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import TaskList from '../TaskList';
 import { useTaskStore } from '../../../store/taskStore';
-import type { Task } from '../../../types';
+import type { Item } from '../../../types';
 
 // Mock TaskForm and TaskItem to isolate TaskList logic
 vi.mock('../TaskForm', () => ({
@@ -10,12 +10,12 @@ vi.mock('../TaskForm', () => ({
 }));
 
 vi.mock('../TaskItem', () => ({
-  default: ({ task }: { task: Task }) => (
+  default: ({ task }: { task: Item }) => (
     <div data-testid={`task-item-${task.id}`}>{task.title}</div>
   ),
 }));
 
-const createMockTask = (overrides: Partial<Task> = {}): Task => ({
+const createMockItem = (overrides: Partial<Item> = {}): Item => ({
   id: '1',
   title: 'Test Task',
   completed: false,
@@ -24,7 +24,6 @@ const createMockTask = (overrides: Partial<Task> = {}): Task => ({
   updatedAt: new Date('2025-01-01'),
   userId: 'user1',
   labels: [],
-  subtasks: [],
   ...overrides,
 });
 
@@ -63,8 +62,8 @@ describe('TaskList', () => {
       useTaskStore.setState({
         currentView: 'inbox',
         tasks: [
-          createMockTask({ id: '1', title: 'No Project', projectId: undefined }),
-          createMockTask({ id: '2', title: 'Has Project', projectId: 'proj-1' }),
+          createMockItem({ id: '1', title: 'No Project', projectId: undefined }),
+          createMockItem({ id: '2', title: 'Has Project', projectId: 'proj-1' }),
         ],
       });
       render(<TaskList />);
@@ -79,8 +78,8 @@ describe('TaskList', () => {
         currentView: 'project',
         currentProjectId: 'proj-1',
         tasks: [
-          createMockTask({ id: '1', title: 'Match', projectId: 'proj-1' }),
-          createMockTask({ id: '2', title: 'Other', projectId: 'proj-2' }),
+          createMockItem({ id: '1', title: 'Match', projectId: 'proj-1' }),
+          createMockItem({ id: '2', title: 'Other', projectId: 'proj-2' }),
         ],
       });
       render(<TaskList />);
@@ -95,8 +94,8 @@ describe('TaskList', () => {
         currentView: 'label',
         currentLabelId: 'work',
         tasks: [
-          createMockTask({ id: '1', title: 'Work Task', labels: ['work'] }),
-          createMockTask({ id: '2', title: 'Personal', labels: ['personal'] }),
+          createMockItem({ id: '1', title: 'Work Task', labels: ['work'] }),
+          createMockItem({ id: '2', title: 'Personal', labels: ['personal'] }),
         ],
       });
       render(<TaskList />);
@@ -109,8 +108,8 @@ describe('TaskList', () => {
     it('filters by title matching search term', () => {
       useTaskStore.setState({
         tasks: [
-          createMockTask({ id: '1', title: 'Buy groceries' }),
-          createMockTask({ id: '2', title: 'Write report' }),
+          createMockItem({ id: '1', title: 'Buy groceries' }),
+          createMockItem({ id: '2', title: 'Write report' }),
         ],
         filter: { search: 'groceries' },
       });
@@ -122,8 +121,8 @@ describe('TaskList', () => {
     it('filters by description matching search term', () => {
       useTaskStore.setState({
         tasks: [
-          createMockTask({ id: '1', title: 'Task A', description: 'needs milk' }),
-          createMockTask({ id: '2', title: 'Task B', description: 'needs paper' }),
+          createMockItem({ id: '1', title: 'Task A', description: 'needs milk' }),
+          createMockItem({ id: '2', title: 'Task B', description: 'needs paper' }),
         ],
         filter: { search: 'milk' },
       });
@@ -137,8 +136,8 @@ describe('TaskList', () => {
     it('sorts completed tasks after incomplete tasks', () => {
       useTaskStore.setState({
         tasks: [
-          createMockTask({ id: '1', title: 'Done', completed: true }),
-          createMockTask({ id: '2', title: 'Todo', completed: false }),
+          createMockItem({ id: '1', title: 'Done', completed: true }),
+          createMockItem({ id: '2', title: 'Todo', completed: false }),
         ],
       });
       render(<TaskList />);
@@ -150,8 +149,8 @@ describe('TaskList', () => {
     it('sorts by priority (lower number = higher priority first)', () => {
       useTaskStore.setState({
         tasks: [
-          createMockTask({ id: '1', title: 'Low P3', priority: 3 }),
-          createMockTask({ id: '2', title: 'High P1', priority: 1 }),
+          createMockItem({ id: '1', title: 'Low P3', priority: 3 }),
+          createMockItem({ id: '2', title: 'High P1', priority: 1 }),
         ],
       });
       render(<TaskList />);

@@ -3,9 +3,11 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase/config';
 import { useAuthStore } from './store/authStore';
 import { useTaskStore } from './store/taskStore';
-import { taskService } from './services/taskService';
+import { itemService } from './services/itemService';
 import { projectService } from './services/projectService';
 import { labelService } from './services/labelService';
+import { mindmapService } from './services/mindmapService';
+import { useMindmapStore } from './store/mindmapStore';
 import AuthForm from './components/auth/AuthForm';
 import Sidebar from './components/layout/Sidebar';
 import MainContent from './components/layout/MainContent';
@@ -13,6 +15,7 @@ import MainContent from './components/layout/MainContent';
 function App() {
   const { user, loading, setUser, setLoading } = useAuthStore();
   const { setTasks, setProjects, setLabels } = useTaskStore();
+  const { setMindmaps } = useMindmapStore();
   const unsubscribersRef = useRef<(() => void)[]>([]);
 
   useEffect(() => {
@@ -26,10 +29,11 @@ function App() {
         });
 
         // Subscribe to real-time Firestore data
-        const unsubTasks = taskService.subscribeToUserTasks(firebaseUser.uid, setTasks);
+        const unsubTasks = itemService.subscribeToUserTasks(firebaseUser.uid, setTasks);
         const unsubProjects = projectService.subscribeToUserProjects(firebaseUser.uid, setProjects);
         const unsubLabels = labelService.subscribeToUserLabels(firebaseUser.uid, setLabels);
-        unsubscribersRef.current = [unsubTasks, unsubProjects, unsubLabels];
+        const unsubMindmaps = mindmapService.subscribeToUserMindmaps(firebaseUser.uid, setMindmaps);
+        unsubscribersRef.current = [unsubTasks, unsubProjects, unsubLabels, unsubMindmaps];
       } else {
         // Clean up subscriptions on logout
         unsubscribersRef.current.forEach((unsub) => unsub());
@@ -38,6 +42,7 @@ function App() {
         setTasks([]);
         setProjects([]);
         setLabels([]);
+        setMindmaps([]);
       }
       setLoading(false);
     });
@@ -46,7 +51,7 @@ function App() {
       unsubscribeAuth();
       unsubscribersRef.current.forEach((unsub) => unsub());
     };
-  }, [setUser, setLoading, setTasks, setProjects, setLabels]);
+  }, [setUser, setLoading, setTasks, setProjects, setLabels, setMindmaps]);
 
   if (loading) {
     return (

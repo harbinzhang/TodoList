@@ -1,20 +1,21 @@
 import { create } from 'zustand';
-import type { Task, Project, Label, TaskFilter, ViewType } from '../types';
+import type { Item, Project, Label, TaskFilter, ViewType } from '../types';
 
 interface TaskState {
-  tasks: Task[];
+  tasks: Item[];
   projects: Project[];
   labels: Label[];
   currentView: ViewType;
   currentProjectId?: string;
   currentLabelId?: string;
+  currentMindmapId?: string;
   filter: TaskFilter;
   loading: boolean;
-  
+
   // Actions
-  setTasks: (tasks: Task[]) => void;
-  addTask: (task: Task) => void;
-  updateTask: (taskId: string, updates: Partial<Task>) => void;
+  setTasks: (tasks: Item[]) => void;
+  addTask: (task: Item) => void;
+  updateTask: (taskId: string, updates: Partial<Item>) => void;
   deleteTask: (taskId: string) => void;
   
   setProjects: (projects: Project[]) => void;
@@ -73,10 +74,11 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     labels: get().labels.filter(label => label.id !== labelId)
   }),
 
-  setCurrentView: (view, id) => set({ 
+  setCurrentView: (view, id) => set({
     currentView: view,
     currentProjectId: view === 'project' ? id : undefined,
-    currentLabelId: view === 'label' ? id : undefined
+    currentLabelId: view === 'label' ? id : undefined,
+    currentMindmapId: view === 'mindmap' ? id : undefined,
   }),
   setFilter: (filter) => set({ filter: { ...get().filter, ...filter } }),
   setLoading: (loading) => set({ loading }),

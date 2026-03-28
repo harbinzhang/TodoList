@@ -25,5 +25,21 @@ service cloud.firestore {
       allow create: if request.auth != null
         && request.auth.uid == request.resource.data.userId;
     }
+
+    // Mindmaps: only the owner can read/write their mindmaps
+    match /mindmaps/{mindmapId} {
+      allow read, update, delete: if request.auth != null
+        && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.userId;
+    }
+
+    // MindmapNodes: only the owner can read/write their nodes
+    match /mindmapNodes/{nodeId} {
+      allow read, update, delete: if request.auth != null
+        && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.userId;
+    }
   }
 }

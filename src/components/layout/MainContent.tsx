@@ -1,11 +1,14 @@
 import { useTaskStore } from '../../store/taskStore';
+import { useMindmapStore } from '../../store/mindmapStore';
 import TaskList from '../tasks/TaskList';
+import MindmapView from '../mindmap/MindmapView';
 import SearchBar from '../common/SearchBar';
 import ProfileDropdown from '../common/ProfileDropdown';
 import { format } from 'date-fns';
 
 const MainContent = () => {
-  const { currentView, currentProjectId, currentLabelId, projects, labels } = useTaskStore();
+  const { currentView, currentProjectId, currentLabelId, currentMindmapId, projects, labels } = useTaskStore();
+  const { mindmaps } = useMindmapStore();
 
   const getViewTitle = () => {
     switch (currentView) {
@@ -21,6 +24,9 @@ const MainContent = () => {
       case 'label':
         const label = labels.find(l => l.id === currentLabelId);
         return label?.name || 'Label';
+      case 'mindmap':
+        const mindmap = mindmaps.find(m => m.id === currentMindmapId);
+        return mindmap?.name || 'Mindmap';
       default:
         return 'Tasks';
     }
@@ -58,8 +64,8 @@ const MainContent = () => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 bg-gray-50">
-        <TaskList />
+      <div className="flex-1 bg-gray-50 flex flex-col">
+        {currentView === 'mindmap' ? <MindmapView /> : <TaskList />}
       </div>
     </div>
   );

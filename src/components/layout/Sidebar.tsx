@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useTaskStore } from '../../store/taskStore';
+import { useMindmapStore } from '../../store/mindmapStore';
 import ProjectForm from '../projects/ProjectForm';
 import LabelForm from '../labels/LabelForm';
+import MindmapForm from '../mindmap/MindmapForm';
 import {
   HomeIcon,
   CalendarIcon,
@@ -10,14 +12,18 @@ import {
   PlusIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  ShareIcon,
 } from '@heroicons/react/24/outline';
 
 const Sidebar = () => {
-  const { currentView, currentProjectId, currentLabelId, projects, labels, tasks, setCurrentView } = useTaskStore();
+  const { currentView, currentProjectId, currentLabelId, currentMindmapId, projects, labels, tasks, setCurrentView } = useTaskStore();
+  const { mindmaps } = useMindmapStore();
   const [isProjectsOpen, setIsProjectsOpen] = useState(true);
   const [isLabelsOpen, setIsLabelsOpen] = useState(false);
+  const [isMindmapsOpen, setIsMindmapsOpen] = useState(true);
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [showLabelForm, setShowLabelForm] = useState(false);
+  const [showMindmapForm, setShowMindmapForm] = useState(false);
 
   const getTaskCount = (type: string, id?: string) => {
     switch (type) {
@@ -43,7 +49,7 @@ const Sidebar = () => {
       case 'project':
         return tasks.filter(task => !task.completed && task.projectId === id).length;
       case 'label':
-        return tasks.filter(task => !task.completed && task.labels.includes(id!)).length;
+        return tasks.filter(task => !task.completed && (task.labels ?? []).includes(id!)).length;
       default:
         return 0;
     }
@@ -205,16 +211,64 @@ const Sidebar = () => {
             </div>
           )}
         </div>
+        {/* Mindmaps Section */}
+        <div className="p-2">
+          <button
+            onClick={() => setIsMindmapsOpen(!isMindmapsOpen)}
+            className="w-full flex items-center justify-between p-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+          >
+            <div className="flex items-center space-x-2">
+              {isMindmapsOpen ? (
+                <ChevronDownIcon className="w-4 h-4" />
+              ) : (
+                <ChevronRightIcon className="w-4 h-4" />
+              )}
+              <span className="font-medium">Mindmaps</span>
+            </div>
+            <PlusIcon
+              className="w-4 h-4 cursor-pointer hover:text-blue-500"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMindmapForm(true);
+              }}
+            />
+          </button>
+
+          {isMindmapsOpen && (
+            <div className="ml-6 mt-1 space-y-1">
+              {mindmaps.map((mindmap) => (
+                <button
+                  key={mindmap.id}
+                  onClick={() => setCurrentView('mindmap', mindmap.id)}
+                  className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 ${
+                    currentView === 'mindmap' && currentMindmapId === mindmap.id
+                      ? 'bg-red-50 text-red-700'
+                      : 'text-gray-700'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <ShareIcon className="w-4 h-4" style={{ color: mindmap.color }} />
+                    <span className="truncate">{mindmap.name}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Modals */}
-      <ProjectForm 
-        isOpen={showProjectForm} 
-        onClose={() => setShowProjectForm(false)} 
+      <ProjectForm
+        isOpen={showProjectForm}
+        onClose={() => setShowProjectForm(false)}
       />
-      <LabelForm 
-        isOpen={showLabelForm} 
-        onClose={() => setShowLabelForm(false)} 
+      <LabelForm
+        isOpen={showLabelForm}
+        onClose={() => setShowLabelForm(false)}
+      />
+      <MindmapForm
+        isOpen={showMindmapForm}
+        onClose={() => setShowMindmapForm(false)}
       />
     </div>
   );

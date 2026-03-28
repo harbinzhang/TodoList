@@ -1,18 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { addDoc, updateDoc, deleteDoc, getDocs, onSnapshot } from 'firebase/firestore';
-import { taskService } from '../taskService';
+import { itemService } from '../itemService';
 
-vi.mock('../taskService', async () => {
-  const actual = await vi.importActual('../taskService');
+vi.mock('../itemService', async () => {
+  const actual = await vi.importActual('../itemService');
   return actual;
 });
 
-describe('taskService', () => {
+describe('itemService (task context)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('createTask', () => {
+  describe('create', () => {
     it('calls addDoc with task data and server timestamps', async () => {
       const mockDocRef = { id: 'new-task-id' };
       vi.mocked(addDoc).mockResolvedValue(mockDocRef as never);
@@ -23,10 +23,9 @@ describe('taskService', () => {
         priority: 1 as const,
         userId: 'user1',
         labels: [],
-        subtasks: [],
       };
 
-      const result = await taskService.createTask(taskData);
+      const result = await itemService.create('task', taskData);
 
       expect(addDoc).toHaveBeenCalledOnce();
       expect(result).toBe('new-task-id');
@@ -38,21 +37,21 @@ describe('taskService', () => {
     });
   });
 
-  describe('updateTask', () => {
+  describe('update', () => {
     it('calls updateDoc with updates and server timestamp', async () => {
       vi.mocked(updateDoc).mockResolvedValue(undefined);
 
-      await taskService.updateTask('task-1', { title: 'Updated' });
+      await itemService.update('task', 'task-1', { title: 'Updated' });
 
       expect(updateDoc).toHaveBeenCalledOnce();
     });
   });
 
-  describe('deleteTask', () => {
+  describe('delete', () => {
     it('calls deleteDoc with the correct task ref', async () => {
       vi.mocked(deleteDoc).mockResolvedValue(undefined);
 
-      await taskService.deleteTask('task-1');
+      await itemService.delete('task', 'task-1');
 
       expect(deleteDoc).toHaveBeenCalledOnce();
     });
@@ -70,7 +69,6 @@ describe('taskService', () => {
             priority: 1,
             userId: 'user1',
             labels: [],
-            subtasks: [],
             createdAt: { toDate: () => mockDate },
             updatedAt: { toDate: () => mockDate },
             dueDate: { toDate: () => mockDate },
@@ -79,7 +77,7 @@ describe('taskService', () => {
       ];
       vi.mocked(getDocs).mockResolvedValue({ docs: mockDocs } as never);
 
-      const tasks = await taskService.getUserTasks('user1');
+      const tasks = await itemService.getUserTasks('user1');
 
       expect(tasks).toHaveLength(1);
       expect(tasks[0].id).toBe('task-1');
@@ -98,7 +96,6 @@ describe('taskService', () => {
             priority: 1,
             userId: 'user1',
             labels: [],
-            subtasks: [],
             createdAt: null,
             updatedAt: null,
             dueDate: null,
@@ -107,7 +104,7 @@ describe('taskService', () => {
       ];
       vi.mocked(getDocs).mockResolvedValue({ docs: mockDocs } as never);
 
-      const tasks = await taskService.getUserTasks('user1');
+      const tasks = await itemService.getUserTasks('user1');
 
       expect(tasks[0].createdAt).toBeInstanceOf(Date);
       expect(tasks[0].updatedAt).toBeInstanceOf(Date);
@@ -120,18 +117,18 @@ describe('taskService', () => {
       vi.mocked(onSnapshot).mockReturnValue(mockUnsubscribe as never);
 
       const callback = vi.fn();
-      const unsub = taskService.subscribeToUserTasks('user1', callback);
+      const unsub = itemService.subscribeToUserTasks('user1', callback);
 
       expect(onSnapshot).toHaveBeenCalledOnce();
       expect(unsub).toBe(mockUnsubscribe);
     });
   });
 
-  describe('toggleTaskCompletion', () => {
-    it('calls updateTask with completed status', async () => {
+  describe('toggleCompletion', () => {
+    it('calls update with completed status', async () => {
       vi.mocked(updateDoc).mockResolvedValue(undefined);
 
-      await taskService.toggleTaskCompletion('task-1', true);
+      await itemService.toggleCompletion('task', 'task-1', true);
 
       expect(updateDoc).toHaveBeenCalledOnce();
     });
