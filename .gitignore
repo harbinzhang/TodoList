@@ -24,6 +24,9 @@ ui-debug.log
 # Screenshots
 *.png
 
+# Release workspace
+release-workspace/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

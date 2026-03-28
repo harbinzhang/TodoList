@@ -24,8 +24,8 @@ try {
 
   // Connect to emulators in development when VITE_USE_EMULATORS is set
   if (import.meta.env.VITE_USE_EMULATORS === 'true') {
-    connectAuthEmulator(auth, 'http://localhost:9199', { disableWarnings: true });
-    connectFirestoreEmulator(db, 'localhost', 8180);
+    connectAuthEmulator(auth, 'http://localhost:9299', { disableWarnings: true });
+    connectFirestoreEmulator(db, 'localhost', 8280);
     console.log('🔧 Using Firebase Emulators');
   }
 } catch {
