@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { TreeNode } from '../../../utils/mindmapTree';
 
-const LAYER_GAP_X = 260;
+const EDGE_GAP_X = 60;
 const NODE_HEIGHT = 44;
 const NODE_GAP_Y = 12;
 const NODE_MIN_WIDTH = 200;
@@ -54,20 +54,22 @@ function layoutTree(
   node: TreeNode,
   depth: number,
   yOffset: number,
-  collapsedIds: Set<string>
+  collapsedIds: Set<string>,
+  parentRight: number = 0
 ): LayoutNode {
   const width = getNodeWidth(node.title);
   const subtreeHeight = computeSubtreeHeight(node, collapsedIds);
   const y = yOffset + subtreeHeight / 2 - NODE_HEIGHT / 2;
-  const x = depth * LAYER_GAP_X;
+  const x = depth === 0 ? 0 : parentRight + EDGE_GAP_X;
 
   const children: LayoutNode[] = [];
 
   if (!collapsedIds.has(node.id) && node.children.length > 0) {
     let childY = yOffset;
+    const childParentRight = x + width;
     for (const child of node.children) {
       const childHeight = computeSubtreeHeight(child, collapsedIds);
-      children.push(layoutTree(child, depth + 1, childY, collapsedIds));
+      children.push(layoutTree(child, depth + 1, childY, collapsedIds, childParentRight));
       childY += childHeight + NODE_GAP_Y;
     }
   }

@@ -2,7 +2,6 @@ import {
   doc,
   writeBatch,
   serverTimestamp,
-  setDoc,
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import type { Item } from '../types';
