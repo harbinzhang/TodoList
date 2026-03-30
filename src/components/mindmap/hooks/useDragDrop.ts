@@ -6,6 +6,10 @@ import type { Item } from '../../../types';
 import type { LayoutNode } from './useTreeLayout';
 
 const DRAG_THRESHOLD = 5;
+const NODE_HEIGHT = 44;
+const NODE_GAP_Y = 12;
+// Fraction of node height used for sibling insertion zones (top/bottom)
+const SIBLING_ZONE_RATIO = 0.25;
 
 interface DragState {
   isDragging: boolean;
@@ -13,6 +17,19 @@ interface DragState {
   ghostX: number;
   ghostY: number;
   ghostTitle: string;
+}
+
+export type DropZone = 'child' | 'before' | 'after';
+
+export interface DropIndicator {
+  targetNodeId: string;
+  zone: DropZone;
+  // For 'before'/'after': the y-coordinate of the insertion line (SVG coords)
+  // For 'child': not used
+  insertionY: number;
+  // x range for the insertion line
+  insertionX: number;
+  insertionWidth: number;
 }
 
 interface UseDragDropParams {
@@ -38,18 +55,71 @@ function screenToSvg(
   };
 }
 
-function hitTest(svgX: number, svgY: number, layoutNodes: LayoutNode[]): LayoutNode | null {
+/**
+ * Enhanced hit-test that returns the target node and drop zone.
+ *
+ * For each visible node, the vertical area is split into 3 zones:
+ *   top 25%   → 'before' (insert as sibling before this node)
+ *   middle 50% → 'child'  (make child of this node)
+ *   bottom 25% → 'after'  (insert as sibling after this node)
+ *
+ * The gap between sibling nodes (NODE_GAP_Y) is also checked and
+ * attributed to the nearest sibling as 'after' (upper node) or
+ * 'before' (lower node).
+ *
+ * Root nodes only support 'child' zone (cannot insert siblings of root).
+ */
+function hitTestWithZone(
+  svgX: number,
+  svgY: number,
+  layoutNodes: LayoutNode[],
+): { node: LayoutNode; zone: DropZone } | null {
+  const siblingThreshold = NODE_HEIGHT * SIBLING_ZONE_RATIO; // 11px
+
   for (const ln of layoutNodes) {
-    if (svgX >= ln.x && svgX <= ln.x + ln.width && svgY >= ln.y && svgY <= ln.y + ln.height) {
-      return ln;
+    // Check within the node's bounding box (with extended gap area)
+    const inX = svgX >= ln.x && svgX <= ln.x + ln.width;
+    if (!inX) continue;
+
+    const relY = svgY - ln.y;
+
+    // Within node bounds
+    if (relY >= 0 && relY <= ln.height) {
+      const isRoot = ln.node.parentId == null;
+      if (isRoot) {
+        // Root only accepts 'child' drops
+        return { node: ln, zone: 'child' };
+      }
+      if (relY < siblingThreshold) {
+        return { node: ln, zone: 'before' };
+      }
+      if (relY > ln.height - siblingThreshold) {
+        return { node: ln, zone: 'after' };
+      }
+      return { node: ln, zone: 'child' };
+    }
+
+    // Check gap below the node (up to NODE_GAP_Y / 2)
+    if (relY > ln.height && relY <= ln.height + NODE_GAP_Y / 2) {
+      if (ln.node.parentId != null) {
+        return { node: ln, zone: 'after' };
+      }
+    }
+
+    // Check gap above the node (up to NODE_GAP_Y / 2)
+    if (relY < 0 && relY >= -(NODE_GAP_Y / 2)) {
+      if (ln.node.parentId != null) {
+        return { node: ln, zone: 'before' };
+      }
     }
   }
+
   return null;
 }
 
 export function useDragDrop({ layoutNodes, panX, panY, zoom, svgRef, nodes }: UseDragDropParams) {
   const [dragState, setDragState] = useState<DragState | null>(null);
-  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const [dropIndicator, setDropIndicator] = useState<DropIndicator | null>(null);
 
   const dragNodeIdRef = useRef<string | null>(null);
   const dragStartPos = useRef({ x: 0, y: 0 });
@@ -58,7 +128,6 @@ export function useDragDrop({ layoutNodes, panX, panY, zoom, svgRef, nodes }: Us
 
   const handleNodePointerDown = useCallback(
     (nodeId: string, e: React.PointerEvent) => {
-      // Don't drag root nodes or nodes being edited
       const node = nodes.find((n) => n.id === nodeId);
       if (!node || node.parentId == null) return;
       const { editingNodeId } = useMindmapStore.getState();
@@ -81,17 +150,14 @@ export function useDragDrop({ layoutNodes, panX, panY, zoom, svgRef, nodes }: Us
       if (!thresholdMet.current) {
         if (Math.sqrt(dx * dx + dy * dy) < DRAG_THRESHOLD) return;
 
-        // Threshold met — start dragging
         thresholdMet.current = true;
         const nodeId = dragNodeIdRef.current;
         const layoutNode = layoutNodes.find((ln) => ln.id === nodeId);
         const title = layoutNode?.node.title ?? '';
 
-        // Precompute descendants for validation
         const descIds = treeService.getDescendantIds(nodeId, nodes);
         descendantIds.current = new Set(descIds);
 
-        // Capture pointer on SVG for smooth dragging
         if (svgRef.current) {
           svgRef.current.setPointerCapture(e.pointerId);
         }
@@ -111,20 +177,43 @@ export function useDragDrop({ layoutNodes, panX, panY, zoom, svgRef, nodes }: Us
         prev ? { ...prev, ghostX: e.clientX, ghostY: e.clientY } : prev
       );
 
-      // Hit-test for drop target
+      // Hit-test with zone detection
       const svgRect = svgRef.current?.getBoundingClientRect();
       if (!svgRect) return;
       const { svgX, svgY } = screenToSvg(e.clientX, e.clientY, svgRect, panX, panY, zoom);
-      const hit = hitTest(svgX, svgY, layoutNodes);
+      const hit = hitTestWithZone(svgX, svgY, layoutNodes);
 
       if (
         hit &&
-        hit.id !== dragNodeIdRef.current &&
-        !descendantIds.current.has(hit.id)
+        hit.node.id !== dragNodeIdRef.current &&
+        !descendantIds.current.has(hit.node.id)
       ) {
-        setDropTargetId(hit.id);
+        const ln = hit.node;
+        const zone = hit.zone;
+
+        if (zone === 'child') {
+          setDropIndicator({
+            targetNodeId: ln.id,
+            zone: 'child',
+            insertionY: 0,
+            insertionX: 0,
+            insertionWidth: 0,
+          });
+        } else {
+          // 'before' or 'after' — compute insertion line position
+          const insertionY = zone === 'before'
+            ? ln.y - NODE_GAP_Y / 2
+            : ln.y + ln.height + NODE_GAP_Y / 2;
+          setDropIndicator({
+            targetNodeId: ln.id,
+            zone,
+            insertionY,
+            insertionX: ln.x,
+            insertionWidth: ln.width,
+          });
+        }
       } else {
-        setDropTargetId(null);
+        setDropIndicator(null);
       }
     },
     [layoutNodes, panX, panY, zoom, svgRef, nodes]
@@ -134,9 +223,8 @@ export function useDragDrop({ layoutNodes, panX, panY, zoom, svgRef, nodes }: Us
     async (e: React.PointerEvent) => {
       const nodeId = dragNodeIdRef.current;
       const wasDragging = thresholdMet.current;
-      const currentDropTarget = dropTargetId;
+      const currentIndicator = dropIndicator;
 
-      // Release pointer capture
       if (wasDragging && svgRef.current) {
         svgRef.current.releasePointerCapture(e.pointerId);
       }
@@ -146,60 +234,93 @@ export function useDragDrop({ layoutNodes, panX, panY, zoom, svgRef, nodes }: Us
       thresholdMet.current = false;
       descendantIds.current = new Set();
       setDragState(null);
-      setDropTargetId(null);
+      setDropIndicator(null);
 
-      if (!wasDragging || !nodeId || !currentDropTarget) return;
+      if (!wasDragging || !nodeId || !currentIndicator) return;
 
-      // Prevent click from firing after a drag
       e.stopPropagation();
 
-      // Execute reparent
       const node = nodes.find((n) => n.id === nodeId);
       if (!node) return;
 
       const oldParentId = node.parentId ?? null;
       const oldSortOrder = node.sortOrder ?? 0;
 
-      // Compute new sort order (append as last child)
-      const targetChildren = nodes.filter((n) => n.parentId === currentDropTarget);
-      const newSortOrder =
-        targetChildren.length > 0
+      const targetNode = nodes.find((n) => n.id === currentIndicator.targetNodeId);
+      if (!targetNode) return;
+
+      let newParentId: string | null;
+      let newSortOrder: number;
+      const affectedSiblings: Array<{ id: string; sortOrder: number }> = [];
+
+      if (currentIndicator.zone === 'child') {
+        // Make child of target — append as last child
+        newParentId = targetNode.id;
+        const targetChildren = nodes.filter(
+          (n) => n.parentId === targetNode.id && n.id !== nodeId
+        );
+        newSortOrder = targetChildren.length > 0
           ? Math.max(...targetChildren.map((c) => c.sortOrder ?? 0)) + 1
           : 0;
+      } else {
+        // Insert as sibling — same parent as target
+        newParentId = targetNode.parentId ?? null;
+        const siblings = nodes
+          .filter((n) => n.parentId === newParentId && n.id !== nodeId)
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
-      await treeService.moveNode(nodeId, currentDropTarget, newSortOrder, []);
+        const targetIndex = siblings.findIndex((s) => s.id === targetNode.id);
+        const insertIndex = currentIndicator.zone === 'before' ? targetIndex : targetIndex + 1;
+
+        // Reassign sort orders: items before insertion keep their order,
+        // items at and after insertion get shifted by 1
+        for (let i = 0; i < siblings.length; i++) {
+          const newOrder = i < insertIndex ? i : i + 1;
+          if (newOrder !== (siblings[i].sortOrder ?? 0)) {
+            affectedSiblings.push({ id: siblings[i].id, sortOrder: newOrder });
+          }
+        }
+        newSortOrder = insertIndex;
+      }
+
+      await treeService.moveNode(nodeId, newParentId, newSortOrder, affectedSiblings);
 
       // Expand new parent if collapsed
       const { collapsedNodeIds, toggleNodeExpanded, setSelectedNodeId } =
         useMindmapStore.getState();
-      if (collapsedNodeIds.has(currentDropTarget)) {
-        toggleNodeExpanded(currentDropTarget);
+      if (newParentId && collapsedNodeIds.has(newParentId)) {
+        toggleNodeExpanded(newParentId);
       }
       setSelectedNodeId(nodeId);
 
       // Undo/redo
+      // For undo we need to restore old siblings' sort orders too
+      const oldSiblings = nodes
+        .filter((n) => n.parentId === newParentId && n.id !== nodeId)
+        .map((n) => ({ id: n.id, sortOrder: n.sortOrder ?? 0 }));
+
       useUndoStore.getState().push({
         description: 'Move node',
         undo: async () => {
-          await treeService.moveNode(nodeId, oldParentId, oldSortOrder, []);
+          await treeService.moveNode(nodeId, oldParentId, oldSortOrder, oldSiblings);
           useMindmapStore.getState().setSelectedNodeId(nodeId);
         },
         redo: async () => {
-          await treeService.moveNode(nodeId, currentDropTarget, newSortOrder, []);
+          await treeService.moveNode(nodeId, newParentId, newSortOrder, affectedSiblings);
           const state = useMindmapStore.getState();
-          if (state.collapsedNodeIds.has(currentDropTarget)) {
-            state.toggleNodeExpanded(currentDropTarget);
+          if (newParentId && state.collapsedNodeIds.has(newParentId)) {
+            state.toggleNodeExpanded(newParentId);
           }
           state.setSelectedNodeId(nodeId);
         },
       });
     },
-    [nodes, dropTargetId, svgRef]
+    [nodes, dropIndicator, svgRef]
   );
 
   return {
     dragState,
-    dropTargetId,
+    dropIndicator,
     handleNodePointerDown,
     handleCanvasPointerMove,
     handleCanvasPointerUp,

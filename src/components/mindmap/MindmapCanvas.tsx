@@ -36,7 +36,7 @@ const MindmapCanvas = () => {
   } = usePanZoom();
 
   const {
-    dragState, dropTargetId,
+    dragState, dropIndicator,
     handleNodePointerDown, handleCanvasPointerMove, handleCanvasPointerUp,
   } = useDragDrop({ layoutNodes, panX, panY, zoom, svgRef, nodes });
 
@@ -134,13 +134,29 @@ const MindmapCanvas = () => {
                   <MindmapNodeComponent
                     layoutNode={ln}
                     onAddChild={handleAddChild}
-                    isDropTarget={dropTargetId === ln.id}
+                    isDropTarget={dropIndicator?.targetNodeId === ln.id && dropIndicator.zone === 'child'}
                     onDragStart={handleNodePointerDown}
                   />
                 </foreignObject>
               </motion.g>
             ))}
           </AnimatePresence>
+
+          {/* Drop insertion line indicator */}
+          {dropIndicator && dropIndicator.zone !== 'child' && (
+            <motion.line
+              x1={dropIndicator.insertionX}
+              y1={dropIndicator.insertionY}
+              x2={dropIndicator.insertionX + dropIndicator.insertionWidth}
+              y2={dropIndicator.insertionY}
+              stroke="#22c55e"
+              strokeWidth={2}
+              strokeDasharray="6,3"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.15 }}
+            />
+          )}
         </g>
       </svg>
 
