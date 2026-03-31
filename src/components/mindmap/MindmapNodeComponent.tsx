@@ -17,6 +17,8 @@ import type { LayoutNode } from './hooks/useTreeLayout';
 interface MindmapNodeComponentProps {
   layoutNode: LayoutNode;
   onAddChild: (parentId: string) => void;
+  isDropTarget?: boolean;
+  onDragStart?: (nodeId: string, e: React.PointerEvent) => void;
 }
 
 const priorityBorderColors: Record<number, string> = {
@@ -26,7 +28,7 @@ const priorityBorderColors: Record<number, string> = {
   4: 'border-l-gray-300',
 };
 
-const MindmapNodeComponent = ({ layoutNode, onAddChild }: MindmapNodeComponentProps) => {
+const MindmapNodeComponent = ({ layoutNode, onAddChild, isDropTarget, onDragStart }: MindmapNodeComponentProps) => {
   const { node } = layoutNode;
   const { selectedNodeId, setSelectedNodeId, editingNodeId, setEditingNode, collapsedNodeIds, toggleNodeExpanded, nodes } = useMindmapStore();
   const [editTitle, setEditTitle] = useState(node.title);
@@ -181,10 +183,15 @@ const MindmapNodeComponent = ({ layoutNode, onAddChild }: MindmapNodeComponentPr
       data-mindmap-node
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
+      onPointerDown={(e) => {
+        if (e.button === 0 && onDragStart) onDragStart(node.id, e);
+      }}
       className={`group relative flex items-center h-full px-3 rounded-lg border border-l-4 transition-all duration-200 cursor-pointer select-none
         ${priorityBorderColors[node.priority]}
         ${node.completed ? 'opacity-60 bg-gray-50' : 'bg-white'}
-        ${isSelected ? 'ring-2 ring-blue-500 ring-offset-1 shadow-md' : 'border-gray-200 hover:shadow-md'}
+        ${isDropTarget ? 'ring-2 ring-green-400 ring-offset-2 shadow-lg shadow-green-100 bg-green-50/50' : ''}
+        ${isSelected && !isDropTarget ? 'ring-2 ring-blue-500 ring-offset-1 shadow-md' : ''}
+        ${!isSelected && !isDropTarget ? 'border-gray-200 hover:shadow-md' : ''}
       `}
     >
       {/* Expand/collapse */}

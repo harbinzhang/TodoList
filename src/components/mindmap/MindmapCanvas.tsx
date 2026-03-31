@@ -6,6 +6,7 @@ import { itemService } from '../../services/itemService';
 import { buildTree } from '../../utils/mindmapTree';
 import { useTreeLayout } from './hooks/useTreeLayout';
 import { usePanZoom } from './hooks/usePanZoom';
+import { useDragDrop } from './hooks/useDragDrop';
 import MindmapEdge from './MindmapEdge';
 import MindmapNodeComponent from './MindmapNodeComponent';
 import MindmapToolbar from './MindmapToolbar';
@@ -15,6 +16,7 @@ const MindmapCanvas = () => {
   const { nodes, collapsedNodeIds, currentMindmapId, editingNodeId } = useMindmapStore();
   const { user } = useAuthStore();
   const containerRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   useMindmapKeyboard(containerRef);
 
   // Refocus container when editing ends so keyboard shortcuts keep working
@@ -32,6 +34,11 @@ const MindmapCanvas = () => {
     handleWheel, handlePointerDown, handlePointerMove, handlePointerUp,
     zoomIn, zoomOut, fitView,
   } = usePanZoom();
+
+  const {
+    dragState, dropIndicator,
+    handleNodePointerDown, handleCanvasPointerMove, handleCanvasPointerUp,
+  } = useDragDrop({ layoutNodes, panX, panY, zoom, svgRef, nodes });
 
   const handleFitView = useCallback(() => {
     if (!containerRef.current) return;
@@ -91,14 +98,15 @@ const MindmapCanvas = () => {
       />
 
       <svg
+        ref={svgRef}
         width="100%"
         height="100%"
         className="select-none"
-        style={{ cursor: 'grab' }}
+        style={{ cursor: dragState?.isDragging ? 'grabbing' : 'grab' }}
         onWheel={handleWheel}
         onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
+        onPointerMove={(e) => { handleCanvasPointerMove(e); handlePointerMove(e); }}
+        onPointerUp={(e) => { handleCanvasPointerUp(e); handlePointerUp(); }}
       >
         <g transform={`translate(${panX}, ${panY}) scale(${zoom})`}>
           {/* Edges */}
@@ -126,13 +134,43 @@ const MindmapCanvas = () => {
                   <MindmapNodeComponent
                     layoutNode={ln}
                     onAddChild={handleAddChild}
+                    isDropTarget={dropIndicator?.targetNodeId === ln.id && dropIndicator.zone === 'child'}
+                    onDragStart={handleNodePointerDown}
                   />
                 </foreignObject>
               </motion.g>
             ))}
           </AnimatePresence>
+
+          {/* Drop insertion line indicator */}
+          {dropIndicator && dropIndicator.zone !== 'child' && (
+            <motion.line
+              x1={dropIndicator.insertionX}
+              y1={dropIndicator.insertionY}
+              x2={dropIndicator.insertionX + dropIndicator.insertionWidth}
+              y2={dropIndicator.insertionY}
+              stroke="#22c55e"
+              strokeWidth={2}
+              strokeDasharray="6,3"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.15 }}
+            />
+          )}
         </g>
       </svg>
+
+      {/* Drag ghost overlay */}
+      {dragState?.isDragging && (
+        <div
+          className="fixed pointer-events-none z-50"
+          style={{ left: dragState.ghostX + 12, top: dragState.ghostY - 10 }}
+        >
+          <div className="px-3 py-2 bg-white/80 border border-blue-300 rounded-lg shadow-lg text-sm text-gray-700 max-w-[280px] truncate backdrop-blur-sm">
+            {dragState.ghostTitle}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
