@@ -1,17 +1,9 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { Env } from '../env';
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
-};
-
-const app = initializeApp(firebaseConfig);
+const app = initializeApp(Env.firebaseConfig());
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let auth: any;
@@ -22,11 +14,11 @@ try {
   auth = getAuth(app);
   db = getFirestore(app);
 
-  // Connect to emulators in development when VITE_USE_EMULATORS is set
-  if (import.meta.env.VITE_USE_EMULATORS === 'true') {
-    connectAuthEmulator(auth, 'http://localhost:9299', { disableWarnings: true });
-    connectFirestoreEmulator(db, 'localhost', 8280);
-    console.log('🔧 Using Firebase Emulators');
+  if (Env.shouldUseEmulators()) {
+    const emu = Env.emulatorConfig();
+    connectAuthEmulator(auth, emu.authUrl, { disableWarnings: true });
+    connectFirestoreEmulator(db, emu.firestoreHost, emu.firestorePort);
+    console.log('\u{1F527} Using Firebase Emulators');
   }
 } catch {
   // Firebase init may fail in demo/dev mode without valid config
