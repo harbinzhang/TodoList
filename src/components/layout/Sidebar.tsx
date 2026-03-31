@@ -29,17 +29,18 @@ const Sidebar = () => {
     switch (type) {
       case 'inbox':
         return tasks.filter(task => !task.completed && !task.projectId).length;
-      case 'today':
+      case 'today': {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
-        return tasks.filter(task => 
-          !task.completed && 
-          task.dueDate && 
-          task.dueDate >= today && 
+        return tasks.filter(task =>
+          !task.completed &&
+          task.dueDate &&
+          task.dueDate >= today &&
           task.dueDate < tomorrow
         ).length;
+      }
       case 'upcoming':
         return tasks.filter(task => 
           !task.completed && 

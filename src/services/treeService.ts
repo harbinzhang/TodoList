@@ -52,9 +52,9 @@ export const treeService = {
   async recreateNodes(items: Item[]): Promise<void> {
     const batch = writeBatch(db);
     for (const item of items) {
-      const { id, createdAt, updatedAt, ...data } = item;
+      const { id, ...rest } = item;
       const cleaned = Object.fromEntries(
-        Object.entries(data).filter(([, v]) => v !== undefined)
+        Object.entries(rest).filter(([k, v]) => v !== undefined && k !== 'createdAt' && k !== 'updatedAt')
       );
       batch.set(doc(db, COLLECTION_NAME, id), {
         ...cleaned,

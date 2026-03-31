@@ -201,7 +201,7 @@ const MOCK_NODES: Item[] = [
   },
 ];
 
-function DemoApp() {
+export default function DemoApp() {
   const { setNodes, setCurrentMindmapId, setMindmaps } = useMindmapStore();
   const { setCurrentView } = useTaskStore();
   const { setUser } = useAuthStore();
