@@ -14,7 +14,8 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { useTaskStore } from '../../store/taskStore';
-import { useAuthStore } from '../../store/authStore';
+import { useAuthSession } from '../../providers/AuthProvider';
+import { useAppData } from '../../hooks/useAppData';
 import SortableTaskItem from './SortableTaskItem';
 import TaskForm from './TaskForm';
 import SectionHeader from '../sections/SectionHeader';
@@ -26,20 +27,15 @@ import { isDateTodayInTz } from '../../utils/dateUtils';
 import { applyFilters } from '../../utils/filterEngine';
 
 const TaskList = () => {
-  const { user } = useAuthStore();
+  const { user } = useAuthSession();
   const { 
-    tasks, 
-    sections,
     currentView, 
     currentProjectId, 
     currentLabelId,
     currentFilterId,
-    savedFilters,
-    projects,
-    labels,
     filter,
-    loading 
   } = useTaskStore();
+  const { tasks, sections, savedFilters, projects, labels, isLoading } = useAppData();
   const { timezone } = useSettingsStore();
 
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
@@ -225,7 +221,7 @@ const TaskList = () => {
   const getTasksForSection = (sectionId: string) =>
     filteredTasks.filter(t => t.sectionId === sectionId);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 dark:border-blue-400"></div>

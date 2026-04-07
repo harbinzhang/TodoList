@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase/config';
 import { useAuthStore } from '../../store/authStore';
-import { useTaskStore } from '../../store/taskStore';
+import { useAppData } from '../../hooks/useAppData';
 import { useSettingsStore } from '../../store/settingsStore';
 import {
   UserIcon,
@@ -17,13 +17,15 @@ import {
 
 const ProfileDropdown = () => {
   const { user } = useAuthStore();
-  const { tasks } = useTaskStore();
+  const { tasks } = useAppData();
   const { openSettings } = useSettingsStore();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const completedTasks = tasks.filter(task => task.completed).length;
   const totalTasks = tasks.length;
+  const profileLabel = user?.displayName || user?.email || (user?.isAnonymous ? 'Guest' : 'User');
+  const profileName = user?.displayName?.split(' ')[0] || user?.email?.split('@')[0] || (user?.isAnonymous ? 'Guest' : 'User');
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -47,13 +49,16 @@ const ProfileDropdown = () => {
     if (user?.displayName) {
       return user.displayName.split(' ').map(name => name[0]).join('').toUpperCase();
     }
-    return user?.email?.[0]?.toUpperCase() || 'U';
+    if (user?.email) {
+      return user.email[0].toUpperCase();
+    }
+    return user?.isAnonymous ? 'G' : 'U';
   };
 
   const menuItems = [
     {
       icon: UserIcon,
-      label: user?.displayName || user?.email || 'User',
+      label: profileLabel,
       subtitle: `${completedTasks}/${totalTasks} tasks`,
       isHeader: true,
     },
@@ -131,7 +136,7 @@ const ProfileDropdown = () => {
             </div>
           )}
           <span className="hidden sm:block font-medium text-gray-900 dark:text-white">
-            {user?.displayName?.split(' ')[0] || 'Haibin'}
+            {profileName}
           </span>
         </div>
         <ChevronDownIcon 

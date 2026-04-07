@@ -12,20 +12,28 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import type { Label } from '../types';
+import { cleanFirestoreData, mapFirestoreDocument } from '../firebase/firestoreUtils';
 
 const COLLECTION_NAME = 'labels';
+
+function mapLabel(id: string, data: Record<string, unknown>): Label {
+  return mapFirestoreDocument<Label>(id, data);
+}
 
 export const labelService = {
   // Create a new label
   async createLabel(labelData: Omit<Label, 'id'>): Promise<string> {
-    const docRef = await addDoc(collection(db, COLLECTION_NAME), labelData);
+    const docRef = await addDoc(
+      collection(db, COLLECTION_NAME),
+      cleanFirestoreData(labelData as Record<string, unknown>)
+    );
     return docRef.id;
   },
 
   // Update an existing label
   async updateLabel(labelId: string, updates: Partial<Omit<Label, 'id'>>): Promise<void> {
     const labelRef = doc(db, COLLECTION_NAME, labelId);
-    await updateDoc(labelRef, updates);
+    await updateDoc(labelRef, cleanFirestoreData(updates as Record<string, unknown>));
   },
 
   // Delete a label
@@ -43,10 +51,7 @@ export const labelService = {
     );
     
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    } as Label));
+    return querySnapshot.docs.map((snapshot) => mapLabel(snapshot.id, snapshot.data()));
   },
 
   // Subscribe to real-time updates for user labels
@@ -58,10 +63,9 @@ export const labelService = {
     );
 
     return onSnapshot(q, (querySnapshot) => {
-      const labels = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      } as Label));
+      const labels = querySnapshot.docs.map((snapshot) =>
+        mapLabel(snapshot.id, snapshot.data())
+      );
       callback(labels);
     });
   },

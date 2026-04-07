@@ -1,7 +1,8 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useTaskStore } from '../store/taskStore';
-import { useAuthStore } from '../store/authStore';
+import { useAuthSession } from '../providers/AuthProvider';
 import { useSettingsStore } from '../store/settingsStore';
+import { useAppData } from './useAppData';
 import { taskService } from '../services/taskService';
 import { parseTaskInput } from '../utils/taskParser';
 import { getTodayStringInTz } from '../utils/dateUtils';
@@ -22,8 +23,9 @@ interface UseQuickAddOptions {
 }
 
 export function useQuickAdd(options: UseQuickAddOptions = {}) {
-  const { user } = useAuthStore();
-  const { currentView, currentProjectId, currentLabelId, projects, labels } = useTaskStore();
+  const { user } = useAuthSession();
+  const { currentView, currentProjectId, currentLabelId } = useTaskStore();
+  const { projects, labels } = useAppData();
   const { timezone } = useSettingsStore();
 
   const [inputText, setInputText] = useState('');

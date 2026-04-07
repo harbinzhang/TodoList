@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
-import { useTaskStore } from '../../store/taskStore';
+import { useAppData } from '../../hooks/useAppData';
 import { sectionService } from '../../services/sectionService';
 
 interface SectionFormProps {
@@ -9,7 +9,7 @@ interface SectionFormProps {
 
 const SectionForm = ({ projectId }: SectionFormProps) => {
   const { user } = useAuthStore();
-  const { sections } = useTaskStore();
+  const { sections } = useAppData();
   const [isAdding, setIsAdding] = useState(false);
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);

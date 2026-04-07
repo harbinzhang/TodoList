@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useTaskStore } from '../../store/taskStore';
+import { useAppData } from '../../hooks/useAppData';
 import { taskService } from '../../services/taskService';
 import { format, isToday, isYesterday, isThisWeek } from 'date-fns';
 import {
@@ -9,7 +9,7 @@ import {
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 
 const CompletedList = () => {
-  const { tasks, projects, labels } = useTaskStore();
+  const { tasks, projects, labels } = useAppData();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterProject, setFilterProject] = useState<string | ''>('');
 

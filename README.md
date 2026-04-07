@@ -38,6 +38,12 @@ A professional todo list application built with React, TypeScript, Vite, and Fir
 - **Date Handling**: date-fns
 - **Forms**: React Hook Form
 
+## Engineering Standards
+
+This repo now treats [Firebase + Vite + React Reference Guide](./docs/firebase-vite-react-reference.md) as the canonical baseline for Firebase wiring, environment safety, testing layers, and operational scripts.
+
+Local development is emulator-first by default. Use `npm run dev` for the combined app + emulator workflow, and `npm run seed:local:apply` when you want deterministic local data before testing flows.
+
 ## Getting Started
 
 ### Prerequisites
@@ -74,6 +80,7 @@ A professional todo list application built with React, TypeScript, Vite, and Fir
    - Copy `.env.example` to `.env.local` for local development
    - Fill in your Firebase configuration values:
    ```env
+   VITE_APP_ENV=local
    VITE_FIREBASE_API_KEY=your_api_key_here
    VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
    VITE_FIREBASE_PROJECT_ID=your_project_id
@@ -81,9 +88,9 @@ A professional todo list application built with React, TypeScript, Vite, and Fir
    VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
    VITE_FIREBASE_APP_ID=your_app_id
    VITE_FIREBASE_MEASUREMENT_ID=
-   VITE_USE_EMULATOR=false
+   VITE_USE_EMULATOR=true
    ```
-   - Set `VITE_USE_EMULATOR=true` in a local dev env file when you want the app to use the Firebase Emulator Suite
+   - Use `.env.development`, `.env.staging`, and `.env.production` to keep local, staging, and production behavior separate
 
 5. **Firestore Setup**
    - Enable Firestore in your Firebase console
@@ -100,14 +107,23 @@ A professional todo list application built with React, TypeScript, Vite, and Fir
 ### Development
 
 ```bash
-# Start development server
+# Start app + Firebase emulators together
 npm run dev
 
-# Start Firebase emulators
-npm run emulators
+# Start only the Vite app
+npm run dev:app
+
+# Start only the Firebase emulators
+npm run dev:emulators
+
+# Seed deterministic local emulator data
+npm run seed:local:apply
 
 # Build for production
 npm run build
+
+# Build for staging
+npm run build:staging
 
 # Preview production build
 npm run preview

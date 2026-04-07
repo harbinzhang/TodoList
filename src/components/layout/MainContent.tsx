@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useTaskStore } from '../../store/taskStore';
+import { useMindmapStore } from '../../store/mindmapStore';
 import { useViewPreference } from '../../hooks/useViewPreference';
+import { useAppData } from '../../hooks/useAppData';
 import TaskList from '../tasks/TaskList';
 import TaskDetailPanel from '../tasks/TaskDetailPanel';
 import SearchBar from '../common/SearchBar';
@@ -10,6 +12,7 @@ import CompletedList from '../archive/CompletedList';
 import ArchiveStats from '../archive/ArchiveStats';
 import ViewSwitcher from './ViewSwitcher';
 import QuickAdd from '../tasks/QuickAdd';
+import MindmapView from '../mindmap/MindmapView';
 import { format } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -32,7 +35,10 @@ const ViewFallback = () => (
 );
 
 const MainContent = () => {
-  const { currentView, currentProjectId, currentLabelId, currentFilterId, projects, labels, savedFilters } = useTaskStore();
+  const { currentView, currentProjectId, currentLabelId, currentFilterId, currentMindmapId } =
+    useTaskStore();
+  const { mindmaps } = useMindmapStore();
+  const { projects, labels, savedFilters } = useAppData();
   const { currentViewMode, setViewMode, availableViews } = useViewPreference();
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
 
@@ -81,6 +87,10 @@ const MainContent = () => {
         const filter = savedFilters?.find(f => f.id === currentFilterId);
         return filter?.name || 'Filter';
       }
+      case 'mindmap': {
+        const mindmap = mindmaps.find((item) => item.id === currentMindmapId);
+        return mindmap?.name || 'Mindmap';
+      }
       default:
         return 'Tasks';
     }
@@ -96,6 +106,10 @@ const MainContent = () => {
   };
 
   const renderContent = () => {
+    if (currentView === 'mindmap') {
+      return <MindmapView />;
+    }
+
     // Completed view is always its own thing
     if (currentView === 'completed') {
       return (

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { ChevronDownIcon, ChevronRightIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { sectionService } from '../../services/sectionService';
+import { useConfirmationDialog } from '../../providers/ConfirmationDialogProvider';
+import { useToast } from '../../providers/ToastProvider';
 
 interface SectionHeaderProps {
   sectionId: string;
@@ -25,6 +27,8 @@ const SectionHeader = ({
 }: SectionHeaderProps) => {
   const [isRenaming, setIsRenaming] = useState(false);
   const [editName, setEditName] = useState(name);
+  const { confirm } = useConfirmationDialog();
+  const { toast } = useToast();
 
   const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
@@ -34,6 +38,11 @@ const SectionHeader = ({
         await sectionService.updateSection(sectionId, { name: editName.trim() });
       } catch (error) {
         console.error('Error renaming section:', error);
+        toast({
+          title: 'Could not rename section',
+          description: 'The latest section name was not saved.',
+          tone: 'error',
+        });
         setEditName(name);
       }
     } else {
@@ -52,12 +61,32 @@ const SectionHeader = ({
   };
 
   const handleDelete = async () => {
-    if (window.confirm(`Delete section "${name}"? Tasks in this section will be moved to "No section".`)) {
-      try {
-        await sectionService.deleteSection(sectionId, projectId, userId);
-      } catch (error) {
-        console.error('Error deleting section:', error);
-      }
+    const shouldDelete = await confirm({
+      title: `Delete section "${name}"?`,
+      message: 'Tasks in this section will be moved to "No section".',
+      confirmLabel: 'Delete section',
+      cancelLabel: 'Keep section',
+      tone: 'danger',
+    });
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    try {
+      await sectionService.deleteSection(sectionId, projectId, userId);
+      toast({
+        title: 'Section deleted',
+        description: 'Tasks were moved to "No section".',
+        tone: 'success',
+      });
+    } catch (error) {
+      console.error('Error deleting section:', error);
+      toast({
+        title: 'Could not delete section',
+        description: 'Please try again.',
+        tone: 'error',
+      });
     }
   };
 
@@ -66,6 +95,7 @@ const SectionHeader = ({
       <div className="flex items-center space-x-2 py-2 px-1">
         <button
           onClick={onToggleCollapse}
+          aria-label={isCollapsed ? `Expand section ${name}` : `Collapse section ${name}`}
           className="flex-shrink-0 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
         >
           {isCollapsed ? (
@@ -101,12 +131,14 @@ const SectionHeader = ({
         <div className="opacity-0 group-hover/section:opacity-100 transition-opacity flex items-center space-x-1">
           <button
             onClick={() => setIsRenaming(true)}
+            aria-label={`Rename section ${name}`}
             className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded"
           >
             <PencilIcon className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={handleDelete}
+            aria-label={`Delete section ${name}`}
             className="p-1 text-gray-400 hover:text-red-500 rounded"
           >
             <TrashIcon className="w-3.5 h-3.5" />

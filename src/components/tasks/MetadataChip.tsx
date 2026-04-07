@@ -8,7 +8,7 @@ import {
   FolderIcon,
   TagIcon,
 } from '@heroicons/react/24/outline';
-import { useTaskStore } from '../../store/taskStore';
+import { useAppData } from '../../hooks/useAppData';
 
 // ──────────── Types ────────────
 
@@ -160,7 +160,7 @@ function ProjectEditor({ value, onChange, onClose }: {
   onChange: (projectId: string | null) => void;
   onClose: () => void;
 }) {
-  const { projects } = useTaskStore();
+  const { projects } = useAppData();
   return (
     <motion.div
       initial={{ opacity: 0, y: -4 }}

@@ -44,5 +44,19 @@ service cloud.firestore {
       allow update: if isOwner(resource.data.userId) &&
         request.resource.data.userId == resource.data.userId;
     }
+
+    match /mindmaps/{mindmapId} {
+      allow create: if isOwner(request.resource.data.userId);
+      allow read, delete: if isOwner(resource.data.userId);
+      allow update: if isOwner(resource.data.userId) &&
+        request.resource.data.userId == resource.data.userId;
+    }
+
+    match /mindmapNodes/{nodeId} {
+      allow create: if isOwner(request.resource.data.userId);
+      allow read, delete: if isOwner(resource.data.userId);
+      allow update: if isOwner(resource.data.userId) &&
+        request.resource.data.userId == resource.data.userId;
+    }
   }
 }

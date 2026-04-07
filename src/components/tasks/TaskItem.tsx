@@ -1,5 +1,6 @@
 import { useContext } from 'react';
 import { useTaskStore } from '../../store/taskStore';
+import { useAppData } from '../../hooks/useAppData';
 import { taskService } from '../../services/taskService';
 import type { Task } from '../../types';
 import { format } from 'date-fns';
@@ -21,7 +22,8 @@ interface TaskItemProps {
 
 const TaskItem = ({ task, dragHandleProps }: TaskItemProps) => {
   const { timezone } = useSettingsStore();
-  const { labels: allLabels, projects: allProjects, setSelectedTaskId } = useTaskStore();
+  const { setSelectedTaskId } = useTaskStore();
+  const { labels: allLabels, projects: allProjects } = useAppData();
   const { enqueue } = useContext(UndoQueueContext);
 
   const handleToggleComplete = async (e: React.MouseEvent) => {

@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import { useTaskStore } from '../../store/taskStore';
+import { useAppData } from '../../hooks/useAppData';
 import { getTodayCount, getDailyCountsForDays } from '../../utils/stats';
 
 const CompletionSpark = () => {
-  const { tasks } = useTaskStore();
+  const { tasks } = useAppData();
 
   const todayCount = useMemo(() => getTodayCount(tasks), [tasks]);
   const dailyCounts = useMemo(() => getDailyCountsForDays(tasks, 7), [tasks]);

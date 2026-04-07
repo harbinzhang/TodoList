@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { PlusIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { useQuickAdd } from '../../hooks/useQuickAdd';
-import { useTaskStore } from '../../store/taskStore';
+import { useAppData } from '../../hooks/useAppData';
 import {
   MetadataChip,
   DateEditor,
@@ -131,7 +131,7 @@ export default function QuickAdd({ variant, onClose, sectionId: _sectionId }: Qu
   // Suppress unused variable lint — sectionId reserved for future use
   void _sectionId;
 
-  const { projects, labels } = useTaskStore();
+  const { projects, labels } = useAppData();
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeEditor, setActiveEditor] = useState<ActiveEditor>(null);

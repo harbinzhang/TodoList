@@ -14,6 +14,7 @@ import { arrayMove } from '@dnd-kit/sortable';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { useTaskStore } from '../../store/taskStore';
 import { useAuthStore } from '../../store/authStore';
+import { useAppData } from '../../hooks/useAppData';
 import {
   groupTasksBySource,
   getDropFieldUpdate,
@@ -60,8 +61,7 @@ function setCollapsedStorage(columnId: string, collapsed: boolean) {
 }
 
 const BoardView = () => {
-  const tasks = useTaskStore((s) => s.tasks);
-  const sections = useTaskStore((s) => s.sections);
+  const { tasks, sections } = useAppData();
   const currentProjectId = useTaskStore((s) => s.currentProjectId);
   const currentView = useTaskStore((s) => s.currentView);
   const currentLabelId = useTaskStore((s) => s.currentLabelId);

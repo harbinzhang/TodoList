@@ -10,6 +10,7 @@ import {
 } from '@dnd-kit/core';
 import { useTaskStore } from '../../store/taskStore';
 import { useAuthStore } from '../../store/authStore';
+import { useAppData } from '../../hooks/useAppData';
 import { taskService } from '../../services/taskService';
 import {
   type UpcomingScope,
@@ -38,7 +39,7 @@ function loadScope(): UpcomingScope {
 }
 
 const UpcomingView = () => {
-  const tasks = useTaskStore((s) => s.tasks);
+  const { tasks } = useAppData();
   const { currentProjectId } = useTaskStore();
   const { user } = useAuthStore();
 

@@ -1,8 +1,9 @@
 export interface User {
   uid: string;
-  email: string;
+  email?: string;
   displayName?: string;
   photoURL?: string;
+  isAnonymous?: boolean;
 }
 
 // --- Recurrence (Feature 1) ---
@@ -57,7 +58,40 @@ export interface Label {
   userId: string;
 }
 
-export type ViewType = 'inbox' | 'today' | 'upcoming' | 'project' | 'label' | 'filter' | 'completed';
+export interface Mindmap {
+  id: string;
+  name: string;
+  color: string;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MindmapNode {
+  id: string;
+  title: string;
+  description?: string;
+  completed: boolean;
+  priority: 1 | 2 | 3 | 4;
+  createdAt: Date;
+  updatedAt: Date;
+  userId: string;
+  parentId?: string | null;
+  sortOrder?: number;
+  mindmapId: string;
+}
+
+export type Item = MindmapNode;
+
+export type ViewType =
+  | 'inbox'
+  | 'today'
+  | 'upcoming'
+  | 'project'
+  | 'label'
+  | 'filter'
+  | 'completed'
+  | 'mindmap';
 
 export type TaskViewMode = 'list' | 'board' | 'calendar';
 

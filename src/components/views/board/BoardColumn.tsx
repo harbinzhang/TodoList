@@ -10,7 +10,7 @@ import type { BoardColumnSource } from '../../../utils/board';
 import { getDropFieldUpdate } from '../../../utils/board';
 import { taskService } from '../../../services/taskService';
 import { sectionService } from '../../../services/sectionService';
-import { useAuthStore } from '../../../store/authStore';
+import { useAuthSession } from '../../../providers/AuthProvider';
 import { useTaskStore } from '../../../store/taskStore';
 import ColumnHeader from './ColumnHeader';
 import BoardCard from './BoardCard';
@@ -36,7 +36,7 @@ const BoardColumn = ({
 }: BoardColumnProps) => {
   const [isAdding, setIsAdding] = useState(false);
   const [newTitle, setNewTitle] = useState('');
-  const user = useAuthStore((s) => s.user);
+  const { user } = useAuthSession();
   const currentProjectId = useTaskStore((s) => s.currentProjectId);
 
   const { setNodeRef, isOver } = useDroppable({
