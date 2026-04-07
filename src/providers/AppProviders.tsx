@@ -5,16 +5,19 @@ import { AuthProvider } from './AuthProvider';
 import { AppDataProvider } from './AppDataProvider';
 import { ToastProvider } from './ToastProvider';
 import { ConfirmationDialogProvider } from './ConfirmationDialogProvider';
+import { MindmapProvider } from './MindmapProvider';
 
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <AppDataProvider>
-          <ToastProvider>
-            <ConfirmationDialogProvider>{children}</ConfirmationDialogProvider>
-          </ToastProvider>
-        </AppDataProvider>
+        <MindmapProvider>
+          <AppDataProvider>
+            <ToastProvider>
+              <ConfirmationDialogProvider>{children}</ConfirmationDialogProvider>
+            </ToastProvider>
+          </AppDataProvider>
+        </MindmapProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

@@ -6,6 +6,7 @@ interface TaskState {
   currentProjectId?: string;
   currentLabelId?: string;
   currentFilterId?: string;
+  currentMindmapId?: string;
   selectedTaskId: string | null;
   currentViewMode: TaskViewMode;
   boardColumnSource: 'section' | 'priority' | 'status';
@@ -58,6 +59,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     currentProjectId: view === 'project' ? id : undefined,
     currentLabelId: view === 'label' ? id : undefined,
     currentFilterId: view === 'filter' ? id : undefined,
+    currentMindmapId: view === 'mindmap' ? id : undefined,
   }),
   setFilter: (filter) => set({ filter: { ...get().filter, ...filter } }),
 }));

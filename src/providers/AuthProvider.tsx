@@ -1,14 +1,8 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
 import { auth } from '../firebase/config';
+import { useAuthStore } from '../store/authStore';
 import type { User } from '../types';
-
-interface AuthSessionValue {
-  user: User | null;
-  loading: boolean;
-}
-
-const AuthContext = createContext<AuthSessionValue | undefined>(undefined);
 
 function mapAuthUser(firebaseUser: FirebaseUser): User {
   return {
@@ -21,8 +15,8 @@ function mapAuthUser(firebaseUser: FirebaseUser): User {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const setUser = useAuthStore((state) => state.setUser);
+  const setLoading = useAuthStore((state) => state.setLoading);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -31,20 +25,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return unsubscribe;
-  }, []);
+  }, [setLoading, setUser]);
 
-  const value = useMemo(() => ({ user, loading }), [user, loading]);
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return <>{children}</>;
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
 export function useAuthSession() {
-  const value = useContext(AuthContext);
-
-  if (!value) {
-    throw new Error('useAuthSession must be used within AuthProvider');
-  }
-
-  return value;
+  return useAuthStore();
 }

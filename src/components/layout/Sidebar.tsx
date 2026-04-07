@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useTaskStore } from '../../store/taskStore';
+import { useMindmapStore } from '../../store/mindmapStore';
 import { useAppData } from '../../hooks/useAppData';
 import ProjectForm from '../projects/ProjectForm';
 import LabelForm from '../labels/LabelForm';
 import FilterForm from '../filters/FilterForm';
+import MindmapForm from '../mindmap/MindmapForm';
 import {
   HomeIcon,
   CalendarIcon,
@@ -14,17 +16,28 @@ import {
   ChevronRightIcon,
   ArchiveBoxIcon,
   FunnelIcon,
+  ShareIcon,
 } from '@heroicons/react/24/outline';
 import CompletionSpark from '../common/CompletionSpark';
 
 const Sidebar = () => {
-  const { currentView, currentProjectId, currentLabelId, currentFilterId, setCurrentView } = useTaskStore();
+  const {
+    currentView,
+    currentProjectId,
+    currentLabelId,
+    currentFilterId,
+    currentMindmapId,
+    setCurrentView,
+  } = useTaskStore();
+  const { mindmaps } = useMindmapStore();
   const { projects, labels, tasks, savedFilters } = useAppData();
   const [isProjectsOpen, setIsProjectsOpen] = useState(true);
   const [isLabelsOpen, setIsLabelsOpen] = useState(false);
+  const [isMindmapsOpen, setIsMindmapsOpen] = useState(true);
   const [isFiltersOpen, setIsFiltersOpen] = useState(true);
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [showLabelForm, setShowLabelForm] = useState(false);
+  const [showMindmapForm, setShowMindmapForm] = useState(false);
   const [showFilterForm, setShowFilterForm] = useState(false);
 
   const getTaskCount = (type: string, id?: string) => {
@@ -229,6 +242,51 @@ const Sidebar = () => {
             </div>
           )}
         </div>
+
+        {/* Mindmaps Section */}
+        <div className="p-2">
+          <button
+            onClick={() => setIsMindmapsOpen(!isMindmapsOpen)}
+            className="w-full flex items-center justify-between p-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+          >
+            <div className="flex items-center space-x-2">
+              {isMindmapsOpen ? (
+                <ChevronDownIcon className="w-4 h-4" />
+              ) : (
+                <ChevronRightIcon className="w-4 h-4" />
+              )}
+              <span className="font-medium">Mindmaps</span>
+            </div>
+            <PlusIcon
+              className="w-4 h-4 cursor-pointer hover:text-blue-500"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMindmapForm(true);
+              }}
+            />
+          </button>
+
+          {isMindmapsOpen && (
+            <div className="ml-6 mt-1 space-y-1">
+              {mindmaps.map((mindmap) => (
+                <button
+                  key={mindmap.id}
+                  onClick={() => setCurrentView('mindmap', mindmap.id)}
+                  className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                    currentView === 'mindmap' && currentMindmapId === mindmap.id
+                      ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                      : 'text-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <ShareIcon className="w-4 h-4" style={{ color: mindmap.color }} />
+                    <span className="truncate">{mindmap.name}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Saved Filters Section */}
@@ -280,6 +338,10 @@ const Sidebar = () => {
       <LabelForm 
         isOpen={showLabelForm} 
         onClose={() => setShowLabelForm(false)} 
+      />
+      <MindmapForm
+        isOpen={showMindmapForm}
+        onClose={() => setShowMindmapForm(false)}
       />
       <FilterForm
         isOpen={showFilterForm}
