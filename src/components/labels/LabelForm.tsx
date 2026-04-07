@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useTaskStore } from '../../store/taskStore';
 import { useAuthStore } from '../../store/authStore';
 import { labelService } from '../../services/labelService';
 import { XMarkIcon } from '@heroicons/react/24/outline';
@@ -23,7 +22,6 @@ const colors = [
 
 const LabelForm = ({ isOpen, onClose }: LabelFormProps) => {
   const { user } = useAuthStore();
-  const { addLabel } = useTaskStore();
   const [name, setName] = useState('');
   const [selectedColor, setSelectedColor] = useState(colors[0]);
   const [loading, setLoading] = useState(false);
@@ -34,14 +32,7 @@ const LabelForm = ({ isOpen, onClose }: LabelFormProps) => {
 
     setLoading(true);
     try {
-      const labelId = await labelService.createLabel({
-        name: name.trim(),
-        color: selectedColor,
-        userId: user.uid,
-      });
-
-      addLabel({
-        id: labelId,
+      await labelService.createLabel({
         name: name.trim(),
         color: selectedColor,
         userId: user.uid,
@@ -65,12 +56,12 @@ const LabelForm = ({ isOpen, onClose }: LabelFormProps) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Add Label</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Add Label</h2>
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
           >
             <XMarkIcon className="w-6 h-6" />
           </button>
@@ -78,7 +69,7 @@ const LabelForm = ({ isOpen, onClose }: LabelFormProps) => {
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label htmlFor="labelName" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="labelName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Name
             </label>
             <input
@@ -87,13 +78,13 @@ const LabelForm = ({ isOpen, onClose }: LabelFormProps) => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter label name"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
               autoFocus
             />
           </div>
 
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Color
             </label>
             <div className="flex space-x-2">
@@ -103,7 +94,7 @@ const LabelForm = ({ isOpen, onClose }: LabelFormProps) => {
                   type="button"
                   onClick={() => setSelectedColor(color)}
                   className={`w-8 h-8 rounded-full border-2 ${
-                    selectedColor === color ? 'border-gray-400' : 'border-gray-200'
+                    selectedColor === color ? 'border-gray-400 dark:border-gray-200' : 'border-gray-200 dark:border-gray-600'
                   }`}
                   style={{ backgroundColor: color }}
                 />
@@ -115,7 +106,7 @@ const LabelForm = ({ isOpen, onClose }: LabelFormProps) => {
             <button
               type="button"
               onClick={handleClose}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md"
+              className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-md"
             >
               Cancel
             </button>

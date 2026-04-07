@@ -3,6 +3,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase/config';
 import { useAuthStore } from '../../store/authStore';
 import { useTaskStore } from '../../store/taskStore';
+import { useSettingsStore } from '../../store/settingsStore';
 import {
   UserIcon,
   Cog6ToothIcon,
@@ -17,6 +18,7 @@ import {
 const ProfileDropdown = () => {
   const { user } = useAuthStore();
   const { tasks } = useTaskStore();
+  const { openSettings } = useSettingsStore();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -61,7 +63,7 @@ const ProfileDropdown = () => {
       label: 'Settings',
       shortcut: 'O then S',
       onClick: () => {
-        // Settings functionality
+        openSettings();
         setIsOpen(false);
       },
     },
@@ -114,7 +116,7 @@ const ProfileDropdown = () => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+        className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
       >
         <div className="flex items-center space-x-3">
           {user?.photoURL ? (
@@ -128,25 +130,25 @@ const ProfileDropdown = () => {
               {getInitials()}
             </div>
           )}
-          <span className="hidden sm:block font-medium text-gray-900">
+          <span className="hidden sm:block font-medium text-gray-900 dark:text-white">
             {user?.displayName?.split(' ')[0] || 'Haibin'}
           </span>
         </div>
         <ChevronDownIcon 
-          className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
         />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+        <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
           {menuItems.map((item, index) => {
             if (item.type === 'divider') {
-              return <div key={index} className="my-1 border-t border-gray-100" />;
+              return <div key={index} className="my-1 border-t border-gray-100 dark:border-gray-700" />;
             }
 
             if (item.isHeader) {
               return (
-                <div key={index} className="px-4 py-3 border-b border-gray-100">
+                <div key={index} className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
                   <div className="flex items-center space-x-3">
                     {user?.photoURL ? (
                       <img
@@ -160,8 +162,8 @@ const ProfileDropdown = () => {
                       </div>
                     )}
                     <div>
-                      <div className="font-medium text-gray-900">{item.label}</div>
-                      <div className="text-sm text-gray-500">{item.subtitle}</div>
+                      <div className="font-medium text-gray-900 dark:text-white">{item.label}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">{item.subtitle}</div>
                     </div>
                   </div>
                 </div>
@@ -173,8 +175,8 @@ const ProfileDropdown = () => {
               <button
                 key={index}
                 onClick={item.onClick}
-                className={`w-full flex items-center justify-between px-4 py-2 text-left hover:bg-gray-50 transition-colors ${
-                  item.danger ? 'text-red-600 hover:bg-red-50' : 'text-gray-700'
+                className={`w-full flex items-center justify-between px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                  item.danger ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30' : 'text-gray-700 dark:text-gray-300'
                 }`}
               >
                 <div className="flex items-center space-x-3">
@@ -182,20 +184,20 @@ const ProfileDropdown = () => {
                   <div>
                     <span className="block">{item.label}</span>
                     {item.subtitle && (
-                      <span className="text-xs text-gray-500">{item.subtitle}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{item.subtitle}</span>
                     )}
                   </div>
                 </div>
                 {item.shortcut && (
-                  <span className="text-xs text-gray-400">{item.shortcut}</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">{item.shortcut}</span>
                 )}
               </button>
             );
           })}
           
-          <div className="px-4 py-2 border-t border-gray-100 mt-1">
-            <div className="text-xs text-gray-400">
-              v8951 · <span className="hover:text-gray-600 cursor-pointer">Changelog</span>
+          <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-700 mt-1">
+            <div className="text-xs text-gray-400 dark:text-gray-500">
+              v8951 · <span className="hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer">Changelog</span>
             </div>
           </div>
         </div>

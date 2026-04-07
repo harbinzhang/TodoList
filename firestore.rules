@@ -30,5 +30,19 @@ service cloud.firestore {
       allow update: if isOwner(resource.data.userId) &&
         request.resource.data.userId == resource.data.userId;
     }
+
+    match /sections/{sectionId} {
+      allow create: if isOwner(request.resource.data.userId);
+      allow read, delete: if isOwner(resource.data.userId);
+      allow update: if isOwner(resource.data.userId) &&
+        request.resource.data.userId == resource.data.userId;
+    }
+
+    match /savedFilters/{filterId} {
+      allow create: if isOwner(request.resource.data.userId);
+      allow read, delete: if isOwner(resource.data.userId);
+      allow update: if isOwner(resource.data.userId) &&
+        request.resource.data.userId == resource.data.userId;
+    }
   }
 }

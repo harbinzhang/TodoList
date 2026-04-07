@@ -1,24 +1,27 @@
 import { create } from 'zustand';
-import type { Task, Project, Label, TaskFilter, ViewType } from '../types';
-import { labelService } from '../services/labelService';
-import { taskService } from '../services/taskService';
-import { parserConfig } from '../config/parserConfig';
+import type { Task, Project, Label, Section, SavedFilter, TaskFilter, ViewType, TaskViewMode } from '../types';
 
 interface TaskState {
   tasks: Task[];
   projects: Project[];
   labels: Label[];
+  sections: Section[];
+  savedFilters: SavedFilter[];
   currentView: ViewType;
   currentProjectId?: string;
   currentLabelId?: string;
+  currentFilterId?: string;
+  selectedTaskId: string | null;
+  currentViewMode: TaskViewMode;
+  boardColumnSource: 'section' | 'priority' | 'status';
   filter: TaskFilter;
   loading: boolean;
   
   // Actions
   setTasks: (tasks: Task[]) => void;
-  addTask: (task: Task) => Promise<void>;
-  updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
-  deleteTask: (taskId: string) => Promise<void>;
+  addTask: (task: Task) => void;
+  updateTask: (taskId: string, updates: Partial<Task>) => void;
+  deleteTask: (taskId: string) => void;
   
   setProjects: (projects: Project[]) => void;
   addProject: (project: Project) => void;
@@ -29,10 +32,18 @@ interface TaskState {
   addLabel: (label: Label) => void;
   updateLabel: (labelId: string, updates: Partial<Label>) => void;
   deleteLabel: (labelId: string) => void;
-  findLabelByName: (name: string) => Label | undefined;
-  findLabelById: (id: string) => Label | undefined;
-  findOrCreateLabel: (name: string, userId: string, defaultColor?: string) => Promise<Label>;
   
+  setSections: (sections: Section[]) => void;
+  addSection: (section: Section) => void;
+  updateSection: (sectionId: string, updates: Partial<Section>) => void;
+  deleteSection: (sectionId: string) => void;
+  
+  setSavedFilters: (filters: SavedFilter[]) => void;
+  setCurrentFilterId: (filterId: string | undefined) => void;
+  
+  setSelectedTaskId: (taskId: string | null) => void;
+  setCurrentViewMode: (mode: TaskViewMode) => void;
+  setBoardColumnSource: (source: 'section' | 'priority' | 'status') => void;
   setCurrentView: (view: ViewType, id?: string) => void;
   setFilter: (filter: Partial<TaskFilter>) => void;
   setLoading: (loading: boolean) => void;
@@ -42,46 +53,28 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   tasks: [],
   projects: [],
   labels: [],
+  sections: [],
+  savedFilters: [],
   currentView: 'inbox',
+  selectedTaskId: null,
+  currentViewMode: 'list',
+  boardColumnSource: 'section',
   filter: {},
   loading: false,
 
   setTasks: (tasks) => set({ tasks }),
-  addTask: async (task) => {
-    const sanitizedTaskData = Object.fromEntries(
-      Object.entries(task).filter(([key, value]) => {
-        return !['id', 'createdAt', 'updatedAt'].includes(key) && value !== undefined;
-      })
-    ) as Omit<Task, 'id' | 'createdAt' | 'updatedAt'>;
-
-    const newTaskId = await taskService.createTask(sanitizedTaskData);
-    const persistedTask = { ...task, id: newTaskId };
-
-    if (!get().tasks.some((existingTask) => existingTask.id === newTaskId)) {
-      set({ tasks: [...get().tasks, persistedTask] });
-    }
-  },
-  updateTask: async (taskId, updates) => {
-    await taskService.updateTask(taskId, updates);
-    set({
-      tasks: get().tasks.map((task) =>
-        task.id === taskId ? { ...task, ...updates, updatedAt: new Date() } : task
-      ),
-    });
-  },
-  deleteTask: async (taskId) => {
-    await taskService.deleteTask(taskId);
-    set({
-      tasks: get().tasks.filter((task) => task.id !== taskId),
-    });
-  },
+  addTask: (task) => set({ tasks: [...get().tasks, task] }),
+  updateTask: (taskId, updates) => set({
+    tasks: get().tasks.map(task => 
+      task.id === taskId ? { ...task, ...updates } : task
+    )
+  }),
+  deleteTask: (taskId) => set({
+    tasks: get().tasks.filter(task => task.id !== taskId)
+  }),
 
   setProjects: (projects) => set({ projects }),
-  addProject: (project) => set({
-    projects: get().projects.some((existingProject) => existingProject.id === project.id)
-      ? get().projects
-      : [...get().projects, project],
-  }),
+  addProject: (project) => set({ projects: [...get().projects, project] }),
   updateProject: (projectId, updates) => set({
     projects: get().projects.map(project => 
       project.id === projectId ? { ...project, ...updates } : project
@@ -92,11 +85,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   }),
 
   setLabels: (labels) => set({ labels }),
-  addLabel: (label) => set({
-    labels: get().labels.some((existingLabel) => existingLabel.id === label.id)
-      ? get().labels
-      : [...get().labels, label],
-  }),
+  addLabel: (label) => set({ labels: [...get().labels, label] }),
   updateLabel: (labelId, updates) => set({
     labels: get().labels.map(label => 
       label.id === labelId ? { ...label, ...updates } : label
@@ -105,39 +94,29 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   deleteLabel: (labelId) => set({
     labels: get().labels.filter(label => label.id !== labelId)
   }),
-  findLabelByName: (name) => {
-    return get().labels.find((label) => label.name.toLowerCase() === name.toLowerCase());
-  },
-  findLabelById: (id) => {
-    return get().labels.find((label) => label.id === id);
-  },
-  findOrCreateLabel: async (name, userId, defaultColor = parserConfig.labels.defaultColor) => {
-    const existingLabel = get().findLabelByName(name);
-    if (existingLabel) {
-      return existingLabel;
-    }
 
-    const labelId = await labelService.createLabel({
-      name,
-      color: defaultColor,
-      userId,
-    });
+  setSections: (sections) => set({ sections }),
+  addSection: (section) => set({ sections: [...get().sections, section] }),
+  updateSection: (sectionId, updates) => set({
+    sections: get().sections.map(section => 
+      section.id === sectionId ? { ...section, ...updates } : section
+    )
+  }),
+  deleteSection: (sectionId) => set({
+    sections: get().sections.filter(section => section.id !== sectionId)
+  }),
 
-    const newLabel: Label = {
-      id: labelId,
-      name,
-      color: defaultColor,
-      userId,
-    };
+  setSavedFilters: (savedFilters) => set({ savedFilters }),
+  setCurrentFilterId: (currentFilterId) => set({ currentFilterId }),
 
-    get().addLabel(newLabel);
-    return newLabel;
-  },
-
+  setSelectedTaskId: (taskId) => set({ selectedTaskId: taskId }),
+  setCurrentViewMode: (currentViewMode) => set({ currentViewMode }),
+  setBoardColumnSource: (boardColumnSource) => set({ boardColumnSource }),
   setCurrentView: (view, id) => set({ 
     currentView: view,
     currentProjectId: view === 'project' ? id : undefined,
-    currentLabelId: view === 'label' ? id : undefined
+    currentLabelId: view === 'label' ? id : undefined,
+    currentFilterId: view === 'filter' ? id : undefined,
   }),
   setFilter: (filter) => set({ filter: { ...get().filter, ...filter } }),
   setLoading: (loading) => set({ loading }),

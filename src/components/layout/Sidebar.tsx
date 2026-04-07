@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTaskStore } from '../../store/taskStore';
 import ProjectForm from '../projects/ProjectForm';
 import LabelForm from '../labels/LabelForm';
+import FilterForm from '../filters/FilterForm';
 import {
   HomeIcon,
   CalendarIcon,
@@ -10,22 +11,19 @@ import {
   PlusIcon,
   ChevronDownIcon,
   ChevronRightIcon,
-  XMarkIcon,
+  ArchiveBoxIcon,
+  FunnelIcon,
 } from '@heroicons/react/24/outline';
-import type { ViewType } from '../../types';
+import CompletionSpark from '../common/CompletionSpark';
 
-interface SidebarProps {
-  isMobile: boolean;
-  sidebarOpen: boolean;
-  closeSidebar: () => void;
-}
-
-const Sidebar = ({ isMobile, sidebarOpen, closeSidebar }: SidebarProps) => {
-  const { currentView, currentProjectId, currentLabelId, projects, labels, tasks, setCurrentView } = useTaskStore();
+const Sidebar = () => {
+  const { currentView, currentProjectId, currentLabelId, currentFilterId, projects, labels, tasks, savedFilters, setCurrentView } = useTaskStore();
   const [isProjectsOpen, setIsProjectsOpen] = useState(true);
   const [isLabelsOpen, setIsLabelsOpen] = useState(false);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(true);
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [showLabelForm, setShowLabelForm] = useState(false);
+  const [showFilterForm, setShowFilterForm] = useState(false);
 
   const getTaskCount = (type: string, id?: string) => {
     switch (type) {
@@ -46,101 +44,96 @@ const Sidebar = ({ isMobile, sidebarOpen, closeSidebar }: SidebarProps) => {
       case 'upcoming':
         return tasks.filter(task => 
           !task.completed && 
-          task.dueDate && 
-          task.dueDate > new Date()
+          task.dueDate != null
         ).length;
       case 'project':
         return tasks.filter(task => !task.completed && task.projectId === id).length;
       case 'label':
         return tasks.filter(task => !task.completed && task.labels.includes(id!)).length;
+      case 'completed':
+        return tasks.filter(task => task.completed).length;
       default:
         return 0;
     }
   };
 
-  const handleNavClick = (view: ViewType, id?: string) => {
-    setCurrentView(view, id);
-    if (isMobile) {
-      closeSidebar();
-    }
-  };
 
   return (
-    <div
-      className={`
-        ${isMobile
-          ? `fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out ${
-              sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-            }`
-          : 'w-64'}
-        flex h-screen flex-col border-r border-gray-200 bg-gray-50
-      `}
-    >
-      {isMobile && (
-        <div className="flex items-center justify-between border-b border-gray-200 p-4">
-          <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
-          <button
-            onClick={closeSidebar}
-            className="rounded-lg p-2 hover:bg-gray-100"
-          >
-            <XMarkIcon className="h-6 w-6 text-gray-500" />
-          </button>
-        </div>
-      )}
+    <div className="w-64 bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 h-screen flex flex-col">
 
-      <div className={`border-b border-gray-200 p-4 ${isMobile ? '' : 'mt-4'}`}>
-        <button className="w-full flex items-center space-x-2 text-red-500 hover:bg-red-50 rounded-lg p-2">
+      {/* Quick Add */}
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700 mt-4">
+        <button className="w-full flex items-center space-x-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg p-2">
           <PlusIcon className="w-5 h-5" />
           <span className="font-medium">Add task</span>
         </button>
       </div>
 
+      {/* Main Navigation */}
       <div className="flex-1 overflow-y-auto">
         <nav className="p-2 space-y-1">
+          {/* Inbox */}
           <button
-            onClick={() => handleNavClick('inbox')}
-            className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 ${
-              currentView === 'inbox' ? 'bg-red-50 text-red-700' : 'text-gray-700'
+            onClick={() => setCurrentView('inbox')}
+            className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 ${
+              currentView === 'inbox' ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'
             }`}
           >
             <div className="flex items-center space-x-3">
               <HomeIcon className="w-5 h-5" />
               <span>Inbox</span>
             </div>
-            <span className="text-sm text-gray-500">{getTaskCount('inbox')}</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{getTaskCount('inbox')}</span>
           </button>
 
+          {/* Today */}
           <button
-            onClick={() => handleNavClick('today')}
-            className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 ${
-              currentView === 'today' ? 'bg-red-50 text-red-700' : 'text-gray-700'
+            onClick={() => setCurrentView('today')}
+            className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 ${
+              currentView === 'today' ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'
             }`}
           >
             <div className="flex items-center space-x-3">
               <CalendarIcon className="w-5 h-5" />
               <span>Today</span>
             </div>
-            <span className="text-sm text-gray-500">{getTaskCount('today')}</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{getTaskCount('today')}</span>
           </button>
 
+          {/* Upcoming */}
           <button
-            onClick={() => handleNavClick('upcoming')}
-            className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 ${
-              currentView === 'upcoming' ? 'bg-red-50 text-red-700' : 'text-gray-700'
+            onClick={() => setCurrentView('upcoming')}
+            className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 ${
+              currentView === 'upcoming' ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'
             }`}
           >
             <div className="flex items-center space-x-3">
               <ClockIcon className="w-5 h-5" />
               <span>Upcoming</span>
             </div>
-            <span className="text-sm text-gray-500">{getTaskCount('upcoming')}</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{getTaskCount('upcoming')}</span>
+          </button>
+
+          {/* Completed */}
+          <button
+            onClick={() => setCurrentView('completed')}
+            className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 ${
+              currentView === 'completed' ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <ArchiveBoxIcon className="w-5 h-5" />
+              <span>Completed</span>
+            </div>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{getTaskCount('completed')}</span>
           </button>
         </nav>
 
+        {/* Projects Section */}
         <div className="p-2 mt-4">
           <button
             onClick={() => setIsProjectsOpen(!isProjectsOpen)}
-            className="w-full flex items-center justify-between p-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+            className="w-full flex items-center justify-between p-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
           >
             <div className="flex items-center space-x-2">
               {isProjectsOpen ? (
@@ -164,11 +157,11 @@ const Sidebar = ({ isMobile, sidebarOpen, closeSidebar }: SidebarProps) => {
               {projects.map((project) => (
                 <button
                   key={project.id}
-                  onClick={() => handleNavClick('project', project.id)}
-                  className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 ${
+                  onClick={() => setCurrentView('project', project.id)}
+                  className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 ${
                     currentView === 'project' && currentProjectId === project.id
-                      ? 'bg-red-50 text-red-700'
-                      : 'text-gray-700'
+                      ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                      : 'text-gray-700 dark:text-gray-300'
                   }`}
                 >
                   <div className="flex items-center space-x-3">
@@ -178,7 +171,7 @@ const Sidebar = ({ isMobile, sidebarOpen, closeSidebar }: SidebarProps) => {
                     />
                     <span className="truncate">{project.name}</span>
                   </div>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
                     {getTaskCount('project', project.id)}
                   </span>
                 </button>
@@ -187,10 +180,11 @@ const Sidebar = ({ isMobile, sidebarOpen, closeSidebar }: SidebarProps) => {
           )}
         </div>
 
+        {/* Labels Section */}
         <div className="p-2">
           <button
             onClick={() => setIsLabelsOpen(!isLabelsOpen)}
-            className="w-full flex items-center justify-between p-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+            className="w-full flex items-center justify-between p-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
           >
             <div className="flex items-center space-x-2">
               {isLabelsOpen ? (
@@ -214,18 +208,18 @@ const Sidebar = ({ isMobile, sidebarOpen, closeSidebar }: SidebarProps) => {
               {labels.map((label) => (
                 <button
                   key={label.id}
-                  onClick={() => handleNavClick('label', label.id)}
-                  className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 ${
+                  onClick={() => setCurrentView('label', label.id)}
+                  className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 ${
                     currentView === 'label' && currentLabelId === label.id
-                      ? 'bg-red-50 text-red-700'
-                      : 'text-gray-700'
+                      ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                      : 'text-gray-700 dark:text-gray-300'
                   }`}
                 >
                   <div className="flex items-center space-x-3">
                     <TagIcon className="w-4 h-4" style={{ color: label.color }} />
                     <span className="truncate">{label.name}</span>
                   </div>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
                     {getTaskCount('label', label.id)}
                   </span>
                 </button>
@@ -235,6 +229,48 @@ const Sidebar = ({ isMobile, sidebarOpen, closeSidebar }: SidebarProps) => {
         </div>
       </div>
 
+      {/* Saved Filters Section */}
+      <div className="px-4 mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <button
+            onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+            className="flex items-center space-x-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hover:text-gray-700 dark:hover:text-gray-200"
+          >
+            {isFiltersOpen ? <ChevronDownIcon className="w-3 h-3" /> : <ChevronRightIcon className="w-3 h-3" />}
+            <span>Filters</span>
+          </button>
+          <button
+            onClick={() => setShowFilterForm(true)}
+            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+          >
+            <PlusIcon className="w-4 h-4" />
+          </button>
+        </div>
+        {isFiltersOpen && savedFilters.length > 0 && (
+          <div className="space-y-0.5">
+            {savedFilters.map((filter) => (
+              <button
+                key={filter.id}
+                onClick={() => setCurrentView('filter', filter.id)}
+                className={`w-full flex items-center justify-between p-2 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                  currentView === 'filter' && currentFilterId === filter.id
+                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                    : 'text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <FunnelIcon className="w-4 h-4" style={{ color: filter.color }} />
+                  <span className="truncate">{filter.name}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      {/* Sparkline widget */}
+      <CompletionSpark />
+
+      {/* Modals */}
       <ProjectForm 
         isOpen={showProjectForm} 
         onClose={() => setShowProjectForm(false)} 
@@ -242,6 +278,10 @@ const Sidebar = ({ isMobile, sidebarOpen, closeSidebar }: SidebarProps) => {
       <LabelForm 
         isOpen={showLabelForm} 
         onClose={() => setShowLabelForm(false)} 
+      />
+      <FilterForm
+        isOpen={showFilterForm}
+        onClose={() => setShowFilterForm(false)}
       />
     </div>
   );

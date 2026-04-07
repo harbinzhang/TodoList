@@ -1,91 +1,71 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase/config';
 import { useAuthStore } from './store/authStore';
 import { useTaskStore } from './store/taskStore';
-import { useMobile } from './hooks/useMobile';
 import { taskService } from './services/taskService';
 import { projectService } from './services/projectService';
 import { labelService } from './services/labelService';
+import { sectionService } from './services/sectionService';
+import { filterService } from './services/filterService';
+import { useTheme } from './hooks/useTheme';
+import { useUndoQueue } from './hooks/useUndoQueue';
 import AuthForm from './components/auth/AuthForm';
 import Sidebar from './components/layout/Sidebar';
 import MainContent from './components/layout/MainContent';
+import SettingsModal from './components/common/SettingsModal';
+import UndoToast from './components/common/UndoToast';
+
+import { UndoQueueContext } from './context/UndoQueueContext';
 
 function App() {
   const { user, loading, setUser, setLoading } = useAuthStore();
-  const { setTasks, setProjects, setLabels } = useTaskStore();
-  const { isMobile, sidebarOpen, toggleSidebar, closeSidebar } = useMobile();
-  const [dataReady, setDataReady] = useState({
-    tasks: false,
-    projects: false,
-    labels: false,
-  });
+  useTheme(); // Activate theme management
+  const { setTasks, setProjects, setLabels, setSections, setSavedFilters } = useTaskStore();
+  const unsubscribersRef = useRef<(() => void)[]>([]);
+  const undoQueue = useUndoQueue();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
+    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
         setUser({
-          uid: user.uid,
-          email: user.email!,
-          displayName: user.displayName || undefined,
-          photoURL: user.photoURL || undefined,
+          uid: firebaseUser.uid,
+          email: firebaseUser.email!,
+          displayName: firebaseUser.displayName || undefined,
+          photoURL: firebaseUser.photoURL || undefined,
         });
+
+        // Subscribe to real-time Firestore data
+        const unsubTasks = taskService.subscribeToUserTasks(firebaseUser.uid, setTasks);
+        const unsubProjects = projectService.subscribeToUserProjects(firebaseUser.uid, setProjects);
+        const unsubLabels = labelService.subscribeToUserLabels(firebaseUser.uid, setLabels);
+        const unsubSections = sectionService.subscribeToUserSections(firebaseUser.uid, setSections);
+        const unsubFilters = filterService.subscribeToUserFilters(firebaseUser.uid, setSavedFilters);
+        unsubscribersRef.current = [unsubTasks, unsubProjects, unsubLabels, unsubSections, unsubFilters];
       } else {
+        // Clean up subscriptions on logout
+        unsubscribersRef.current.forEach((unsub) => unsub());
+        unsubscribersRef.current = [];
         setUser(null);
         setTasks([]);
         setProjects([]);
         setLabels([]);
-        setDataReady({
-          tasks: false,
-          projects: false,
-          labels: false,
-        });
+        setSections([]);
+        setSavedFilters([]);
       }
       setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, [setUser, setLoading, setTasks, setProjects, setLabels]);
-
-  useEffect(() => {
-    if (!user) {
-      return;
-    }
-
-    setDataReady({
-      tasks: false,
-      projects: false,
-      labels: false,
-    });
-
-    const unsubscribeTasks = taskService.subscribeToUserTasks(user.uid, (tasks) => {
-      setTasks(tasks);
-      setDataReady((current) => (current.tasks ? current : { ...current, tasks: true }));
-    });
-
-    const unsubscribeProjects = projectService.subscribeToUserProjects(user.uid, (projects) => {
-      setProjects(projects);
-      setDataReady((current) => (current.projects ? current : { ...current, projects: true }));
-    });
-
-    const unsubscribeLabels = labelService.subscribeToUserLabels(user.uid, (labels) => {
-      setLabels(labels);
-      setDataReady((current) => (current.labels ? current : { ...current, labels: true }));
-    });
-
     return () => {
-      unsubscribeTasks();
-      unsubscribeProjects();
-      unsubscribeLabels();
+      unsubscribeAuth();
+      unsubscribersRef.current.forEach((unsub) => unsub());
     };
-  }, [user, setTasks, setProjects, setLabels]);
+  }, [setUser, setLoading, setTasks, setProjects, setLabels, setSections, setSavedFilters]);
 
-  const allDataReady = user && dataReady.tasks && dataReady.projects && dataReady.labels;
-
-  if (loading || (user && !allDataReady)) {
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 dark:border-blue-400"></div>
       </div>
     );
   }
@@ -95,23 +75,18 @@ function App() {
   }
 
   return (
-    <div className="safe-area-top safe-area-bottom flex h-screen bg-gray-50">
-      {isMobile && sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-          onClick={closeSidebar}
+    <UndoQueueContext.Provider value={undoQueue}>
+      <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+        <Sidebar />
+        <MainContent />
+        <SettingsModal />
+        <UndoToast
+          items={undoQueue.pendingItems}
+          onUndo={undoQueue.undo}
+          onDismiss={undoQueue.dismiss}
         />
-      )}
-      <Sidebar
-        isMobile={isMobile}
-        sidebarOpen={sidebarOpen}
-        closeSidebar={closeSidebar}
-      />
-      <MainContent
-        isMobile={isMobile}
-        toggleSidebar={toggleSidebar}
-      />
-    </div>
+      </div>
+    </UndoQueueContext.Provider>
   );
 }
 
