@@ -15,12 +15,14 @@ const MainContent = () => {
         return 'Today';
       case 'upcoming':
         return 'Upcoming';
-      case 'project':
+      case 'project': {
         const project = projects.find(p => p.id === currentProjectId);
         return project?.name || 'Project';
-      case 'label':
+      }
+      case 'label': {
         const label = labels.find(l => l.id === currentLabelId);
         return label?.name || 'Label';
+      }
       default:
         return 'Tasks';
     }
