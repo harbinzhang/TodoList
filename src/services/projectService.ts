@@ -13,14 +13,21 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import type { Project } from '../types';
+import { cleanFirestoreData, mapFirestoreDocument, safeToDate } from '../firebase/firestoreUtils';
 
 const COLLECTION_NAME = 'projects';
+
+function mapProject(id: string, data: Record<string, unknown>): Project {
+  return mapFirestoreDocument<Project>(id, data, {
+    createdAt: (value) => safeToDate(value) || new Date(),
+  });
+}
 
 export const projectService = {
   // Create a new project
   async createProject(projectData: Omit<Project, 'id' | 'createdAt' | 'taskCount'>): Promise<string> {
     const docRef = await addDoc(collection(db, COLLECTION_NAME), {
-      ...projectData,
+      ...cleanFirestoreData(projectData as Record<string, unknown>),
       createdAt: serverTimestamp(),
       taskCount: 0,
     });
@@ -30,7 +37,7 @@ export const projectService = {
   // Update an existing project
   async updateProject(projectId: string, updates: Partial<Omit<Project, 'id' | 'createdAt'>>): Promise<void> {
     const projectRef = doc(db, COLLECTION_NAME, projectId);
-    await updateDoc(projectRef, updates);
+    await updateDoc(projectRef, cleanFirestoreData(updates as Record<string, unknown>));
   },
 
   // Delete a project
@@ -48,11 +55,7 @@ export const projectService = {
     );
     
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate() || new Date(),
-    } as Project));
+    return querySnapshot.docs.map((snapshot) => mapProject(snapshot.id, snapshot.data()));
   },
 
   // Subscribe to real-time updates for user projects
@@ -64,11 +67,9 @@ export const projectService = {
     );
 
     return onSnapshot(q, (querySnapshot) => {
-      const projects = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-      } as Project));
+      const projects = querySnapshot.docs.map((snapshot) =>
+        mapProject(snapshot.id, snapshot.data())
+      );
       callback(projects);
     });
   },

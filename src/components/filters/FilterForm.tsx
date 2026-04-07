@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { FilterCondition, SavedFilter } from '../../types';
 import { useAuthStore } from '../../store/authStore';
 import { filterService } from '../../services/filterService';
-import { useTaskStore } from '../../store/taskStore';
+import { useAppData } from '../../hooks/useAppData';
 import FilterBuilder from './FilterBuilder';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
@@ -19,7 +19,7 @@ const COLOR_PRESETS = [
 
 const FilterForm = ({ isOpen, onClose, editFilter }: FilterFormProps) => {
   const { user } = useAuthStore();
-  const { savedFilters } = useTaskStore();
+  const { savedFilters } = useAppData();
   const [name, setName] = useState('');
   const [color, setColor] = useState('#3b82f6');
   const [conditions, setConditions] = useState<FilterCondition[]>([

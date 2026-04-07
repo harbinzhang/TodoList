@@ -1,5 +1,5 @@
 import type { FilterCondition } from '../../types';
-import { useTaskStore } from '../../store/taskStore';
+import { useAppData } from '../../hooks/useAppData';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 interface FilterConditionRowProps {
@@ -54,7 +54,7 @@ const FilterConditionRow = ({
   onChange,
   onRemove,
 }: FilterConditionRowProps) => {
-  const { projects, labels } = useTaskStore();
+  const { projects, labels } = useAppData();
 
   const operators = OPERATORS_BY_FIELD[condition.field] || [];
   const needsValue = !NO_VALUE_OPERATORS.has(condition.operator);

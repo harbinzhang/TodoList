@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTaskStore } from '../../store/taskStore';
+import { useAppData } from '../../hooks/useAppData';
 import ProjectForm from '../projects/ProjectForm';
 import LabelForm from '../labels/LabelForm';
 import FilterForm from '../filters/FilterForm';
@@ -17,7 +18,8 @@ import {
 import CompletionSpark from '../common/CompletionSpark';
 
 const Sidebar = () => {
-  const { currentView, currentProjectId, currentLabelId, currentFilterId, projects, labels, tasks, savedFilters, setCurrentView } = useTaskStore();
+  const { currentView, currentProjectId, currentLabelId, currentFilterId, setCurrentView } = useTaskStore();
+  const { projects, labels, tasks, savedFilters } = useAppData();
   const [isProjectsOpen, setIsProjectsOpen] = useState(true);
   const [isLabelsOpen, setIsLabelsOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(true);

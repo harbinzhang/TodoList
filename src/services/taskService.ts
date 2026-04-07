@@ -17,48 +17,33 @@ import {
 import { db } from '../firebase/config';
 import type { Task } from '../types';
 import { getNextDueDate, isRecurrenceComplete } from '../utils/recurrence';
-
-// Strip undefined values from an object (Firestore rejects them)
-// Only recurses into plain objects — skips Date, Array, FieldValue sentinels, etc.
-function cleanObject<T extends Record<string, unknown>>(obj: T): T {
-  return Object.fromEntries(
-    Object.entries(obj)
-      .filter(([, v]) => v !== undefined)
-      .map(([k, v]) => [
-        k,
-        v && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype
-          ? cleanObject(v as Record<string, unknown>)
-          : v,
-      ])
-  ) as T;
-}
-
-// Safely convert any Firestore timestamp-like value to a Date
-// Handles: Firestore Timestamp, corrupted objects with seconds, Date, string, number
-function safeToDate(val: unknown): Date | undefined {
-  if (!val) return undefined;
-  if (val instanceof Date) return val;
-  if (typeof val === 'object' && 'toDate' in val && typeof (val as { toDate: unknown }).toDate === 'function') {
-    return (val as { toDate: () => Date }).toDate();
-  }
-  // Handle corrupted Timestamp objects (plain objects with seconds field)
-  if (typeof val === 'object' && ('seconds' in val || '_seconds' in val)) {
-    const seconds = (val as Record<string, number>).seconds ?? (val as Record<string, number>)._seconds;
-    return new Date(seconds * 1000);
-  }
-  if (typeof val === 'string' || typeof val === 'number') {
-    const d = new Date(val);
-    if (!isNaN(d.getTime())) return d;
-  }
-  return undefined;
-}
+import { cleanFirestoreData, mapFirestoreDocument, safeToDate } from '../firebase/firestoreUtils';
 
 const COLLECTION_NAME = 'tasks';
+type TaskWrite = Partial<Omit<Task, 'id' | 'createdAt'>> & Record<string, unknown>;
+
+function mapTask(id: string, data: Record<string, unknown>): Task {
+  return mapFirestoreDocument<Task>(id, data, {
+    createdAt: (value) => safeToDate(value) || new Date(),
+    updatedAt: (value) => safeToDate(value) || new Date(),
+    dueDate: safeToDate,
+    completedAt: safeToDate,
+    recurrence: (value) => {
+      if (!value || typeof value !== 'object') return undefined;
+
+      const recurrence = value as Record<string, unknown>;
+      return cleanFirestoreData({
+        ...recurrence,
+        endDate: safeToDate(recurrence.endDate) || recurrence.endDate,
+      });
+    },
+  });
+}
 
 export const taskService = {
   // Create a new task
   async createTask(taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
-    const cleanedData = cleanObject(taskData as Record<string, unknown>);
+    const cleanedData = cleanFirestoreData(taskData as Record<string, unknown>);
     const docRef = await addDoc(collection(db, COLLECTION_NAME), {
       ...cleanedData,
       createdAt: serverTimestamp(),
@@ -68,12 +53,27 @@ export const taskService = {
   },
 
   // Update an existing task
-  async updateTask(taskId: string, updates: Partial<Omit<Task, 'id' | 'createdAt'>>): Promise<void> {
+  async updateTask(taskId: string, updates: TaskWrite): Promise<void> {
     const taskRef = doc(db, COLLECTION_NAME, taskId);
-    // Sanitize: strip undefined values (Firestore rejects them)
-    const sanitized = cleanObject(updates as Record<string, unknown>);
+    const sanitized = cleanFirestoreData(updates as Record<string, unknown>);
     await updateDoc(taskRef, {
       ...sanitized,
+      updatedAt: serverTimestamp(),
+    });
+  },
+
+  async clearTaskRecurrence(taskId: string): Promise<void> {
+    const taskRef = doc(db, COLLECTION_NAME, taskId);
+    await updateDoc(taskRef, {
+      recurrence: deleteField(),
+      updatedAt: serverTimestamp(),
+    });
+  },
+
+  async clearTaskSection(taskId: string): Promise<void> {
+    const taskRef = doc(db, COLLECTION_NAME, taskId);
+    await updateDoc(taskRef, {
+      sectionId: deleteField(),
       updatedAt: serverTimestamp(),
     });
   },
@@ -93,13 +93,7 @@ export const taskService = {
     );
     
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate() || new Date(),
-      updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-      dueDate: doc.data().dueDate?.toDate(),
-    } as Task));
+    return querySnapshot.docs.map((snapshot) => mapTask(snapshot.id, snapshot.data()));
   },
 
   // Subscribe to real-time updates for user tasks
@@ -111,26 +105,14 @@ export const taskService = {
     );
 
     return onSnapshot(q, (querySnapshot) => {
-      const tasks = querySnapshot.docs.map(doc => {
-        const data = doc.data({ serverTimestamps: 'estimate' });
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: safeToDate(data.createdAt) || new Date(),
-          updatedAt: safeToDate(data.updatedAt) || new Date(),
-          dueDate: safeToDate(data.dueDate),
-          completedAt: safeToDate(data.completedAt),
-          recurrence: data.recurrence ? {
-            ...data.recurrence,
-            endDate: safeToDate(data.recurrence.endDate) || data.recurrence.endDate,
-          } : undefined,
-        } as Task;
-      });
+      const tasks = querySnapshot.docs.map((snapshot) =>
+        mapTask(snapshot.id, snapshot.data({ serverTimestamps: 'estimate' }))
+      );
       // Deduplicate by ID (can happen briefly during batch writes)
       const seen = new Set<string>();
-      const uniqueTasks = tasks.filter(t => {
-        if (seen.has(t.id)) return false;
-        seen.add(t.id);
+      const uniqueTasks = tasks.filter((task) => {
+        if (seen.has(task.id)) return false;
+        seen.add(task.id);
         return true;
       });
       callback(uniqueTasks);
@@ -152,7 +134,7 @@ export const taskService = {
       return;
     }
 
-    const updatedRule = cleanObject({
+    const updatedRule = cleanFirestoreData({
       ...task.recurrence,
       completedCount: (task.recurrence.completedCount || 0) + 1,
     });

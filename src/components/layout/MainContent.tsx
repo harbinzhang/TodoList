@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useTaskStore } from '../../store/taskStore';
 import { useViewPreference } from '../../hooks/useViewPreference';
+import { useAppData } from '../../hooks/useAppData';
 import TaskList from '../tasks/TaskList';
 import TaskDetailPanel from '../tasks/TaskDetailPanel';
 import SearchBar from '../common/SearchBar';
@@ -32,7 +33,8 @@ const ViewFallback = () => (
 );
 
 const MainContent = () => {
-  const { currentView, currentProjectId, currentLabelId, currentFilterId, projects, labels, savedFilters } = useTaskStore();
+  const { currentView, currentProjectId, currentLabelId, currentFilterId } = useTaskStore();
+  const { projects, labels, savedFilters } = useAppData();
   const { currentViewMode, setViewMode, availableViews } = useViewPreference();
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
 

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { FilterCondition } from '../../types';
-import { useTaskStore } from '../../store/taskStore';
+import { useAppData } from '../../hooks/useAppData';
 import { getFilterMatchCount } from '../../utils/filterEngine';
 import FilterConditionRow from './FilterConditionRow';
 import { PlusIcon } from '@heroicons/react/24/outline';
@@ -11,7 +11,7 @@ interface FilterBuilderProps {
 }
 
 const FilterBuilder = ({ conditions, onChange }: FilterBuilderProps) => {
-  const { tasks, projects, labels } = useTaskStore();
+  const { tasks, projects, labels } = useAppData();
 
   const matchCount = useMemo(
     () => getFilterMatchCount(tasks, conditions, { projects, labels }),

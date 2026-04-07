@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTaskStore } from '../../store/taskStore';
+import { useAppData } from '../../hooks/useAppData';
 import { taskService } from '../../services/taskService';
 import { useSettingsStore } from '../../store/settingsStore';
 import { format } from 'date-fns';
@@ -17,10 +18,11 @@ import {
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleFilledIcon } from '@heroicons/react/24/solid';
 import RecurrencePicker from './RecurrencePicker';
-import type { RecurrenceRule, Task } from '../../types';
+import type { RecurrenceRule } from '../../types';
 
 const TaskDetailPanel = () => {
-  const { selectedTaskId, setSelectedTaskId, tasks, projects, labels: allLabels } = useTaskStore();
+  const { selectedTaskId, setSelectedTaskId } = useTaskStore();
+  const { tasks, projects, labels: allLabels } = useAppData();
   const { timezone } = useSettingsStore();
 
   const task = tasks.find((t) => t.id === selectedTaskId);
@@ -375,12 +377,9 @@ const TaskDetailPanel = () => {
                   if (task) {
                     try {
                       if (rule) {
-                        await taskService.updateTask(task.id, { recurrence: rule } as Partial<Omit<Task, 'id' | 'createdAt'>>);
+                        await taskService.updateTask(task.id, { recurrence: rule });
                       } else {
-                        // Use deleteField() to remove the recurrence field from Firestore
-                        const { doc, updateDoc, deleteField } = await import('firebase/firestore');
-                        const { db } = await import('../../firebase/config');
-                        await updateDoc(doc(db, 'tasks', task.id), { recurrence: deleteField() });
+                        await taskService.clearTaskRecurrence(task.id);
                       }
                     } catch (error) {
                       console.error('Error updating recurrence:', error);

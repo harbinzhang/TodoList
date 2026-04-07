@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import { useTaskStore } from '../../store/taskStore';
+import { useAppData } from '../../hooks/useAppData';
 import { getWeeklyCount, getStreak, getWeeklyTrend } from '../../utils/stats';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 
 const ArchiveStats = () => {
-  const { tasks } = useTaskStore();
+  const { tasks } = useAppData();
 
   const weeklyCount = useMemo(() => getWeeklyCount(tasks), [tasks]);
   const streak = useMemo(() => getStreak(tasks), [tasks]);

@@ -10,7 +10,7 @@ import {
 } from '@dnd-kit/core';
 import { format, addMonths, subMonths, addWeeks, subWeeks } from 'date-fns';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import { useTaskStore } from '../../store/taskStore';
+import { useAppData } from '../../hooks/useAppData';
 import { taskService } from '../../services/taskService';
 import { getMonthGrid, getWeekDays } from '../../utils/calendar';
 import MonthGrid from './calendar/MonthGrid';
@@ -24,7 +24,7 @@ export default function CalendarView() {
   const [calendarMode, setCalendarMode] = useState<CalendarMode>('month');
   const [addingForDate, setAddingForDate] = useState<Date | null>(null);
 
-  const { tasks } = useTaskStore();
+  const { tasks } = useAppData();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),

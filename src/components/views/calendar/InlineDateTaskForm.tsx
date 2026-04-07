@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { taskService } from '../../../services/taskService';
-import { useAuthStore } from '../../../store/authStore';
+import { useAuthSession } from '../../../providers/AuthProvider';
 import { useTaskStore } from '../../../store/taskStore';
 
 interface InlineDateTaskFormProps {
@@ -12,7 +12,7 @@ export default function InlineDateTaskForm({ date, onClose }: InlineDateTaskForm
   const [title, setTitle] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { user } = useAuthStore();
+  const { user } = useAuthSession();
   const { currentProjectId } = useTaskStore();
 
   useEffect(() => {
