@@ -12,6 +12,87 @@ function App() {
   const { setTasks, setProjects, setLabels } = useTaskStore();
 
   useEffect(() => {
+    const loadUserData = async (userId: string) => {
+      // Mock data for now - will be replaced with Firebase queries
+      const mockTasks = [
+        {
+          id: '1',
+          title: 'Complete project proposal',
+          description: 'Write and submit the Q4 project proposal',
+          completed: false,
+          priority: 1 as const,
+          dueDate: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          userId,
+          labels: ['work'],
+          subtasks: [],
+        },
+        {
+          id: '2',
+          title: 'Buy groceries',
+          description: 'Milk, bread, eggs, fruits',
+          completed: false,
+          priority: 3 as const,
+          dueDate: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          userId,
+          labels: ['personal'],
+          subtasks: [],
+        },
+        {
+          id: '3',
+          title: 'Review team performance',
+          completed: true,
+          priority: 2 as const,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          userId,
+          labels: ['work'],
+          subtasks: [],
+        },
+      ];
+
+      const mockProjects = [
+        {
+          id: '1',
+          name: 'Work Projects',
+          color: '#3b82f6',
+          userId,
+          createdAt: new Date(),
+          taskCount: 2,
+        },
+        {
+          id: '2',
+          name: 'Personal',
+          color: '#10b981',
+          userId,
+          createdAt: new Date(),
+          taskCount: 1,
+        },
+      ];
+
+      const mockLabels = [
+        {
+          id: '1',
+          name: 'work',
+          color: '#3b82f6',
+          userId,
+        },
+        {
+          id: '2',
+          name: 'personal',
+          color: '#10b981',
+          userId,
+        },
+      ];
+
+      setTasks(mockTasks);
+      setProjects(mockProjects);
+      setLabels(mockLabels);
+    };
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUser({
@@ -34,88 +115,6 @@ function App() {
 
     return () => unsubscribe();
   }, [setUser, setLoading, setTasks, setProjects, setLabels]);
-
-  const loadUserData = async (userId: string) => {
-    // Mock data for now - will be replaced with Firebase queries
-    const mockTasks = [
-      {
-        id: '1',
-        title: 'Complete project proposal',
-        description: 'Write and submit the Q4 project proposal',
-        completed: false,
-        priority: 1 as const,
-        dueDate: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        userId,
-        labels: ['work'],
-        subtasks: [],
-      },
-      {
-        id: '2',
-        title: 'Buy groceries',
-        description: 'Milk, bread, eggs, fruits',
-        completed: false,
-        priority: 3 as const,
-        dueDate: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        userId,
-        labels: ['personal'],
-        subtasks: [],
-      },
-      {
-        id: '3',
-        title: 'Review team performance',
-        completed: true,
-        priority: 2 as const,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        userId,
-        labels: ['work'],
-        subtasks: [],
-      },
-    ];
-
-    const mockProjects = [
-      {
-        id: '1',
-        name: 'Work Projects',
-        color: '#3b82f6',
-        userId,
-        createdAt: new Date(),
-        taskCount: 2,
-      },
-      {
-        id: '2',
-        name: 'Personal',
-        color: '#10b981',
-        userId,
-        createdAt: new Date(),
-        taskCount: 1,
-      },
-    ];
-
-    const mockLabels = [
-      {
-        id: '1',
-        name: 'work',
-        color: '#3b82f6',
-        userId,
-      },
-      {
-        id: '2',
-        name: 'personal',
-        color: '#10b981',
-        userId,
-      },
-    ];
-
-    setTasks(mockTasks);
-    setProjects(mockProjects);
-    setLabels(mockLabels);
-  };
-
 
   if (loading) {
     return (
