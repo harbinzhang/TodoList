@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import TaskItem from '../TaskItem';
-import { taskService } from '../../../services/taskService';
 import type { Task } from '../../../types';
+import { UndoQueueContext } from '../../../context/UndoQueueContext';
 
 vi.mock('../../../services/taskService', () => ({
   taskService: {
@@ -26,6 +26,8 @@ const createMockTask = (overrides: Partial<Task> = {}): Task => ({
 });
 
 describe('TaskItem', () => {
+  const enqueue = vi.fn();
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -70,15 +72,18 @@ describe('TaskItem', () => {
   });
 
   it('calls taskService.toggleTaskCompletion on checkbox click', async () => {
-    vi.mocked(taskService.toggleTaskCompletion).mockResolvedValue(undefined);
-    render(<TaskItem task={createMockTask()} />);
+    render(
+      <UndoQueueContext.Provider value={{ enqueue, pendingItems: [] }}>
+        <TaskItem task={createMockTask()} />
+      </UndoQueueContext.Provider>
+    );
 
     // Click the first button (checkbox)
     const buttons = screen.getAllByRole('button');
     fireEvent.click(buttons[0]);
 
     await waitFor(() => {
-      expect(taskService.toggleTaskCompletion).toHaveBeenCalledWith('task-1', true);
+      expect(enqueue).toHaveBeenCalledWith(expect.objectContaining({ id: 'task-1' }));
     });
   });
 

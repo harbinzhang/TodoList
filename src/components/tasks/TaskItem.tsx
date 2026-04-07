@@ -12,7 +12,7 @@ import {
   FlagIcon,
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleFilledIcon } from '@heroicons/react/24/solid';
-import { UndoQueueContext } from '../../App';
+import { UndoQueueContext } from '../../context/UndoQueueContext';
 
 interface TaskItemProps {
   task: Task;

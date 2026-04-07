@@ -8,11 +8,12 @@ interface WipLimitDialogProps {
 }
 
 const WipLimitDialog = ({
-  columnId: _columnId,
+  columnId,
   currentLimit,
   onSave,
   onClose,
 }: WipLimitDialogProps) => {
+  void columnId;
   const [value, setValue] = useState<string>(
     currentLimit !== undefined ? String(currentLimit) : ''
   );

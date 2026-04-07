@@ -1,4 +1,4 @@
-import { useEffect, useRef, createContext } from 'react';
+import { useEffect, useRef } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase/config';
 import { useAuthStore } from './store/authStore';
@@ -10,24 +10,13 @@ import { sectionService } from './services/sectionService';
 import { filterService } from './services/filterService';
 import { useTheme } from './hooks/useTheme';
 import { useUndoQueue } from './hooks/useUndoQueue';
-import type { UndoQueueItem } from './hooks/useUndoQueue';
 import AuthForm from './components/auth/AuthForm';
 import Sidebar from './components/layout/Sidebar';
 import MainContent from './components/layout/MainContent';
 import SettingsModal from './components/common/SettingsModal';
 import UndoToast from './components/common/UndoToast';
 
-import type { Task } from './types';
-
-// Context for undo queue so child components can enqueue
-interface UndoQueueContextType {
-  enqueue: (task: Task) => void;
-  pendingItems: UndoQueueItem[];
-}
-export const UndoQueueContext = createContext<UndoQueueContextType>({
-  enqueue: () => {},
-  pendingItems: [],
-});
+import { UndoQueueContext } from './context/UndoQueueContext';
 
 function App() {
   const { user, loading, setUser, setLoading } = useAuthStore();
@@ -71,7 +60,7 @@ function App() {
       unsubscribeAuth();
       unsubscribersRef.current.forEach((unsub) => unsub());
     };
-  }, [setUser, setLoading, setTasks, setProjects, setLabels]);
+  }, [setUser, setLoading, setTasks, setProjects, setLabels, setSections, setSavedFilters]);
 
   if (loading) {
     return (

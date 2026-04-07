@@ -102,7 +102,7 @@ const TaskList = () => {
     // Filter by view
     switch (currentView) {
       case 'inbox':
-        // Show all tasks
+        result = result.filter(task => !task.projectId);
         break;
       case 'today':
         result = result.filter(task => {
@@ -151,7 +151,19 @@ const TaskList = () => {
     }
 
     return sortTasks(result);
-  }, [tasks, currentView, currentProjectId, currentLabelId, filter, sortTasks]);
+  }, [
+    tasks,
+    currentView,
+    currentProjectId,
+    currentLabelId,
+    currentFilterId,
+    savedFilters,
+    projects,
+    labels,
+    filter,
+    timezone,
+    sortTasks,
+  ]);
 
   // Handle drag end — compute new sort orders using midpoint strategy
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
@@ -183,9 +195,15 @@ const TaskList = () => {
   // Group tasks by section — applies in project view, and also in other views
   // if the filtered tasks happen to have sectionIds
   const isProjectView = currentView === 'project';
-  const projectSections = isProjectView && currentProjectId
-    ? sections.filter(s => s.projectId === currentProjectId).sort((a, b) => a.sortOrder - b.sortOrder)
-    : [];
+  const projectSections = useMemo(() => {
+    if (!isProjectView || !currentProjectId) {
+      return [];
+    }
+
+    return sections
+      .filter(s => s.projectId === currentProjectId)
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+  }, [isProjectView, currentProjectId, sections]);
 
   // For non-project views, gather sections from the filtered tasks
   const viewSections = useMemo(() => {

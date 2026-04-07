@@ -10,6 +10,7 @@ import {
   onSnapshot,
   serverTimestamp,
   getDocs,
+  deleteField,
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import type { Section } from '../types';
@@ -43,7 +44,7 @@ export const sectionService = {
     );
     const tasksSnapshot = await getDocs(tasksQuery);
     const clearPromises = tasksSnapshot.docs.map(taskDoc =>
-      taskService.updateTask(taskDoc.id, { sectionId: undefined } as any)
+      taskService.updateTask(taskDoc.id, { sectionId: deleteField() as unknown as undefined })
     );
     await Promise.all(clearPromises);
 

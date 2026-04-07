@@ -14,17 +14,17 @@ export function applyFilters(
   conditions: FilterCondition[],
   context: FilterContext
 ): Task[] {
+  void context;
   if (conditions.length === 0) return tasks;
 
   return tasks.filter((task) =>
-    conditions.every((condition) => matchesCondition(task, condition, context))
+    conditions.every((condition) => matchesCondition(task, condition))
   );
 }
 
 function matchesCondition(
   task: Task,
-  condition: FilterCondition,
-  _context: FilterContext
+  condition: FilterCondition
 ): boolean {
   switch (condition.field) {
     case 'priority':

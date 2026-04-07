@@ -67,10 +67,11 @@ export function groupTasksBySource(
             ? tasks.filter((t) => !t.sectionId)
             : tasks.filter((t) => t.sectionId === def.id);
         break;
-      case 'priority':
+      case 'priority': {
         const priorityNum = parseInt(def.id.replace('p', ''));
         columnTasks = tasks.filter((t) => t.priority === priorityNum);
         break;
+      }
       case 'status':
         columnTasks =
           def.id === 'active'

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useTaskStore } from '../store/taskStore';
 import { useAuthStore } from '../store/authStore';
 import { useSettingsStore } from '../store/settingsStore';
@@ -56,25 +56,29 @@ export function useQuickAdd(options: UseQuickAddOptions = {}) {
   }, [inputText, projects, labels]);
 
   // Merged result: parsed values + user overrides (overrides win)
-  const mergedDueDate =
+  const mergedDueDate = useMemo(() => (
     overrides.dueDate !== undefined
       ? overrides.dueDate ?? undefined
-      : parsed.dueDate;
+      : parsed.dueDate
+  ), [overrides.dueDate, parsed.dueDate]);
 
-  const mergedPriority =
+  const mergedPriority = useMemo(() => (
     overrides.priority !== undefined
       ? overrides.priority ?? undefined
-      : parsed.priority;
+      : parsed.priority
+  ), [overrides.priority, parsed.priority]);
 
-  const mergedProjectId =
+  const mergedProjectId = useMemo(() => (
     overrides.projectId !== undefined
       ? overrides.projectId ?? undefined
-      : parsed.projectId ?? (currentView === 'project' ? currentProjectId : undefined);
+      : parsed.projectId ?? (currentView === 'project' ? currentProjectId : undefined)
+  ), [overrides.projectId, parsed.projectId, currentView, currentProjectId]);
 
-  const mergedLabelIds =
+  const mergedLabelIds = useMemo(() => (
     overrides.labelIds !== undefined
       ? overrides.labelIds ?? undefined
-      : parsed.labelIds ?? (currentView === 'label' && currentLabelId ? [currentLabelId] : undefined);
+      : parsed.labelIds ?? (currentView === 'label' && currentLabelId ? [currentLabelId] : undefined)
+  ), [overrides.labelIds, parsed.labelIds, currentView, currentLabelId]);
 
   const canSubmit = parsed.cleanTitle.trim().length > 0 && !loading;
 

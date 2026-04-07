@@ -191,6 +191,6 @@ function ProjectEditor({ value, onChange, onClose }: {
 }
 
 // ──────────── Exports ────────────
-
+// eslint-disable-next-line react-refresh/only-export-components
 export { MetadataChip, DateEditor, PriorityEditor, ProjectEditor, PRIORITY_CONFIG };
 export type { ChipType };

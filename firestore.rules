@@ -1,45 +1,48 @@
-rules_version='2'
+rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Tasks: only the owner can read/write their tasks
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
     match /tasks/{taskId} {
-      allow read, update, delete: if request.auth != null
-        && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null
-        && request.auth.uid == request.resource.data.userId;
+      allow create: if isOwner(request.resource.data.userId);
+      allow read, delete: if isOwner(resource.data.userId);
+      allow update: if isOwner(resource.data.userId) &&
+        request.resource.data.userId == resource.data.userId;
     }
 
-    // Projects: only the owner can read/write their projects
     match /projects/{projectId} {
-      allow read, update, delete: if request.auth != null
-        && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null
-        && request.auth.uid == request.resource.data.userId;
+      allow create: if isOwner(request.resource.data.userId);
+      allow read, delete: if isOwner(resource.data.userId);
+      allow update: if isOwner(resource.data.userId) &&
+        request.resource.data.userId == resource.data.userId;
     }
 
-    // Labels: only the owner can read/write their labels
     match /labels/{labelId} {
-      allow read, update, delete: if request.auth != null
-        && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null
-        && request.auth.uid == request.resource.data.userId;
+      allow create: if isOwner(request.resource.data.userId);
+      allow read, delete: if isOwner(resource.data.userId);
+      allow update: if isOwner(resource.data.userId) &&
+        request.resource.data.userId == resource.data.userId;
     }
 
-    // Sections: only the owner can read/write their sections
     match /sections/{sectionId} {
-      allow read, update, delete: if request.auth != null
-        && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null
-        && request.auth.uid == request.resource.data.userId;
+      allow create: if isOwner(request.resource.data.userId);
+      allow read, delete: if isOwner(resource.data.userId);
+      allow update: if isOwner(resource.data.userId) &&
+        request.resource.data.userId == resource.data.userId;
     }
 
-    // Saved Filters: only the owner can read/write their filters
     match /savedFilters/{filterId} {
-      allow read, update, delete: if request.auth != null
-        && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null
-        && request.auth.uid == request.resource.data.userId;
+      allow create: if isOwner(request.resource.data.userId);
+      allow read, delete: if isOwner(resource.data.userId);
+      allow update: if isOwner(resource.data.userId) &&
+        request.resource.data.userId == resource.data.userId;
     }
   }
 }
