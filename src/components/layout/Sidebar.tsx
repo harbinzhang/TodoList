@@ -10,9 +10,17 @@ import {
   PlusIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
+import type { ViewType } from '../../types';
 
-const Sidebar = () => {
+interface SidebarProps {
+  isMobile: boolean;
+  sidebarOpen: boolean;
+  closeSidebar: () => void;
+}
+
+const Sidebar = ({ isMobile, sidebarOpen, closeSidebar }: SidebarProps) => {
   const { currentView, currentProjectId, currentLabelId, projects, labels, tasks, setCurrentView } = useTaskStore();
   const [isProjectsOpen, setIsProjectsOpen] = useState(true);
   const [isLabelsOpen, setIsLabelsOpen] = useState(false);
@@ -50,24 +58,47 @@ const Sidebar = () => {
     }
   };
 
+  const handleNavClick = (view: ViewType, id?: string) => {
+    setCurrentView(view, id);
+    if (isMobile) {
+      closeSidebar();
+    }
+  };
 
   return (
-    <div className="w-64 bg-gray-50 border-r border-gray-200 h-screen flex flex-col">
+    <div
+      className={`
+        ${isMobile
+          ? `fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out ${
+              sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+            }`
+          : 'w-64'}
+        flex h-screen flex-col border-r border-gray-200 bg-gray-50
+      `}
+    >
+      {isMobile && (
+        <div className="flex items-center justify-between border-b border-gray-200 p-4">
+          <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
+          <button
+            onClick={closeSidebar}
+            className="rounded-lg p-2 hover:bg-gray-100"
+          >
+            <XMarkIcon className="h-6 w-6 text-gray-500" />
+          </button>
+        </div>
+      )}
 
-      {/* Quick Add */}
-      <div className="p-4 border-b border-gray-200 mt-4">
+      <div className={`border-b border-gray-200 p-4 ${isMobile ? '' : 'mt-4'}`}>
         <button className="w-full flex items-center space-x-2 text-red-500 hover:bg-red-50 rounded-lg p-2">
           <PlusIcon className="w-5 h-5" />
           <span className="font-medium">Add task</span>
         </button>
       </div>
 
-      {/* Main Navigation */}
       <div className="flex-1 overflow-y-auto">
         <nav className="p-2 space-y-1">
-          {/* Inbox */}
           <button
-            onClick={() => setCurrentView('inbox')}
+            onClick={() => handleNavClick('inbox')}
             className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 ${
               currentView === 'inbox' ? 'bg-red-50 text-red-700' : 'text-gray-700'
             }`}
@@ -79,9 +110,8 @@ const Sidebar = () => {
             <span className="text-sm text-gray-500">{getTaskCount('inbox')}</span>
           </button>
 
-          {/* Today */}
           <button
-            onClick={() => setCurrentView('today')}
+            onClick={() => handleNavClick('today')}
             className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 ${
               currentView === 'today' ? 'bg-red-50 text-red-700' : 'text-gray-700'
             }`}
@@ -93,9 +123,8 @@ const Sidebar = () => {
             <span className="text-sm text-gray-500">{getTaskCount('today')}</span>
           </button>
 
-          {/* Upcoming */}
           <button
-            onClick={() => setCurrentView('upcoming')}
+            onClick={() => handleNavClick('upcoming')}
             className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 ${
               currentView === 'upcoming' ? 'bg-red-50 text-red-700' : 'text-gray-700'
             }`}
@@ -108,7 +137,6 @@ const Sidebar = () => {
           </button>
         </nav>
 
-        {/* Projects Section */}
         <div className="p-2 mt-4">
           <button
             onClick={() => setIsProjectsOpen(!isProjectsOpen)}
@@ -136,7 +164,7 @@ const Sidebar = () => {
               {projects.map((project) => (
                 <button
                   key={project.id}
-                  onClick={() => setCurrentView('project', project.id)}
+                  onClick={() => handleNavClick('project', project.id)}
                   className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 ${
                     currentView === 'project' && currentProjectId === project.id
                       ? 'bg-red-50 text-red-700'
@@ -159,7 +187,6 @@ const Sidebar = () => {
           )}
         </div>
 
-        {/* Labels Section */}
         <div className="p-2">
           <button
             onClick={() => setIsLabelsOpen(!isLabelsOpen)}
@@ -187,7 +214,7 @@ const Sidebar = () => {
               {labels.map((label) => (
                 <button
                   key={label.id}
-                  onClick={() => setCurrentView('label', label.id)}
+                  onClick={() => handleNavClick('label', label.id)}
                   className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 ${
                     currentView === 'label' && currentLabelId === label.id
                       ? 'bg-red-50 text-red-700'
@@ -208,7 +235,6 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* Modals */}
       <ProjectForm 
         isOpen={showProjectForm} 
         onClose={() => setShowProjectForm(false)} 

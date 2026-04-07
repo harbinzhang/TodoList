@@ -3,8 +3,14 @@ import TaskList from '../tasks/TaskList';
 import SearchBar from '../common/SearchBar';
 import ProfileDropdown from '../common/ProfileDropdown';
 import { format } from 'date-fns';
+import { Bars3Icon } from '@heroicons/react/24/outline';
 
-const MainContent = () => {
+interface MainContentProps {
+  isMobile: boolean;
+  toggleSidebar: () => void;
+}
+
+const MainContent = ({ isMobile, toggleSidebar }: MainContentProps) => {
   const { currentView, currentProjectId, currentLabelId, projects, labels } = useTaskStore();
 
   const getViewTitle = () => {
@@ -41,25 +47,32 @@ const MainContent = () => {
 
   return (
     <div className="flex-1 flex flex-col">
-      {/* Header */}
-      <div className="p-6 border-b border-gray-200 bg-white">
+      <div className="border-b border-gray-200 bg-white p-4 md:p-6">
         <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{getViewTitle()}</h1>
-            {getViewSubtitle() && (
-              <p className="text-sm text-gray-500 mt-1">{getViewSubtitle()}</p>
+          <div className="flex items-center space-x-3">
+            {isMobile && (
+              <button
+                onClick={toggleSidebar}
+                className="rounded-lg p-2 hover:bg-gray-100 lg:hidden"
+              >
+                <Bars3Icon className="h-6 w-6 text-gray-500" />
+              </button>
             )}
+            <div>
+              <h1 className="text-xl font-bold text-gray-900 md:text-2xl">{getViewTitle()}</h1>
+              {getViewSubtitle() && (
+                <p className="mt-1 text-sm text-gray-500">{getViewSubtitle()}</p>
+              )}
+            </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <div className="w-64">
+          <div className="flex items-center space-x-2 md:space-x-4">
+            <div className={isMobile ? 'w-40' : 'w-64'}>
               <SearchBar />
             </div>
             <ProfileDropdown />
           </div>
         </div>
       </div>
-
-      {/* Content */}
       <div className="flex-1 bg-gray-50">
         <TaskList />
       </div>
