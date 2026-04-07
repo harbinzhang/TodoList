@@ -1,7 +1,7 @@
 {
   "name": "todolist-app",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "scripts": {
     "dev": "concurrently -k -n app,emulators -c green,blue \"npm:dev:app\" \"npm:dev:emulators\"",
