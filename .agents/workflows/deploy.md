@@ -9,6 +9,7 @@ description: How to deploy the application to Firebase (hosting, functions, rule
 - Firebase CLI installed and authenticated (`firebase login`)
 - `.env.production` configured with real Firebase credentials
 - `VITE_USE_EMULATORS=false` in `.env.production`
+- `npm run verify:env:prod` passes
 
 ---
 
@@ -39,7 +40,7 @@ Use these when you only changed one part of the system:
 // turbo
 1. Build and deploy hosting:
 ```bash
-npm run build && firebase deploy --only hosting
+npm run build:prod && firebase deploy --only hosting
 ```
 
 ### Firestore Rules Only
@@ -63,6 +64,7 @@ firebase deploy --only functions
 ## Pre-Deploy Checklist
 
 - [ ] `npm run lint` passes with no errors
+- [ ] `npm run verify:env:prod` passes
 - [ ] `npm run build` completes successfully
 - [ ] `npm test -- --run` passes
 - [ ] Verify `VITE_USE_EMULATORS=false` in production env

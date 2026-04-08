@@ -119,6 +119,9 @@ npm run dev:emulators
 # Seed deterministic local emulator data
 npm run seed:local:apply
 
+# Verify production env before hosted builds
+npm run verify:env:prod
+
 # Build for production
 npm run build
 

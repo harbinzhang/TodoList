@@ -16,7 +16,8 @@ interface AppConfig {
   useEmulators: boolean;
 }
 
-type EnvInput = Partial<Record<keyof ImportMetaEnv, string | undefined>>;
+export type EnvInput = Partial<Record<keyof ImportMetaEnv, string | undefined>>;
+export type { AppConfig, AppEnv, FirebaseWebConfig };
 
 const REQUIRED_FIREBASE_KEYS = [
   'VITE_FIREBASE_API_KEY',
@@ -74,6 +75,20 @@ export function buildConfigFromEnv(env: EnvInput): AppConfig {
       measurementId: env.VITE_FIREBASE_MEASUREMENT_ID?.trim() || undefined,
     },
   };
+}
+
+export function tryBuildConfigFromEnv(env: EnvInput) {
+  try {
+    return {
+      config: buildConfigFromEnv(env),
+      error: null,
+    };
+  } catch (error) {
+    return {
+      config: null,
+      error: error instanceof Error ? error : new Error(String(error)),
+    };
+  }
 }
 
 let cachedConfig: AppConfig | null = null;

@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  signInAnonymously,
+  GoogleAuthProvider,
+} from 'firebase/auth';
 import { auth } from '../../firebase/config';
 
 const getErrorMessage = (error: unknown) => {
@@ -42,6 +48,19 @@ const AuthForm = () => {
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
+    } catch (error) {
+      setError(getErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGuestSignIn = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      await signInAnonymously(auth);
     } catch (error) {
       setError(getErrorMessage(error));
     } finally {
@@ -129,7 +148,7 @@ const AuthForm = () => {
               </div>
             </div>
 
-            <div className="mt-6">
+            <div className="mt-6 space-y-3">
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
@@ -155,6 +174,15 @@ const AuthForm = () => {
                   />
                 </svg>
                 <span className="ml-2">Google</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleGuestSignIn}
+                disabled={loading}
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+              >
+                Continue as guest
               </button>
             </div>
           </div>
