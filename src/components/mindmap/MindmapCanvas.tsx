@@ -17,6 +17,7 @@ const MindmapCanvas = () => {
   const { user } = useAuthStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const lastAutoFitMindmapRef = useRef<string | null>(null);
   useMindmapKeyboard(containerRef);
 
   // Refocus container when editing ends so keyboard shortcuts keep working
@@ -39,6 +40,20 @@ const MindmapCanvas = () => {
     dragState, dropIndicator,
     handleNodePointerDown, handleCanvasPointerMove, handleCanvasPointerUp,
   } = useDragDrop({ layoutNodes, panX, panY, zoom, svgRef, nodes });
+
+  // Auto-fit when switching to a different mindmap; skip on individual node changes
+  useEffect(() => {
+    if (layoutNodes.length === 0 || !containerRef.current) return;
+    if (lastAutoFitMindmapRef.current === currentMindmapId) return;
+
+    lastAutoFitMindmapRef.current = currentMindmapId;
+
+    requestAnimationFrame(() => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      fitView(layoutNodes, rect.width, rect.height);
+    });
+  }, [currentMindmapId, layoutNodes, fitView]);
 
   const handleFitView = useCallback(() => {
     if (!containerRef.current) return;
