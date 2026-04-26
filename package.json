@@ -6,12 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:prod": "tsc -b && vite build --mode production",
+    "build:local": "tsc -b && vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "emulators": "firebase emulators:start",
-    "dev:emu": "VITE_USE_EMULATORS=true vite"
+    "emulators": "firebase emulators:start"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

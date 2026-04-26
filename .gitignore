@@ -18,6 +18,7 @@ dist-ssr
 
 # Firebase
 .firebaserc
+.firebase/
 firestore-debug.log
 ui-debug.log
 
@@ -26,6 +27,9 @@ ui-debug.log
 
 # Release workspace
 release-workspace/
+
+# Superpowers brainstorming session artifacts
+.superpowers/
 
 # Editor directories and files
 .vscode/*
