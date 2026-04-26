@@ -51,7 +51,7 @@ const MindmapCanvas = () => {
     requestAnimationFrame(() => {
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
-      fitView(layoutNodes, rect.width, rect.height);
+      fitView(layoutNodes, rect.width, rect.height, 1.0);
     });
   }, [currentMindmapId, layoutNodes, fitView]);
 

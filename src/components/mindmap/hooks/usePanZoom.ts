@@ -82,7 +82,7 @@ export function usePanZoom(initialPanX = 60, initialPanY = 60) {
   }, []);
 
   const fitView = useCallback(
-    (nodes: Array<{ x: number; y: number; width: number; height: number }>, containerWidth: number, containerHeight: number) => {
+    (nodes: Array<{ x: number; y: number; width: number; height: number }>, containerWidth: number, containerHeight: number, clampMaxZoom = MAX_ZOOM) => {
       if (nodes.length === 0) return;
       const padding = 60;
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -96,7 +96,7 @@ export function usePanZoom(initialPanX = 60, initialPanY = 60) {
       const contentH = maxY - minY;
       const scaleX = (containerWidth - padding * 2) / contentW;
       const scaleY = (containerHeight - padding * 2) / contentH;
-      const zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Math.min(scaleX, scaleY)));
+      const zoom = Math.max(MIN_ZOOM, Math.min(clampMaxZoom, Math.min(scaleX, scaleY)));
       const panX = (containerWidth - contentW * zoom) / 2 - minX * zoom;
       const panY = (containerHeight - contentH * zoom) / 2 - minY * zoom;
       setState({ zoom, panX, panY });
