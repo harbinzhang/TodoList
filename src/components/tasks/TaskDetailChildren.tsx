@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bars3Icon, ShareIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, RectangleGroupIcon } from '@heroicons/react/24/outline';
 import { useTaskStore } from '../../store/taskStore';
 import { useAuthStore } from '../../store/authStore';
 import TreeRenderer from '../mindmap/TreeRenderer';
@@ -43,13 +43,13 @@ const TaskDetailChildren = ({ task }: TaskDetailChildrenProps) => {
               mode === 'mindmap' ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:text-gray-600'
             }`}
           >
-            <ShareIcon className="w-5 h-5" />
+            <RectangleGroupIcon className="w-5 h-5" />
           </button>
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto">
+      <div className={`flex-1 ${mode === 'mindmap' ? 'overflow-hidden flex flex-col' : 'overflow-auto'}`}>
         {mode === 'list' ? (
           <div className="p-6 space-y-2">
             {children.length === 0 ? (
@@ -59,7 +59,7 @@ const TaskDetailChildren = ({ task }: TaskDetailChildrenProps) => {
             )}
           </div>
         ) : (
-          <div className="flex-1 h-full" style={{ minHeight: '400px' }}>
+          <div className="flex flex-col flex-1 h-full">
             <TreeRenderer
               items={[task, ...children]}
               itemContext="task"
