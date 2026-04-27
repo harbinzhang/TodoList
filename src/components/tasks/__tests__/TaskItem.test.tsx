@@ -105,4 +105,11 @@ describe('TaskItem', () => {
     render(<TaskItem task={createMockTask({ subtasks: [] })} />);
     expect(screen.queryByText(/\d+\/\d+/)).not.toBeInTheDocument();
   });
+
+  it('opens TaskDetailModal when expand button is clicked', async () => {
+    render(<TaskItem task={createMockItem()} />);
+    const expandBtn = screen.getByTitle('Open detail');
+    fireEvent.click(expandBtn);
+    expect(await screen.findByText('Task Detail')).toBeInTheDocument();
+  });
 });
