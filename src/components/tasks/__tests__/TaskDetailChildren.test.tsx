@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import TaskDetailChildren from '../TaskDetailChildren';
 import { useTaskStore } from '../../../store/taskStore';
@@ -52,6 +52,12 @@ describe('TaskDetailChildren', () => {
   it('shows subtask count', () => {
     render(<TaskDetailChildren task={parentTask} />);
     expect(screen.getByText('1 subtask')).toBeInTheDocument();
+  });
+
+  it('switches to mindmap mode on toggle click', () => {
+    render(<TaskDetailChildren task={parentTask} />);
+    fireEvent.click(screen.getByTitle('Mindmap view'));
+    expect(document.querySelector('svg')).toBeInTheDocument();
   });
 
   it('shows empty state when no children', () => {
