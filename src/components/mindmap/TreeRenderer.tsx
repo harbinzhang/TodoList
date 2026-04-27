@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { buildTree } from '../../utils/mindmapTree';
 import { useTreeLayout } from './hooks/useTreeLayout';
@@ -56,10 +56,26 @@ const TreeRenderer = ({
 
   const selectedNodeId = isControlled ? (extSelected ?? null) : localSelected;
   const editingNodeId = isControlled ? (extEditing ?? null) : localEditing;
-  const collapsedNodeIds = isControlled ? (extCollapsed ?? new Set<string>()) : localCollapsed;
-  const setSelectedNodeId = isControlled ? (onSelectNode ?? (() => {})) : setLocalSelected;
-  const setEditingNodeId = isControlled ? (onEditNode ?? (() => {})) : setLocalEditing;
-  const toggleNodeExpanded = isControlled ? (onToggleExpand ?? (() => {})) : handleLocalToggle;
+
+  const collapsedNodeIds = useMemo(
+    () => (isControlled ? (extCollapsed ?? new Set<string>()) : localCollapsed),
+    [isControlled, extCollapsed, localCollapsed]
+  );
+
+  const setSelectedNodeId = useMemo(
+    () => (isControlled ? (onSelectNode ?? (() => {})) : setLocalSelected),
+    [isControlled, onSelectNode]
+  );
+
+  const setEditingNodeId = useMemo(
+    () => (isControlled ? (onEditNode ?? (() => {})) : setLocalEditing),
+    [isControlled, onEditNode]
+  );
+
+  const toggleNodeExpanded = useMemo(
+    () => (isControlled ? (onToggleExpand ?? (() => {})) : handleLocalToggle),
+    [isControlled, onToggleExpand, handleLocalToggle]
+  );
 
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
