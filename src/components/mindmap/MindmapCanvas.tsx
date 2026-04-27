@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { useMindmapStore } from '../../store/mindmapStore';
 import { useAuthStore } from '../../store/authStore';
 import { useMindmapKeyboard } from './hooks/useMindmapKeyboard';
@@ -13,6 +13,10 @@ const MindmapCanvas = () => {
   const { user } = useAuthStore();
   const containerRef = useRef<HTMLDivElement>(null);
   useMindmapKeyboard(containerRef);
+
+  useEffect(() => {
+    if (!editingNodeId && containerRef.current) containerRef.current.focus();
+  }, [editingNodeId]);
 
   if (!currentMindmapId || !user) {
     return (
