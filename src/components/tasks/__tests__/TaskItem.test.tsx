@@ -112,4 +112,11 @@ describe('TaskItem', () => {
     // Should show original title, not the changed value
     expect(screen.getByText('Test Task')).toBeInTheDocument();
   });
+
+  it('opens TaskDetailModal when expand button is clicked', async () => {
+    render(<TaskItem task={createMockItem()} />);
+    const expandBtn = screen.getByTitle('Open detail');
+    fireEvent.click(expandBtn);
+    expect(await screen.findByText('Task Detail')).toBeInTheDocument();
+  });
 });

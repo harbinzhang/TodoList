@@ -8,8 +8,10 @@ import {
   TrashIcon,
   CalendarIcon,
   FlagIcon,
+  ArrowsPointingOutIcon,
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleFilledIcon } from '@heroicons/react/24/solid';
+import TaskDetailModal from './TaskDetailModal';
 
 interface TaskItemProps {
   task: Item;
@@ -18,6 +20,7 @@ interface TaskItemProps {
 const TaskItem = ({ task }: TaskItemProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
+  const [showDetail, setShowDetail] = useState(false);
 
   const handleToggleComplete = async () => {
     try {
@@ -175,6 +178,13 @@ const TaskItem = ({ task }: TaskItemProps) => {
         <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
           <div className="flex items-center space-x-1">
             <button
+              title="Open detail"
+              onClick={() => setShowDetail(true)}
+              className="p-1 text-gray-400 hover:text-blue-500 rounded"
+            >
+              <ArrowsPointingOutIcon className="w-4 h-4" />
+            </button>
+            <button
               onClick={() => setIsEditing(true)}
               className="p-1 text-gray-400 hover:text-gray-600 rounded"
             >
@@ -196,6 +206,9 @@ const TaskItem = ({ task }: TaskItemProps) => {
         </div>
       </div>
 
+      {showDetail && (
+        <TaskDetailModal task={task} onClose={() => setShowDetail(false)} />
+      )}
     </div>
   );
 };
