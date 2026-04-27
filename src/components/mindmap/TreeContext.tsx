@@ -19,7 +19,7 @@ export interface TreeContextValue {
 
 const TreeContext = createContext<TreeContextValue | null>(null);
 
-export { TreeContext };
+export default TreeContext;
 
 export function useTreeContext(): TreeContextValue {
   const ctx = useContext(TreeContext);
