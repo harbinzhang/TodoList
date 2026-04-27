@@ -27,7 +27,7 @@ const TaskDetailModal = ({ task, onClose }: TaskDetailModalProps) => {
         title: title.trim(),
         description: description.trim() || undefined,
         priority,
-        dueDate: dueDate ? new Date(dueDate) : undefined,
+        dueDate: dueDate ? new Date(dueDate + 'T00:00:00') : undefined,
       });
     } finally {
       setSaving(false);
