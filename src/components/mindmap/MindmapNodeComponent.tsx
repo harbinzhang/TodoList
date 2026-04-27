@@ -159,14 +159,13 @@ const MindmapNodeComponent = ({ layoutNode, onAddChild, isDropTarget, onDragStar
           ctx.setSelectedNodeId(nodeId);
         },
         redo: async () => {
-          const descendantIdsNow = treeService.getDescendantIds(nodeId, ctx.nodes);
-          await Promise.all([nodeId, ...descendantIdsNow].map((id) => itemService.delete('mindmap', id)));
+          await Promise.all(deletedIds.map((id) => itemService.delete(ctx.itemContext, id)));
           if (parentId) ctx.setSelectedNodeId(parentId);
         },
       });
     } else {
       const descendantIds = treeService.getDescendantIds(nodeId, nodes);
-      await Promise.all([nodeId, ...descendantIds].map((id) => itemService.delete('task', id)));
+      await Promise.all([nodeId, ...descendantIds].map((id) => itemService.delete(ctx.itemContext, id)));
       if (parentId) ctx.setSelectedNodeId(parentId);
     }
   };
