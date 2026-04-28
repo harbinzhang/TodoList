@@ -24,11 +24,18 @@ test.describe('PR10: task detail dual-view modal', () => {
     await page.getByRole('button', { name: 'Add task' }).last().click();
     await expect(page.getByRole('heading', { name: title })).toBeVisible();
 
-    // Hover task card → expand button becomes visible → opens modal
+    // Verify button is visually hidden before hover (opacity:0, not absent from DOM)
     const taskCard = page.locator('.group').filter({ hasText: title }).first();
-    await taskCard.hover();
     const expandBtn = taskCard.getByTitle('Open detail');
-    await expect(expandBtn).toBeVisible();
+    await expect(expandBtn).toHaveCSS('opacity', '0');
+
+    // Use page.mouse.move for stable hover — element.hover() loses CSS :hover state
+    // during Playwright's assertion polling. mouse.move keeps position between retries.
+    // waitForTimeout(300) lets the 150ms Tailwind transition-opacity complete before asserting.
+    const box = await taskCard.boundingBox();
+    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+    await page.waitForTimeout(300);
+    await expect(expandBtn).toHaveCSS('opacity', '1');
     await expandBtn.click();
 
     await expect(page.getByText('Task Detail')).toBeVisible();

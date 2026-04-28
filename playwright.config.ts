@@ -1,7 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
 const skipEmulatorWebServer = process.env.PLAYWRIGHT_SKIP_EMULATOR_WEBSERVER === 'true';
-const projectId = 'todo-rea';
+const projectId = process.env.FIREBASE_PROJECT_ID ?? 'todo-rea';
 
 // Demo values for emulator mode — real Firebase validation is bypassed by the emulator
 const emulatorViteEnv: Record<string, string> = {
