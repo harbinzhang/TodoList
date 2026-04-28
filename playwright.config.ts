@@ -16,7 +16,9 @@ const emulatorViteEnv: Record<string, string> = {
 };
 
 export default defineConfig({
+  globalSetup: './src/e2e/global-setup.ts',
   testDir: './src/e2e',
+  workers: 1,
   timeout: 30_000,
   use: {
     baseURL: 'http://127.0.0.1:4173',
