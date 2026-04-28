@@ -139,7 +139,7 @@ export function useDragDrop({ layoutNodes, panX, panY, zoom, svgRef, nodes, read
       dragStartPos.current = { x: e.clientX, y: e.clientY };
       thresholdMet.current = false;
     },
-    [nodes]
+    [nodes, readOnly]
   );
 
   const handleCanvasPointerMove = useCallback(
