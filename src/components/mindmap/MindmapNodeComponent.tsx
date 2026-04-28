@@ -12,6 +12,7 @@ import { itemService } from '../../services/itemService';
 import { treeService } from '../../services/treeService';
 import { useTreeContext } from './TreeContext';
 import type { LayoutNode } from './hooks/useTreeLayout';
+import type { Item } from '../../types';
 
 interface MindmapNodeComponentProps {
   layoutNode: LayoutNode;
@@ -115,7 +116,7 @@ const MindmapNodeComponent = ({ layoutNode, onAddChild, isDropTarget, onDragStar
         completed: false as const,
         priority: 4 as const,
       };
-      const newId = await itemService.create(ctx.itemContext, newNodeData);
+      const newId = await itemService.create(ctx.itemContext, newNodeData as Omit<Item, 'id' | 'createdAt' | 'updatedAt'>);
       if (collapsedNodeIds.has(node.id)) ctx.toggleNodeExpanded(node.id);
       const parentNodeId = node.id;
       setTimeout(() => {
@@ -133,7 +134,7 @@ const MindmapNodeComponent = ({ layoutNode, onAddChild, isDropTarget, onDragStar
           },
           redo: async () => {
             if (titleChanged) await itemService.update(ctx.itemContext, parentNodeId, { title: trimmed! });
-            await itemService.createWithId(ctx.itemContext, newId, newNodeData);
+            await itemService.createWithId(ctx.itemContext, newId, newNodeData as Omit<Item, 'id' | 'createdAt' | 'updatedAt'>);
             ctx.setSelectedNodeId(newId);
           },
         });

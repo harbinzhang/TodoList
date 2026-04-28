@@ -93,7 +93,7 @@ const TreeRenderer = ({
       completed: false as const,
       priority: 4 as const,
     };
-    const newId = await itemService.create(itemContext, newNodeData);
+    const newId = await itemService.create(itemContext, newNodeData as Omit<Item, 'id' | 'createdAt' | 'updatedAt'>);
     if (collapsedNodeIds.has(parentId)) toggleNodeExpanded(parentId);
     setTimeout(() => {
       setSelectedNodeId(newId);
@@ -121,7 +121,7 @@ const TreeRenderer = ({
     requestAnimationFrame(() => {
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
-      fitView(layoutNodes, rect.width, rect.height, 1.0);
+      fitView(layoutNodes, rect.width, rect.height);
     });
   }, [autoFitKey, layoutNodes, fitView]);
 

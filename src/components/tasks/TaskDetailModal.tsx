@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { XMarkIcon, FlagIcon, CalendarIcon } from '@heroicons/react/24/outline';
-import { itemService } from '../../services/itemService';
+import { taskService } from '../../services/taskService';
 import TaskDetailChildren from './TaskDetailChildren';
 import { format } from 'date-fns';
-import type { Item } from '../../types';
+import type { Task } from '../../types';
 
 interface TaskDetailModalProps {
-  task: Item;
+  task: Task;
   onClose: () => void;
 }
 
@@ -23,11 +23,11 @@ const TaskDetailModal = ({ task, onClose }: TaskDetailModalProps) => {
     if (!title.trim()) return;
     setSaving(true);
     try {
-      await itemService.update('task', task.id, {
+      await taskService.updateTask(task.id, {
         title: title.trim(),
         description: description.trim() || undefined,
         priority,
-        dueDate: dueDate ? new Date(dueDate) : undefined,
+        dueDate: dueDate ? new Date(dueDate + 'T00:00:00') : undefined,
       });
     } finally {
       setSaving(false);
