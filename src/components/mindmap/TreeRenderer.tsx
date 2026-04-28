@@ -18,6 +18,7 @@ export interface TreeRendererProps {
   contextId: string | null;
   userId: string;
   autoFitKey?: string;
+  readOnly?: boolean;
   // Controlled-mode props — provide all or none
   selectedNodeId?: string | null;
   editingNodeId?: string | null;
@@ -33,6 +34,7 @@ const TreeRenderer = ({
   contextId,
   userId,
   autoFitKey,
+  readOnly = false,
   selectedNodeId: extSelected,
   editingNodeId: extEditing,
   collapsedNodeIds: extCollapsed,
@@ -141,6 +143,7 @@ const TreeRenderer = ({
     contextId,
     userId,
     onAddChild: handleAddChild,
+    readOnly,
   };
 
   if (!tree) {

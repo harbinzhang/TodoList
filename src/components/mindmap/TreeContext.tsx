@@ -15,6 +15,7 @@ export interface TreeContextValue {
   contextId: string | null;
   userId: string;
   onAddChild: (parentId: string) => Promise<void>;
+  readOnly: boolean;
 }
 
 const TreeContext = createContext<TreeContextValue | null>(null);

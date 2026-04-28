@@ -31,7 +31,7 @@ const priorityBorderColors: Record<number, string> = {
 const MindmapNodeComponent = ({ layoutNode, onAddChild, isDropTarget, onDragStart }: MindmapNodeComponentProps) => {
   const { node } = layoutNode;
   const ctx = useTreeContext();
-  const { selectedNodeId, editingNodeId, collapsedNodeIds, nodes } = ctx;
+  const { selectedNodeId, editingNodeId, collapsedNodeIds, nodes, readOnly } = ctx;
 
   const [editTitle, setEditTitle] = useState(node.title);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -52,6 +52,7 @@ const MindmapNodeComponent = ({ layoutNode, onAddChild, isDropTarget, onDragStar
 
   const handleToggleComplete = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (readOnly) return;
     const prevCompleted = node.completed;
     await itemService.toggleCompletion(ctx.itemContext, node.id, !prevCompleted);
     if (ctx.itemContext === 'mindmap') {
@@ -64,7 +65,7 @@ const MindmapNodeComponent = ({ layoutNode, onAddChild, isDropTarget, onDragStar
   };
 
   const handleSaveEdit = async () => {
-    if (savingRef.current) return;
+    if (savingRef.current || readOnly) { ctx.setEditingNodeId(null); return; }
     savingRef.current = true;
     const trimmed = editTitle.trim();
     if (trimmed && trimmed !== node.title) {
@@ -144,7 +145,7 @@ const MindmapNodeComponent = ({ layoutNode, onAddChild, isDropTarget, onDragStar
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isRoot) return;
+    if (isRoot || readOnly) return;
     const nodeId = node.id;
     const parentId = node.parentId;
 
@@ -173,6 +174,7 @@ const MindmapNodeComponent = ({ layoutNode, onAddChild, isDropTarget, onDragStar
 
   const handleClick = () => ctx.setSelectedNodeId(node.id);
   const handleDoubleClick = () => {
+    if (readOnly) return;
     ctx.setEditingNodeId(node.id);
     setEditTitle(node.title);
   };
@@ -225,6 +227,7 @@ const MindmapNodeComponent = ({ layoutNode, onAddChild, isDropTarget, onDragStar
         </span>
       )}
 
+      {!readOnly && (
       <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded px-1">
         <button
           onClick={(e) => { e.stopPropagation(); onAddChild(node.id); }}
@@ -243,6 +246,7 @@ const MindmapNodeComponent = ({ layoutNode, onAddChild, isDropTarget, onDragStar
           </button>
         )}
       </div>
+      )}
     </div>
   );
 };

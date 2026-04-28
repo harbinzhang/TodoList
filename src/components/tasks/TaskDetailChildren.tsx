@@ -99,6 +99,7 @@ const TaskDetailChildren = ({ task }: TaskDetailChildrenProps) => {
               contextId={task.id}
               userId={user?.uid ?? ''}
               autoFitKey={task.id}
+              readOnly
             />
           </div>
         )}
