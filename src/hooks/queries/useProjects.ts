@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { Project } from '../../types';
 import { projectService } from '../../services/projectService';
-import { useAuthSession } from '../../providers/AuthProvider';
+import { useAuthSession } from '../../providers/useAuthSession';
 import { useRealtimeCollection } from './useRealtimeCollection';
 
 export function useProjects() {

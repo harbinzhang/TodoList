@@ -20,8 +20,8 @@
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
     "test:contract": "firebase emulators:exec --only firestore --project todo-rea \"vitest run --project contract\"",
-    "test:e2e": "npm run seed:local:apply && playwright test",
-    "test:core": "npm run seed:local:apply && playwright test src/e2e/core-journey.spec.ts",
+    "test:e2e": "tsx ops/run-e2e.ts",
+    "test:core": "tsx ops/run-e2e.ts src/e2e/core-journey.spec.ts",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {

@@ -9,19 +9,20 @@ test('core task flow stays green', async ({ page }) => {
 
   await expect(page.getByRole('heading', { name: 'Inbox' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Add task' }).first().click();
+  await page.getByRole('button', { name: 'Open quick add task form' }).click();
   await page.getByPlaceholder('Try: "Buy groceries tomorrow p2 #Personal"').fill('Core journey task p2');
   await page.getByRole('button', { name: 'Add task' }).last().click();
 
-  await expect(page.getByText('Core journey task')).toBeVisible();
+  const createdTask = page.getByRole('heading', { name: 'Core journey task' });
+  await expect(createdTask).toBeVisible();
 
-  await page.getByText('Core journey task').click();
+  await createdTask.click();
   await page.locator('input[value="Core journey task"]').fill('Core journey task updated');
   await page.locator('input[value="Core journey task updated"]').blur();
-  await page.getByText('Core journey task updated').click();
-
-  await page.getByRole('button').filter({ has: page.locator('svg') }).first().click();
+  const updatedTask = page.getByRole('heading', { name: 'Core journey task updated' });
+  await expect(updatedTask).toBeVisible();
+  await page.getByRole('button', { name: 'Close task detail panel' }).click();
   await page.reload();
 
-  await expect(page.getByText('Core journey task updated')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Core journey task updated' })).toBeVisible();
 });

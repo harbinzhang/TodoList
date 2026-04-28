@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { Label } from '../../types';
 import { labelService } from '../../services/labelService';
-import { useAuthSession } from '../../providers/AuthProvider';
+import { useAuthSession } from '../../providers/useAuthSession';
 import { useRealtimeCollection } from './useRealtimeCollection';
 
 export function useLabels() {

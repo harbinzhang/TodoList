@@ -254,6 +254,7 @@ const TaskDetailPanel = () => {
             })()}
           </div>
           <button
+            aria-label="Close task detail panel"
             onClick={() => setSelectedTaskId(null)}
             className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >

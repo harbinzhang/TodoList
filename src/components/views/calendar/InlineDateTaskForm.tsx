@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { taskService } from '../../../services/taskService';
-import { useAuthSession } from '../../../providers/AuthProvider';
+import { useAuthSession } from '../../../providers/useAuthSession';
 import { useTaskStore } from '../../../store/taskStore';
 
 interface InlineDateTaskFormProps {
