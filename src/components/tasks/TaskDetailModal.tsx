@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { XMarkIcon, FlagIcon, CalendarIcon } from '@heroicons/react/24/outline';
 import { taskService } from '../../services/taskService';
+import { deleteField } from 'firebase/firestore';
 import TaskDetailChildren from './TaskDetailChildren';
 import { format } from 'date-fns';
 import type { Task } from '../../types';
@@ -25,9 +26,12 @@ const TaskDetailModal = ({ task, onClose }: TaskDetailModalProps) => {
     try {
       await taskService.updateTask(task.id, {
         title: title.trim(),
-        description: description.trim() || undefined,
+        // deleteField() is a Firestore sentinel — cast needed because Task types don't model FieldValue
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        description: (description.trim() || deleteField()) as any,
         priority,
-        dueDate: dueDate ? new Date(dueDate + 'T00:00:00') : undefined,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        dueDate: (dueDate ? new Date(dueDate + 'T00:00:00') : deleteField()) as any,
       });
     } finally {
       setSaving(false);
@@ -35,7 +39,7 @@ const TaskDetailModal = ({ task, onClose }: TaskDetailModalProps) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-white">
+    <div className="fixed inset-0 z-50 flex flex-col bg-white" onClick={(e) => e.stopPropagation()}>
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
         <h2 className="text-lg font-semibold text-gray-900">Task Detail</h2>

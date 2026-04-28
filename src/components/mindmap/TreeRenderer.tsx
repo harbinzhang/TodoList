@@ -107,7 +107,7 @@ const TreeRenderer = ({
   const { nodes: layoutNodes, edges } = useTreeLayout(tree, collapsedNodeIds);
   const { panX, panY, zoom, handleWheel, handlePointerDown, handlePointerMove, handlePointerUp, zoomIn, zoomOut, fitView } = usePanZoom();
   const { dragState, dropIndicator, handleNodePointerDown, handleCanvasPointerMove, handleCanvasPointerUp } = useDragDrop({
-    layoutNodes, panX, panY, zoom, svgRef, nodes: items,
+    layoutNodes, panX, panY, zoom, svgRef, nodes: items, readOnly,
   });
 
   const handleFitView = useCallback(() => {

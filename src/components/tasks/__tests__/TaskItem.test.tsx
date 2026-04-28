@@ -11,6 +11,18 @@ vi.mock('../../../services/taskService', () => ({
     deleteTask: vi.fn(),
   },
 }));
+vi.mock('../../../hooks/useAppData', () => ({
+  useAppData: () => ({ labels: [], projects: [] }),
+}));
+vi.mock('../../../store/settingsStore', () => ({
+  useSettingsStore: () => ({ timezone: 'UTC' }),
+}));
+vi.mock('../../../store/taskStore', () => ({
+  useTaskStore: () => ({ setSelectedTaskId: vi.fn() }),
+}));
+vi.mock('../../../store/authStore', () => ({
+  useAuthStore: () => ({ user: { uid: 'user-1' } }),
+}));
 
 const createMockTask = (overrides: Partial<Task> = {}): Task => ({
   id: 'task-1',
@@ -107,7 +119,7 @@ describe('TaskItem', () => {
   });
 
   it('opens TaskDetailModal when expand button is clicked', async () => {
-    render(<TaskItem task={createMockItem()} />);
+    render(<TaskItem task={createMockTask()} />);
     const expandBtn = screen.getByTitle('Open detail');
     fireEvent.click(expandBtn);
     expect(await screen.findByText('Task Detail')).toBeInTheDocument();

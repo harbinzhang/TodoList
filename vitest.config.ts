@@ -6,6 +6,7 @@ export default defineConfig({
   test: {
     projects: [
       {
+        plugins: [react()],
         test: {
           name: 'unit',
           environment: 'jsdom',
@@ -16,6 +17,7 @@ export default defineConfig({
             'src/firebase/**/*.test.ts',
             'src/services/**/*.test.ts',
             'src/utils/**/*.test.ts',
+            'src/components/**/__tests__/*.test.{ts,tsx}',
           ],
         },
       },

@@ -39,6 +39,7 @@ interface UseDragDropParams {
   zoom: number;
   svgRef: RefObject<SVGSVGElement | null>;
   nodes: Item[];
+  readOnly?: boolean;
 }
 
 function screenToSvg(
@@ -117,7 +118,7 @@ function hitTestWithZone(
   return null;
 }
 
-export function useDragDrop({ layoutNodes, panX, panY, zoom, svgRef, nodes }: UseDragDropParams) {
+export function useDragDrop({ layoutNodes, panX, panY, zoom, svgRef, nodes, readOnly = false }: UseDragDropParams) {
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [dropIndicator, setDropIndicator] = useState<DropIndicator | null>(null);
 
@@ -128,6 +129,7 @@ export function useDragDrop({ layoutNodes, panX, panY, zoom, svgRef, nodes }: Us
 
   const handleNodePointerDown = useCallback(
     (nodeId: string, e: React.PointerEvent) => {
+      if (readOnly) return;
       const node = nodes.find((n) => n.id === nodeId);
       if (!node || node.parentId == null) return;
       const { editingNodeId } = useMindmapStore.getState();
