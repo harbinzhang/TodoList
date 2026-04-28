@@ -16,6 +16,26 @@ vi.mock('chrono-node', () => ({
   parse: vi.fn(() => []),
 }));
 
+vi.mock('../../../hooks/useAppData', () => ({
+  useAppData: () => ({ labels: [], projects: [], sections: [], savedFilters: [], tasks: [], isLoading: false }),
+}));
+
+vi.mock('../../../store/settingsStore', () => ({
+  useSettingsStore: () => ({ timezone: 'UTC' }),
+}));
+
+vi.mock('../QuickAdd', () => ({
+  default: () => (
+    <div data-testid="quick-add">
+      <input placeholder="Quick add task" />
+    </div>
+  ),
+}));
+
+vi.mock('../RecurrencePicker', () => ({
+  default: () => <div data-testid="recurrence-picker" />,
+}));
+
 describe('TaskForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();

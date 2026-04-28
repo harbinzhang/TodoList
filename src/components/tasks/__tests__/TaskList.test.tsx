@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import TaskList from '../TaskList';
 import { useTaskStore } from '../../../store/taskStore';
+import { useAppData } from '../../../hooks/useAppData';
 import type { Task } from '../../../types';
 
 // Mock DnD kit
@@ -39,6 +40,8 @@ vi.mock('../../sections/SectionForm', () => ({
   default: () => <div data-testid="section-form">SectionForm</div>,
 }));
 
+vi.mock('../../../hooks/useAppData');
+
 const createMockTask = (overrides: Partial<Task> = {}): Task => ({
   id: '1',
   title: 'Test Task',
@@ -52,22 +55,30 @@ const createMockTask = (overrides: Partial<Task> = {}): Task => ({
   ...overrides,
 });
 
+const defaultAppData = {
+  tasks: [] as Task[],
+  labels: [],
+  projects: [],
+  sections: [],
+  savedFilters: [],
+  isLoading: false,
+  isPending: false,
+};
+
 describe('TaskList', () => {
   beforeEach(() => {
+    vi.mocked(useAppData).mockReturnValue(defaultAppData);
     useTaskStore.setState({
-      tasks: [],
       currentView: 'inbox',
       currentProjectId: undefined,
       currentLabelId: undefined,
       filter: {},
-      loading: false,
     });
   });
 
   it('renders loading spinner when loading', () => {
-    useTaskStore.setState({ loading: true });
+    vi.mocked(useAppData).mockReturnValue({ ...defaultAppData, isLoading: true });
     render(<TaskList />);
-    // Should show spinner, not the form
     expect(screen.queryByTestId('task-form')).not.toBeInTheDocument();
   });
 
@@ -84,13 +95,14 @@ describe('TaskList', () => {
 
   describe('Inbox filtering', () => {
     it('shows tasks without projectId in inbox view', () => {
-      useTaskStore.setState({
-        currentView: 'inbox',
+      vi.mocked(useAppData).mockReturnValue({
+        ...defaultAppData,
         tasks: [
           createMockTask({ id: '1', title: 'No Project', projectId: undefined }),
           createMockTask({ id: '2', title: 'Has Project', projectId: 'proj-1' }),
         ],
       });
+      useTaskStore.setState({ currentView: 'inbox' });
       render(<TaskList />);
       expect(screen.getByText('No Project')).toBeInTheDocument();
       expect(screen.queryByText('Has Project')).not.toBeInTheDocument();
@@ -99,14 +111,14 @@ describe('TaskList', () => {
 
   describe('Project filtering', () => {
     it('shows tasks matching currentProjectId', () => {
-      useTaskStore.setState({
-        currentView: 'project',
-        currentProjectId: 'proj-1',
+      vi.mocked(useAppData).mockReturnValue({
+        ...defaultAppData,
         tasks: [
           createMockTask({ id: '1', title: 'Match', projectId: 'proj-1' }),
           createMockTask({ id: '2', title: 'Other', projectId: 'proj-2' }),
         ],
       });
+      useTaskStore.setState({ currentView: 'project', currentProjectId: 'proj-1' });
       render(<TaskList />);
       expect(screen.getByText('Match')).toBeInTheDocument();
       expect(screen.queryByText('Other')).not.toBeInTheDocument();
@@ -115,14 +127,14 @@ describe('TaskList', () => {
 
   describe('Label filtering', () => {
     it('shows tasks matching currentLabelId', () => {
-      useTaskStore.setState({
-        currentView: 'label',
-        currentLabelId: 'work',
+      vi.mocked(useAppData).mockReturnValue({
+        ...defaultAppData,
         tasks: [
           createMockTask({ id: '1', title: 'Work Task', labels: ['work'] }),
           createMockTask({ id: '2', title: 'Personal', labels: ['personal'] }),
         ],
       });
+      useTaskStore.setState({ currentView: 'label', currentLabelId: 'work' });
       render(<TaskList />);
       expect(screen.getByText('Work Task')).toBeInTheDocument();
       expect(screen.queryByText('Personal')).not.toBeInTheDocument();
@@ -131,26 +143,28 @@ describe('TaskList', () => {
 
   describe('Search filtering', () => {
     it('filters by title matching search term', () => {
-      useTaskStore.setState({
+      vi.mocked(useAppData).mockReturnValue({
+        ...defaultAppData,
         tasks: [
           createMockTask({ id: '1', title: 'Buy groceries' }),
           createMockTask({ id: '2', title: 'Write report' }),
         ],
-        filter: { search: 'groceries' },
       });
+      useTaskStore.setState({ filter: { search: 'groceries' } });
       render(<TaskList />);
       expect(screen.getByText('Buy groceries')).toBeInTheDocument();
       expect(screen.queryByText('Write report')).not.toBeInTheDocument();
     });
 
     it('filters by description matching search term', () => {
-      useTaskStore.setState({
+      vi.mocked(useAppData).mockReturnValue({
+        ...defaultAppData,
         tasks: [
           createMockTask({ id: '1', title: 'Task A', description: 'needs milk' }),
           createMockTask({ id: '2', title: 'Task B', description: 'needs paper' }),
         ],
-        filter: { search: 'milk' },
       });
+      useTaskStore.setState({ filter: { search: 'milk' } });
       render(<TaskList />);
       expect(screen.getByText('Task A')).toBeInTheDocument();
       expect(screen.queryByText('Task B')).not.toBeInTheDocument();
@@ -159,7 +173,8 @@ describe('TaskList', () => {
 
   describe('Sorting', () => {
     it('sorts completed tasks after incomplete tasks', () => {
-      useTaskStore.setState({
+      vi.mocked(useAppData).mockReturnValue({
+        ...defaultAppData,
         tasks: [
           createMockTask({ id: '1', title: 'Done', completed: true }),
           createMockTask({ id: '2', title: 'Todo', completed: false }),
@@ -172,7 +187,8 @@ describe('TaskList', () => {
     });
 
     it('sorts by priority (lower number = higher priority first)', () => {
-      useTaskStore.setState({
+      vi.mocked(useAppData).mockReturnValue({
+        ...defaultAppData,
         tasks: [
           createMockTask({ id: '1', title: 'Low P3', priority: 3 }),
           createMockTask({ id: '2', title: 'High P1', priority: 1 }),
