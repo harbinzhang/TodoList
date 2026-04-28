@@ -28,7 +28,7 @@ export default defineConfig({
     ...(!skipEmulatorWebServer
       ? [
           {
-            command: 'firebase emulators:start --only auth,firestore,functions --project todo-rea',
+            command: `firebase emulators:start --only auth,firestore,functions --project ${projectId}`,
             port: 4000,
             reuseExistingServer: !process.env.CI,
             timeout: 120_000,
