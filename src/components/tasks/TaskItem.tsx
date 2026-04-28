@@ -229,7 +229,7 @@ const TaskItem = ({ task, dragHandleProps }: TaskItemProps) => {
         <button
           title="Open detail"
           onClick={(e) => { e.stopPropagation(); setShowDetail(true); }}
-          className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity p-1 text-gray-400 hover:text-blue-500 rounded"
+          className="flex-shrink-0 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity p-1 text-gray-400 hover:text-blue-500 rounded"
         >
           <ArrowsPointingOutIcon className="w-4 h-4" />
         </button>

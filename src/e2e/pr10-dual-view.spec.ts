@@ -13,7 +13,10 @@ test.describe('PR10: task detail dual-view modal', () => {
   async function openDetailModal(page: import('@playwright/test').Page, taskTitle: string) {
     const taskCard = page.locator('.group').filter({ hasText: taskTitle }).first();
     await taskCard.hover();
-    await taskCard.getByTitle('Open detail').click();
+    // force:true bypasses Playwright's pointer-events stability check; the button has
+    // pointer-events:none until group:hover activates, and headless Chromium can lose
+    // :hover state during Playwright's click-stability polling when Firestore re-renders.
+    await taskCard.getByTitle('Open detail').click({ force: true });
     await expect(page.getByText('Task Detail')).toBeVisible();
   }
 
@@ -24,18 +27,25 @@ test.describe('PR10: task detail dual-view modal', () => {
     await page.getByRole('button', { name: 'Add task' }).last().click();
     await expect(page.getByRole('heading', { name: title })).toBeVisible();
 
-    // Pre-hover: button exists in DOM but is visually hidden (opacity:0).
-    // This proves the button starts invisible to users and is not simply absent.
+    // Pre-hover: button is in DOM but non-interactive — opacity:0 + pointer-events:none.
     const taskCard = page.locator('.group').filter({ hasText: title }).first();
     const expandBtn = taskCard.getByTitle('Open detail');
     await expect(expandBtn).toHaveCSS('opacity', '0');
+    await expect(expandBtn).toHaveCSS('pointer-events', 'none');
 
-    // Post-hover CSS opacity (group-hover:opacity-100) cannot be reliably asserted
-    // in headless Playwright: Chromium loses the :hover state during assertion
-    // polling. The hover→click→modal sequence below proves the interaction works
-    // end-to-end, which is the meaningful user-facing behavior.
+    // Hover activates group-hover:pointer-events-auto.
+    // We use evaluate() (a single synchronous check) rather than toHaveCSS() (polling)
+    // so we capture the CSS state right after hover before headless Chromium can lose
+    // :hover during Playwright's retry loop.
     await taskCard.hover();
-    await expandBtn.click();
+    const pointerEventsAfterHover = await expandBtn.evaluate(
+      (el) => getComputedStyle(el).pointerEvents,
+    );
+    expect(pointerEventsAfterHover).toBe('auto');
+
+    // force:true for the click because :hover can be lost between evaluate() and click
+    // when Firestore re-renders cause brief DOM instability.
+    await expandBtn.click({ force: true });
 
     await expect(page.getByText('Task Detail')).toBeVisible();
     await expect(page.getByPlaceholder('Task name')).toHaveValue(title);
