@@ -72,6 +72,7 @@ const TaskForm = ({ sectionId }: TaskFormProps) => {
   if (!isExpanded) {
     return (
       <button
+        aria-label="Open quick add task form"
         onClick={() => {
           if (currentView === 'today') {
             setDueDate(getTodayStringInTz(timezone));

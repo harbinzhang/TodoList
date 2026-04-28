@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
 import { mindmapService } from '../services/mindmapService';
-import { useAuthSession } from './AuthProvider';
+import { useAuthSession } from './useAuthSession';
 import { useMindmapStore } from '../store/mindmapStore';
 
 export function MindmapProvider({ children }: { children: ReactNode }) {

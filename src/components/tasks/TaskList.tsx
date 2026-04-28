@@ -14,7 +14,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { useTaskStore } from '../../store/taskStore';
-import { useAuthSession } from '../../providers/AuthProvider';
+import { useAuthSession } from '../../providers/useAuthSession';
 import { useAppData } from '../../hooks/useAppData';
 import SortableTaskItem from './SortableTaskItem';
 import TaskForm from './TaskForm';

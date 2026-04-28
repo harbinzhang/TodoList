@@ -1,5 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
+const skipEmulatorWebServer = process.env.PLAYWRIGHT_SKIP_EMULATOR_WEBSERVER === 'true';
+
 export default defineConfig({
   testDir: './src/e2e',
   timeout: 30_000,
@@ -8,12 +10,16 @@ export default defineConfig({
     headless: true,
   },
   webServer: [
-    {
-      command: 'firebase emulators:start --only auth,firestore,functions --project todo-rea',
-      port: 4000,
-      reuseExistingServer: !process.env.CI,
-      timeout: 120_000,
-    },
+    ...(!skipEmulatorWebServer
+      ? [
+          {
+            command: 'firebase emulators:start --only auth,firestore,functions --project todo-rea',
+            port: 4000,
+            reuseExistingServer: !process.env.CI,
+            timeout: 120_000,
+          },
+        ]
+      : []),
     {
       command: 'vite --mode development --host 127.0.0.1 --port 4173',
       port: 4173,

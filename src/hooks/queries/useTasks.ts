@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { useTaskStore } from '../../store/taskStore';
 import { taskService } from '../../services/taskService';
-import { useAuthSession } from '../../providers/AuthProvider';
+import { useAuthSession } from '../../providers/useAuthSession';
 import { useRealtimeCollection } from './useRealtimeCollection';
 import type { Task } from '../../types';
 

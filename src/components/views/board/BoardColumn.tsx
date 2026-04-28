@@ -10,7 +10,7 @@ import type { BoardColumnSource } from '../../../utils/board';
 import { getDropFieldUpdate } from '../../../utils/board';
 import { taskService } from '../../../services/taskService';
 import { sectionService } from '../../../services/sectionService';
-import { useAuthSession } from '../../../providers/AuthProvider';
+import { useAuthSession } from '../../../providers/useAuthSession';
 import { useTaskStore } from '../../../store/taskStore';
 import ColumnHeader from './ColumnHeader';
 import BoardCard from './BoardCard';

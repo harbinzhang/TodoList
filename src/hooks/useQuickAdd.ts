@@ -1,6 +1,6 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useTaskStore } from '../store/taskStore';
-import { useAuthSession } from '../providers/AuthProvider';
+import { useAuthSession } from '../providers/useAuthSession';
 import { useSettingsStore } from '../store/settingsStore';
 import { useAppData } from './useAppData';
 import { taskService } from '../services/taskService';
@@ -29,32 +29,15 @@ export function useQuickAdd(options: UseQuickAddOptions = {}) {
   const { timezone } = useSettingsStore();
 
   const [inputText, setInputText] = useState('');
-  const [parsed, setParsed] = useState<ParsedTask>({
-    cleanTitle: '',
-    parsedTokens: [],
-  });
   const [overrides, setOverrides] = useState<QuickAddOverrides>({});
   const [loading, setLoading] = useState(false);
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  // Debounced parsing (150ms)
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-
+  const parsed = useMemo<ParsedTask>(() => {
     if (!inputText.trim()) {
-      setParsed({ cleanTitle: '', parsedTokens: [] });
-      return;
+      return { cleanTitle: '', parsedTokens: [] };
     }
 
-    debounceRef.current = setTimeout(() => {
-      const result = parseTaskInput(inputText, projects, labels);
-      setParsed(result);
-    }, 150);
-
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
+    return parseTaskInput(inputText, projects, labels);
   }, [inputText, projects, labels]);
 
   // Merged result: parsed values + user overrides (overrides win)
@@ -109,7 +92,6 @@ export function useQuickAdd(options: UseQuickAddOptions = {}) {
 
       // Reset for next task
       setInputText('');
-      setParsed({ cleanTitle: '', parsedTokens: [] });
       setOverrides({});
       options.onSubmit?.();
     } catch (error) {
@@ -121,7 +103,6 @@ export function useQuickAdd(options: UseQuickAddOptions = {}) {
 
   const cancel = useCallback(() => {
     setInputText('');
-    setParsed({ cleanTitle: '', parsedTokens: [] });
     setOverrides({});
     options.onCancel?.();
   }, [options]);

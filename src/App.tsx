@@ -1,6 +1,6 @@
 import { useTheme } from './hooks/useTheme';
 import { useUndoQueue } from './hooks/useUndoQueue';
-import { useAuthSession } from './providers/AuthProvider';
+import { useAuthSession } from './providers/useAuthSession';
 import AuthForm from './components/auth/AuthForm';
 import Sidebar from './components/layout/Sidebar';
 import MainContent from './components/layout/MainContent';

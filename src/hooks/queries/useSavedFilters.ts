@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { SavedFilter } from '../../types';
 import { filterService } from '../../services/filterService';
-import { useAuthSession } from '../../providers/AuthProvider';
+import { useAuthSession } from '../../providers/useAuthSession';
 import { useRealtimeCollection } from './useRealtimeCollection';
 
 export function useSavedFilters() {

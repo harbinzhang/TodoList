@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
-import { useAuthSession } from './AuthProvider';
+import { useAuthSession } from './useAuthSession';
 import { useLabels } from '../hooks/queries/useLabels';
 import { useProjects } from '../hooks/queries/useProjects';
 import { useSavedFilters } from '../hooks/queries/useSavedFilters';

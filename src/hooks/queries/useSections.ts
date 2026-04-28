@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { Section } from '../../types';
 import { sectionService } from '../../services/sectionService';
-import { useAuthSession } from '../../providers/AuthProvider';
+import { useAuthSession } from '../../providers/useAuthSession';
 import { useRealtimeCollection } from './useRealtimeCollection';
 
 export function useSections() {
