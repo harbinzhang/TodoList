@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { useTaskStore } from '../../store/taskStore';
 import { useAppData } from '../../hooks/useAppData';
 import { taskService } from '../../services/taskService';
@@ -11,9 +11,11 @@ import {
   CheckCircleIcon,
   CalendarIcon,
   FlagIcon,
+  ArrowsPointingOutIcon,
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleFilledIcon } from '@heroicons/react/24/solid';
 import { UndoQueueContext } from '../../context/UndoQueueContext';
+import TaskDetailModal from './TaskDetailModal';
 
 interface TaskItemProps {
   task: Task;
@@ -25,6 +27,7 @@ const TaskItem = ({ task, dragHandleProps }: TaskItemProps) => {
   const { setSelectedTaskId } = useTaskStore();
   const { labels: allLabels, projects: allProjects } = useAppData();
   const { enqueue } = useContext(UndoQueueContext);
+  const [showDetail, setShowDetail] = useState(false);
 
   const handleToggleComplete = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Don't open detail panel
@@ -221,7 +224,20 @@ const TaskItem = ({ task, dragHandleProps }: TaskItemProps) => {
             )}
           </div>
         </div>
+
+        {/* Expand to dual-view modal */}
+        <button
+          title="Open detail"
+          onClick={(e) => { e.stopPropagation(); setShowDetail(true); }}
+          className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity p-1 text-gray-400 hover:text-blue-500 rounded"
+        >
+          <ArrowsPointingOutIcon className="w-4 h-4" />
+        </button>
       </div>
+
+      {showDetail && (
+        <TaskDetailModal task={task} onClose={() => setShowDetail(false)} />
+      )}
     </div>
   );
 };

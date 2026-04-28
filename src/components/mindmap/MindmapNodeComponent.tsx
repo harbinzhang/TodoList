@@ -7,12 +7,12 @@ import {
   ChevronDownIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
-import { useMindmapStore } from '../../store/mindmapStore';
-import { useAuthStore } from '../../store/authStore';
 import { useUndoStore } from '../../store/undoStore';
 import { itemService } from '../../services/itemService';
 import { treeService } from '../../services/treeService';
+import { useTreeContext } from './TreeContext';
 import type { LayoutNode } from './hooks/useTreeLayout';
+import type { Item } from '../../types';
 
 interface MindmapNodeComponentProps {
   layoutNode: LayoutNode;
@@ -30,7 +30,9 @@ const priorityBorderColors: Record<number, string> = {
 
 const MindmapNodeComponent = ({ layoutNode, onAddChild, isDropTarget, onDragStart }: MindmapNodeComponentProps) => {
   const { node } = layoutNode;
-  const { selectedNodeId, setSelectedNodeId, editingNodeId, setEditingNode, collapsedNodeIds, toggleNodeExpanded, nodes } = useMindmapStore();
+  const ctx = useTreeContext();
+  const { selectedNodeId, editingNodeId, collapsedNodeIds, nodes, readOnly } = ctx;
+
   const [editTitle, setEditTitle] = useState(node.title);
   const inputRef = useRef<HTMLInputElement>(null);
   const savingRef = useRef(false);
@@ -50,32 +52,37 @@ const MindmapNodeComponent = ({ layoutNode, onAddChild, isDropTarget, onDragStar
 
   const handleToggleComplete = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (readOnly) return;
     const prevCompleted = node.completed;
-    await itemService.toggleCompletion('mindmap', node.id, !prevCompleted);
-    useUndoStore.getState().push({
-      description: 'Toggle completion',
-      undo: () => itemService.toggleCompletion('mindmap', node.id, prevCompleted),
-      redo: () => itemService.toggleCompletion('mindmap', node.id, !prevCompleted),
-    });
+    await itemService.toggleCompletion(ctx.itemContext, node.id, !prevCompleted);
+    if (ctx.itemContext === 'mindmap') {
+      useUndoStore.getState().push({
+        description: 'Toggle completion',
+        undo: () => itemService.toggleCompletion(ctx.itemContext, node.id, prevCompleted),
+        redo: () => itemService.toggleCompletion(ctx.itemContext, node.id, !prevCompleted),
+      });
+    }
   };
 
   const handleSaveEdit = async () => {
-    if (savingRef.current) return;
+    if (savingRef.current || readOnly) { ctx.setEditingNodeId(null); return; }
     savingRef.current = true;
     const trimmed = editTitle.trim();
     if (trimmed && trimmed !== node.title) {
       const oldTitle = node.title;
       const nodeId = node.id;
-      await itemService.update('mindmap', nodeId, { title: trimmed });
-      useUndoStore.getState().push({
-        description: 'Edit title',
-        undo: () => itemService.update('mindmap', nodeId, { title: oldTitle }),
-        redo: () => itemService.update('mindmap', nodeId, { title: trimmed }),
-      });
+      await itemService.update(ctx.itemContext, nodeId, { title: trimmed });
+      if (ctx.itemContext === 'mindmap') {
+        useUndoStore.getState().push({
+          description: 'Edit title',
+          undo: () => itemService.update(ctx.itemContext, nodeId, { title: oldTitle }),
+          redo: () => itemService.update(ctx.itemContext, nodeId, { title: trimmed }),
+        });
+      }
     } else {
       setEditTitle(node.title);
     }
-    setEditingNode(null);
+    ctx.setEditingNodeId(null);
     savingRef.current = false;
   };
 
@@ -84,97 +91,91 @@ const MindmapNodeComponent = ({ layoutNode, onAddChild, isDropTarget, onDragStar
       handleSaveEdit();
     } else if (e.key === 'Escape') {
       setEditTitle(node.title);
-      setEditingNode(null);
+      ctx.setEditingNodeId(null);
     } else if (e.key === 'Tab') {
       e.preventDefault();
-      // Save edit
       savingRef.current = true;
       const trimmed = editTitle.trim();
       const oldTitle = node.title;
       const titleChanged = trimmed && trimmed !== oldTitle;
       if (titleChanged) {
-        await itemService.update('mindmap', node.id, { title: trimmed });
+        await itemService.update(ctx.itemContext, node.id, { title: trimmed });
       }
-      setEditingNode(null);
+      ctx.setEditingNodeId(null);
       savingRef.current = false;
 
-      // Create child node
-      const { currentMindmapId, nodes: storeNodes, collapsedNodeIds, toggleNodeExpanded } = useMindmapStore.getState();
-      const { user } = useAuthStore.getState();
-      if (!currentMindmapId || !user) return;
-
-      const childSiblings = storeNodes.filter((n) => n.parentId === node.id);
+      const childSiblings = ctx.nodes.filter((n) => n.parentId === node.id);
       const maxSort = childSiblings.length > 0
         ? Math.max(...childSiblings.map((s) => s.sortOrder ?? 0))
         : -1;
       const newNodeData = {
-        mindmapId: currentMindmapId,
-        userId: user.uid,
+        ...(ctx.itemContext === 'mindmap' && ctx.contextId ? { mindmapId: ctx.contextId } : {}),
+        userId: ctx.userId,
         parentId: node.id,
         sortOrder: maxSort + 1,
         title: 'New node',
         completed: false as const,
         priority: 4 as const,
       };
-      const newId = await itemService.create('mindmap', newNodeData);
-      if (collapsedNodeIds.has(node.id)) {
-        toggleNodeExpanded(node.id);
-      }
+      const newId = await itemService.create(ctx.itemContext, newNodeData as Omit<Item, 'id' | 'createdAt' | 'updatedAt'>);
+      if (collapsedNodeIds.has(node.id)) ctx.toggleNodeExpanded(node.id);
       const parentNodeId = node.id;
       setTimeout(() => {
-        useMindmapStore.getState().setSelectedNodeId(newId);
-        useMindmapStore.getState().setEditingNode(newId);
+        ctx.setSelectedNodeId(newId);
+        ctx.setEditingNodeId(newId);
       }, 300);
 
-      useUndoStore.getState().push({
-        description: 'Tab: save + add child',
-        undo: async () => {
-          await itemService.delete('mindmap', newId);
-          if (titleChanged) {
-            await itemService.update('mindmap', parentNodeId, { title: oldTitle });
-          }
-          useMindmapStore.getState().setSelectedNodeId(parentNodeId);
-        },
-        redo: async () => {
-          if (titleChanged) {
-            await itemService.update('mindmap', parentNodeId, { title: trimmed });
-          }
-          await itemService.createWithId('mindmap', newId, newNodeData);
-          useMindmapStore.getState().setSelectedNodeId(newId);
-        },
-      });
+      if (ctx.itemContext === 'mindmap') {
+        useUndoStore.getState().push({
+          description: 'Tab: save + add child',
+          undo: async () => {
+            await itemService.delete(ctx.itemContext, newId);
+            if (titleChanged) await itemService.update(ctx.itemContext, parentNodeId, { title: oldTitle });
+            ctx.setSelectedNodeId(parentNodeId);
+          },
+          redo: async () => {
+            if (titleChanged) await itemService.update(ctx.itemContext, parentNodeId, { title: trimmed! });
+            await itemService.createWithId(ctx.itemContext, newId, newNodeData as Omit<Item, 'id' | 'createdAt' | 'updatedAt'>);
+            ctx.setSelectedNodeId(newId);
+          },
+        });
+      }
     }
   };
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isRoot) return;
+    if (isRoot || readOnly) return;
     const nodeId = node.id;
     const parentId = node.parentId;
-    const descendantIds = treeService.getDescendantIds(nodeId, nodes);
-    const deletedIds = [nodeId, ...descendantIds];
-    const deletedNodes = nodes.filter((n) => deletedIds.includes(n.id));
-    await treeService.deleteNode(nodeId, nodes, 'cascade');
-    useUndoStore.getState().push({
-      description: 'Delete node',
-      undo: async () => {
-        await treeService.recreateNodes(deletedNodes);
-        useMindmapStore.getState().setSelectedNodeId(nodeId);
-      },
-      redo: async () => {
-        const currentNodes = useMindmapStore.getState().nodes;
-        await treeService.deleteNode(nodeId, currentNodes, 'cascade');
-        if (parentId) useMindmapStore.getState().setSelectedNodeId(parentId);
-      },
-    });
+
+    if (ctx.itemContext === 'mindmap') {
+      const descendantIds = treeService.getDescendantIds(nodeId, nodes);
+      const deletedIds = [nodeId, ...descendantIds];
+      const deletedNodes = nodes.filter((n) => deletedIds.includes(n.id));
+      await treeService.deleteNode(nodeId, nodes, 'cascade');
+      useUndoStore.getState().push({
+        description: 'Delete node',
+        undo: async () => {
+          await treeService.recreateNodes(deletedNodes);
+          ctx.setSelectedNodeId(nodeId);
+        },
+        redo: async () => {
+          await Promise.all(deletedIds.map((id) => itemService.delete(ctx.itemContext, id)));
+          if (parentId) ctx.setSelectedNodeId(parentId);
+        },
+      });
+    } else {
+      const descendantIds = treeService.getDescendantIds(nodeId, nodes);
+      await Promise.all([nodeId, ...descendantIds].map((id) => itemService.delete(ctx.itemContext, id)));
+      if (parentId) ctx.setSelectedNodeId(parentId);
+    }
   };
 
-  const handleClick = () => {
-    setSelectedNodeId(node.id);
-  };
-
+  const handleClick = () => ctx.setSelectedNodeId(node.id);
   const handleDoubleClick = () => {
-    setEditingNode(node.id);
+    if (readOnly) return;
+    ctx.setEditingNodeId(node.id);
     setEditTitle(node.title);
   };
 
@@ -194,32 +195,23 @@ const MindmapNodeComponent = ({ layoutNode, onAddChild, isDropTarget, onDragStar
         ${!isSelected && !isDropTarget ? 'border-gray-200 hover:shadow-md' : ''}
       `}
     >
-      {/* Expand/collapse */}
       {hasChildren ? (
         <button
-          onClick={(e) => { e.stopPropagation(); toggleNodeExpanded(node.id); }}
+          onClick={(e) => { e.stopPropagation(); ctx.toggleNodeExpanded(node.id); }}
           className="flex-shrink-0 w-4 h-4 mr-1 text-gray-400 hover:text-gray-600"
         >
-          {isCollapsed ? (
-            <ChevronRightIcon className="w-4 h-4" />
-          ) : (
-            <ChevronDownIcon className="w-4 h-4" />
-          )}
+          {isCollapsed ? <ChevronRightIcon className="w-4 h-4" /> : <ChevronDownIcon className="w-4 h-4" />}
         </button>
       ) : (
         <div className="w-4 mr-1 flex-shrink-0" />
       )}
 
-      {/* Checkbox */}
       <button onClick={handleToggleComplete} className="flex-shrink-0 mr-2">
-        {node.completed ? (
-          <CheckCircleSolidIcon className="w-5 h-5 text-green-500" />
-        ) : (
-          <CheckCircleIcon className="w-5 h-5 text-gray-400 hover:text-green-500 transition-colors" />
-        )}
+        {node.completed
+          ? <CheckCircleSolidIcon className="w-5 h-5 text-green-500" />
+          : <CheckCircleIcon className="w-5 h-5 text-gray-400 hover:text-green-500 transition-colors" />}
       </button>
 
-      {/* Title */}
       {isEditing ? (
         <input
           ref={inputRef}
@@ -230,16 +222,12 @@ const MindmapNodeComponent = ({ layoutNode, onAddChild, isDropTarget, onDragStar
           className="flex-1 min-w-0 text-sm bg-transparent border-none outline-none focus:ring-0 p-0"
         />
       ) : (
-        <span
-          className={`flex-1 min-w-0 text-sm truncate ${
-            node.completed ? 'line-through text-gray-500' : 'text-gray-900'
-          }`}
-        >
+        <span className={`flex-1 min-w-0 text-sm truncate ${node.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
           {node.title}
         </span>
       )}
 
-      {/* Actions — absolute so they don't consume layout space */}
+      {!readOnly && (
       <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded px-1">
         <button
           onClick={(e) => { e.stopPropagation(); onAddChild(node.id); }}
@@ -258,6 +246,7 @@ const MindmapNodeComponent = ({ layoutNode, onAddChild, isDropTarget, onDragStar
           </button>
         )}
       </div>
+      )}
     </div>
   );
 };
