@@ -1,0 +1,4 @@
+interface:
+  display_name: "Monitor"
+  short_description: "Run production health monitoring scripts"
+  default_prompt: "Run the read-only production health monitoring scripts and analyze unexpected Firestore signals."

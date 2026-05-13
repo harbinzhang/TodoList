@@ -1,0 +1,4 @@
+interface:
+  display_name: "Test Quality Audit"
+  short_description: "Assess behavioral test confidence"
+  default_prompt: "Use $test-quality-audit to assess whether this feature's tests cover trigger, boundary, side effect, reader, and important edge cases."

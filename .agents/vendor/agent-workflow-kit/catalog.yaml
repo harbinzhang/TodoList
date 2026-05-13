@@ -1,0 +1,55 @@
+skills:
+  - name: feature
+    path: skills/feature/SKILL.md
+    description: Manage a short-lived feature branch and worktree using profile-driven branch, review, verify, PR, and cleanup defaults
+    adapters:
+      claude: adapters/claude/commands/feature.md
+  - name: re
+    path: skills/re/SKILL.md
+    description: Review current-worktree git changes against the branch upstream or profile fallback bases
+    adapters:
+      claude: adapters/claude/commands/re.md
+  - name: rebase
+    path: skills/rebase/SKILL.md
+    description: Recreate the current worktree on a fresh branch reset to its upstream or a named remote branch while discarding tracked and normal untracked local changes
+    adapters:
+      claude: adapters/claude/commands/rebase.md
+  - name: tdd
+    path: skills/tdd/SKILL.md
+    description: Drive feature work or bug fixes through red-green-refactor with repo-profile test commands
+    adapters:
+      claude: adapters/claude/commands/tdd.md
+  - name: verify
+    path: skills/verify/SKILL.md
+    description: Run the repository's canonical verification command set from repo-profile.yaml
+    adapters:
+      claude: adapters/claude/commands/verify.md
+  - name: pr-coding-loop
+    path: skills/pr-coding-loop/SKILL.md
+    description: Create and maintain implementation PRs from coding-agent worktrees using upstream-derived PR bases and the shared PR agent marker protocol
+    adapters:
+      claude: adapters/claude/commands/pr-coding-loop.md
+  - name: pr-review-loop
+    path: skills/pr-review-loop/SKILL.md
+    description: Review PRs using a bounded interval-based PR agent marker loop, Chinese human summaries, and SHA-bound approval markers
+    adapters:
+      claude: adapters/claude/commands/pr-review-loop.md
+  - name: upstream-from-repo
+    path: skills/upstream-from-repo/SKILL.md
+    description: Upstream reusable skill or workflow behavior from a consumer repo into Agent Workflow Kit without modifying the source repo
+    adapters:
+      claude: adapters/claude/commands/upstream-from-repo.md
+  - name: gha-monitor
+    path: skills/gha-monitor/SKILL.md
+    description: Check recent GitHub Actions workflow runs and classify failures or anomalies
+  - name: test-quality-audit
+    path: skills/test-quality-audit/SKILL.md
+    description: Assess whether tests provide real behavioral confidence rather than only file-count coverage
+
+workflows:
+  - name: feature
+    path: workflows/feature.md
+  - name: pr-agent-loop
+    path: workflows/pr-agent-loop.md
+  - name: upstream-from-repo
+    path: workflows/upstream-from-repo.md

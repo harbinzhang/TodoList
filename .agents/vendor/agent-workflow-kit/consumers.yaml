@@ -1,0 +1,26 @@
+consumers:
+  - name: perks-react
+    path: /Users/haibinzhang/mine/react/perks-react
+    enabled: true
+    syncVendor: true
+    notes: Primary app repo with repo-local agent workflows.
+
+  - name: perkmon.com
+    path: /Users/haibinzhang/mine/html/perkmon.com
+    enabled: true
+    syncVendor: true
+    allowDirtyUntracked:
+      - content-admin/.firebase/
+    notes: Marketing/content repo with vendored generic AWK skills.
+
+  - name: ai-exploration-mentor
+    path: /Users/haibinzhang/mine/react/ai-exploration-mentor
+    enabled: true
+    syncVendor: true
+    notes: Firebase/Functions repo with vendored generic AWK skills.
+
+  - name: TodoList
+    path: /Users/haibinzhang/mine/react/TodoList
+    enabled: true
+    syncVendor: true
+    notes: Todo app repo with repo-local agent skills; AWK vendor sync will create or refresh the vendored kit.

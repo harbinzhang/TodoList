@@ -1,0 +1,26 @@
+repo:
+  defaultBranch: main
+  branchPrefix: codex/
+  worktreeRoot: ~/.codex/worktrees
+  conventionsPath: .agents/conventions.md
+
+commands:
+  lint: npm run lint
+  test: npm run test
+  build: npm run build
+  bundleCheck: npm run bundle:check
+  e2eLocal: npm run test:e2e:local:auto
+  rules: npm run test:rules
+  typecheck: npx tsc --noEmit
+  functionsTypecheck: cd functions && npm install --prefer-offline && npx tsc --noEmit
+  verify: npm run test && npx tsc --noEmit && cd functions && npm install --prefer-offline && npx tsc --noEmit && cd .. && npm run bundle:check && npm run test:e2e:local:auto && npm run test:rules
+
+review:
+  baseFallbacks:
+    - origin/main
+    - main
+  riskPaths:
+    - firestore.rules
+    - functions/src
+    - src/firebase
+    - packages/contracts

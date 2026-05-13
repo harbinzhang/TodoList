@@ -1,0 +1,157 @@
+conventions:
+  path: .agents/conventions.md
+
+skills:
+  - name: ship
+    path: .agents/skills/ship/SKILL.md
+    description: Optionally sync a named remote branch, then sync remote main, commit intended changes, run a patch release, deploy the released build to Firebase staging, and run staging validation
+  - name: deploy
+    path: .agents/skills/deploy/SKILL.md
+    description: Deploy the application to Firebase using the shared staging/prod deploy workflow, including dedicated card-asset hosting and strict post-deploy staging QA for staging full/hosting deploys
+  - name: release
+    path: .agents/skills/release/SKILL.md
+    description: Prepare a branch-based release from the currently checked out branch tip by merging it into main, applying version bump (major/minor/patch), creating the matching semver tag, and ending with a clean worktree
+  - name: hotfix
+    path: .agents/skills/hotfix/SKILL.md
+    description: Prepare a short-lived production hotfix from a released tag, optionally cherry-pick reviewed commits, run patch release verification, feed the fix through main, and clean up the hotfix branch/worktree
+  - name: feature
+    path: .agents/skills/feature/SKILL.md
+    description: Manage the full feature lifecycle in a dedicated git worktree and branch created from the current branch tip, with plan, design, and finish gates, PR squash merge to main, and post-merge branch/worktree cleanup
+    adapters:
+      openai: .agents/skills/feature/agents/openai.yaml
+      claude: .claude/commands/feature.md
+  - name: rebase
+    path: .agents/skills/rebase/SKILL.md
+    description: Create a fresh branch in the current worktree, then hard-reset it to its upstream remote ref or a named remote branch such as dev6, discarding all uncommitted local tracked changes without a second confirmation prompt
+    adapters:
+      claude: .claude/commands/rebase.md
+  - name: ios-release
+    path: .agents/skills/ios-release/SKILL.md
+    description: Build and upload iOS app to App Store Connect / TestFlight with correct cross-platform version syncing
+    adapters:
+      claude: .claude/commands/ios-release.md
+  - name: firestore
+    path: .agents/skills/firestore/SKILL.md
+    description: Inspect or modify Firestore data using the shared Firestore workflow and project conventions
+  - name: monitor
+    path: .agents/skills/monitor/SKILL.md
+    description: Run read-only production health monitoring scripts and analyze unexpected Firestore signals
+    adapters:
+      openai: .agents/skills/monitor/agents/openai.yaml
+      claude: .claude/commands/monitor.md
+  - name: benefit-drift-audit
+    path: .agents/skills/benefit-drift-audit/SKILL.md
+    description: Run the read-only userCardBenefitsTracking drift audit, or use the aggregate user-level tracking wrapper for one-user investigations
+    adapters:
+      openai: .agents/skills/benefit-drift-audit/agents/openai.yaml
+  - name: sync-core-branches
+    path: .agents/skills/sync-core-branches/SKILL.md
+    description: Execute a two-stage branch sync (current->main, main->configured release/core branches) with optional auto conflict resolution
+    adapters:
+      openai: .agents/skills/sync-core-branches/agents/openai.yaml
+      claude: .claude/commands/sync-core-branches.md
+  - name: local-emulator-admin-setup
+    path: .agents/skills/local-emulator-admin-setup/SKILL.md
+    description: Set up local Firebase emulators with a seeded admin test account and real card products for local testing
+    adapters:
+      openai: .agents/skills/local-emulator-admin-setup/agents/openai.yaml
+      claude: .claude/commands/local-emulator-admin-setup.md
+  - name: re
+    path: .agents/skills/re/SKILL.md
+    description: Review current-branch git changes in the active worktree for bugs, conventions compliance, code quality, and Cloud Functions entrypoint test parity (matrix sync + high-risk helper coverage)
+    adapters:
+      claude: .claude/commands/re.md
+  - name: pr-coding-loop
+    path: .agents/skills/pr-coding-loop/SKILL.md
+    description: Create and maintain implementation PRs from coding-agent worktrees using upstream-derived PR bases and the shared PR agent comment protocol
+    adapters:
+      claude: .claude/commands/pr-coding-loop.md
+  - name: pr-review-loop
+    path: .agents/skills/pr-review-loop/SKILL.md
+    description: Review PRs from a primary review worktree using a bounded interval-based PR agent comment loop, Chinese human summaries, and SHA-bound GOOD_TO_GO signals
+    adapters:
+      claude: .claude/commands/pr-review-loop.md
+  - name: gha-monitor
+    path: .agents/skills/gha-monitor/SKILL.md
+    description: Check recent GitHub Actions workflow runs and surface failures or anomalies
+    adapters:
+      claude: .claude/commands/gha-monitor.md
+  - name: android-release
+    path: .agents/skills/android-release/SKILL.md
+    description: Prepare and ship an Android release to Google Play via CI or local build
+    adapters:
+      claude: .claude/commands/android-release.md
+  - name: android-screenshots
+    path: .agents/skills/android-screenshots/SKILL.md
+    description: Capture and upload Play Store screenshots for phone, 7-inch, and 10-inch tablets
+    adapters:
+      claude: .claude/commands/android-screenshots.md
+  - name: seo-geo-audit
+    path: .agents/skills/seo-geo-audit/SKILL.md
+    description: Audit website SEO and GEO readiness across public surfaces, metadata, crawlability, structured data, rendering strategy, and AI citation readiness
+  - name: test-coverage-report
+    path: .agents/skills/test-coverage-report/SKILL.md
+    description: Report current unit, contract, integration, and e2e test coverage surfaces and the highest-value gaps
+    adapters:
+      openai: .agents/skills/test-coverage-report/agents/openai.yaml
+  - name: test-quality-audit
+    path: .agents/skills/test-quality-audit/SKILL.md
+    description: Assess whether tests provide behavioral confidence across trigger, boundary, side effect, reader, and edge-case coverage
+    adapters:
+      openai: .agents/skills/test-quality-audit/agents/openai.yaml
+  - name: tdd
+    path: .agents/skills/tdd/SKILL.md
+    description: Drive feature work or bug fixes using a Red-Green-Refactor test-driven development cycle with Vitest and Playwright
+    adapters:
+      claude: .claude/commands/tdd.md
+  - name: test-gen
+    path: .agents/skills/test-gen/SKILL.md
+    description: Generate unit, integration, or E2E tests for uncovered code by analyzing source and matching existing patterns
+    adapters:
+      claude: .claude/commands/test-gen.md
+  - name: verify
+    path: .agents/skills/verify/SKILL.md
+    description: Run all test suites (unit, TypeScript, build, E2E, Firestore rules) and report a pass/fail summary
+    adapters:
+      claude: .claude/commands/verify.md
+  - name: staging-tracker-verification
+    path: .agents/skills/staging-tracker-verification/SKILL.md
+    description: Verify the staging tracker flow with remote staging E2E, direct Firestore inspection, temporary staging userCard creation, and cleanup
+  - name: staging-qa
+    path: .agents/skills/staging-qa/SKILL.md
+    description: Run the fast post-deploy staging QA gate across remote E2E, Firebase Auth/Firestore health, Hosting build metadata, and stale test-data cleanup, with health-only default build checks and optional strict expected-build verification
+  - name: staging-user-journey-verification
+    path: .agents/skills/staging-user-journey-verification/SKILL.md
+    description: Verify core hosted-staging user journeys with read-only smoke, staging-safe writes, direct Firestore inspection, and cleanup
+
+workflows:
+  - name: add-card
+    path: .agents/workflows/add-card.md
+  - name: ship
+    path: .agents/workflows/ship.md
+  - name: deploy
+    path: .agents/workflows/deploy.md
+  - name: release
+    path: .agents/workflows/release.md
+    adapters:
+      claude: .claude/commands/release.md
+  - name: hotfix
+    path: .agents/workflows/hotfix.md
+  - name: feature
+    path: .agents/workflows/feature.md
+  - name: run-firestore-script
+    path: .agents/workflows/run-firestore-script.md
+  - name: perkperks-ingestion
+    path: .agents/workflows/perkperks-ingestion.md
+  - name: card-product-staging-rollout
+    path: .agents/workflows/card-product-staging-rollout.md
+  - name: staging-qa
+    path: .agents/workflows/staging-qa.md
+  - name: staging-tracker-verification
+    path: .agents/workflows/staging-tracker-verification.md
+  - name: staging-user-journey-verification
+    path: .agents/workflows/staging-user-journey-verification.md
+  - name: seo-geo-audit
+    path: .agents/workflows/seo-geo-audit.md
+  - name: pr-agent-loop
+    path: .agents/workflows/pr-agent-loop.md
