@@ -1,35 +1,38 @@
 ---
 name: rebase
-description: "Use when the user wants to discard pending local tracked changes in the current worktree and recreate the worktree on a fresh branch reset to its upstream or a named remote branch such as `dev6`, without a second interactive confirmation."
+description: "Use when the user wants to discard pending local tracked and untracked changes in the current worktree and recreate the worktree on a fresh branch reset to origin/dev6 by default or a named remote branch, without a second interactive confirmation."
 ---
 
 # Rebase (Create Fresh Branch, Hard Reset to Remote)
 
 Creates a fresh branch from the branch currently checked out in this worktree,
-then hard-resets that fresh branch to a resolved remote ref. `/rebase` uses the
-original branch's existing upstream as the target. `/rebase dev6` means "in this
-current worktree, create a new branch and hard-reset it to `origin/dev6`." All
-uncommitted modifications to tracked files are permanently discarded from the
-worktree. The `/rebase` invocation itself is approval to proceed after the
-pre-reset summary is shown; do not ask for a second interactive confirmation.
+then hard-resets that fresh branch to a resolved remote ref. `/rebase` defaults
+to `origin/dev6`, equivalent to `/rebase dev6`. `/rebase release-branch` means
+"in this current worktree, create a new branch and hard-reset it to
+`origin/release-branch`." All uncommitted modifications to tracked files and
+normal untracked files are permanently discarded from the worktree. Ignored
+files, such as local env files and dependency folders, are preserved. The
+`/rebase` invocation itself is approval to proceed after the pre-reset summary
+is shown; do not ask for a second interactive confirmation.
 
 ## What this skill owns
 
 - Detecting the current branch and parsing an optional target branch argument
-- Resolving the target remote ref from either the current upstream or the user
-  supplied branch name
+- Resolving the target remote ref from `origin/dev6` by default or from the
+  user supplied branch name
 - Creating a fresh branch from the current HEAD before the hard reset
 - Displaying every dirty file the user is about to lose
 - Treating the explicit `/rebase` invocation as approval, with no second
   interactive confirmation prompt
 - Running `git reset --hard <remote-ref>`
+- Running `git clean -fd` to remove normal untracked files
 - Pointing the fresh branch's upstream at the resolved target ref
 - Reporting the final HEAD and which files were dropped
 
 ## What this skill does NOT own
 
 - Merging, rebasing onto another branch, or pulling new upstream commits
-- Cleaning untracked files (`??` entries survive `git reset --hard` by design)
+- Cleaning ignored files (`git clean -fd` intentionally does not use `-x`)
 - Stashing or preserving any local changes
 - Repointing, resetting, or otherwise modifying the original branch after the
   fresh branch is created
@@ -38,15 +41,15 @@ pre-reset summary is shown; do not ask for a second interactive confirmation.
 
 ## Safety
 
-- **Never run `git reset --hard` without first listing the dirty files and showing the pre-reset summary.** The user cannot undo this for uncommitted work, but the `/rebase` command is already the approval to proceed.
+- **Never run `git reset --hard` or `git clean -fd` without first listing the dirty files and showing the pre-reset summary.** The user cannot undo this for uncommitted work, but the `/rebase` command is already the approval to proceed.
 - Do not ask for an additional interactive yes/no confirmation after the pre-reset summary. Continue directly unless a required safety check fails.
 - Always create and switch to a fresh branch before running `git reset --hard`. Create it only after the pre-reset summary, and before the reset.
-- The fresh branch name must be based on the resolved target ref's branch name plus a random 6- or 8-character UUID-style suffix, for example `dev6-rebase-a1b2c3d4`. Prefer 8 characters.
+- The fresh branch name must be based on the resolved target ref's branch name plus a random 6- or 8-character UUID-style suffix, for example `release-branch-rebase-a1b2c3d4`. Prefer 8 characters.
 - If the worktree is clean (`git status --short` is empty), note this in the summary and continue without an extra confirmation, since HEAD will still move.
-- If the user supplied a branch argument like `dev6`, resolve it to `origin/dev6`. If they supplied a remote-qualified ref like `origin/dev6`, use it as-is.
-- If no branch argument was supplied, resolve the upstream ref via `git rev-parse --abbrev-ref --symbolic-full-name @{u}` first. If no upstream is configured, fall back to `origin/<branch>`. If neither resolves, stop and report the blocker rather than guessing.
+- If the user supplied a branch argument like `release-branch`, resolve it to `origin/release-branch`. If they supplied a remote-qualified ref like `origin/release-branch`, use it as-is.
+- If no branch argument was supplied, resolve the target as `origin/dev6`. Do not use the current branch's upstream as the default target.
 - Treat any supplied branch name only as input for remote-ref resolution. Do not inspect, switch to, or modify the worktree where that branch may be checked out.
-- Untracked files (`??`) are NOT removed by this skill. Mention this explicitly in the pre-reset summary so the user is not surprised.
+- Untracked files (`??`) are removed by this skill via `git clean -fd`. Ignored files are not removed because `-x` is intentionally not used.
 - Never stash, never force-push, never touch other worktrees.
 
 ## Execution
@@ -55,15 +58,12 @@ pre-reset summary is shown; do not ask for a second interactive confirmation.
    ```bash
    BRANCH=$(git branch --show-current)
    [ -n "${BRANCH}" ] || { echo "ERROR: not on a branch"; exit 1; }
-   TARGET_ARG="${1:-}"
-   if [ -n "${TARGET_ARG}" ]; then
-     case "${TARGET_ARG}" in
-       */*) TARGET_REF="${TARGET_ARG}" ;;
-       *) TARGET_REF="origin/${TARGET_ARG}" ;;
-     esac
-   else
-     TARGET_REF=$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null || echo "origin/${BRANCH}")
-   fi
+   RAW_TARGET_ARG="${1:-}"
+   TARGET_ARG="${RAW_TARGET_ARG:-dev6}"
+   case "${TARGET_ARG}" in
+     */*) TARGET_REF="${TARGET_ARG}" ;;
+     *) TARGET_REF="origin/${TARGET_ARG}" ;;
+   esac
    ```
 
 2. **Verify the target remote ref exists**
@@ -74,10 +74,12 @@ pre-reset summary is shown; do not ask for a second interactive confirmation.
 
 3. **Show dirty state**
    ```bash
-   git status --short
+   git status --short --untracked-files=all
+   git clean -nd
    ```
    List every `M`, `A`, `D`, `R` file that will be lost.
-   Note separately any `??` untracked files that will survive.
+   Note separately every `??` untracked file or directory that will be removed.
+   `git clean -nd` is a dry run preview; do not use `-x`.
 
 4. **Generate the fresh branch name from the target ref**
    ```bash
@@ -103,18 +105,22 @@ pre-reset summary is shown; do not ask for a second interactive confirmation.
    About to sync from <TARGET_REF>. The /rebase invocation is approval to continue.
    Original branch in this worktree: <BRANCH>
    Fresh branch to create first: <NEW_BRANCH>
-   Explicit target argument: <TARGET_ARG or none>
-   Files that will be permanently discarded: <N>
-   Untracked files (will NOT be removed): <M>
+   Explicit target argument: <RAW_TARGET_ARG or none>
+   Effective target branch: <TARGET_ARG>
+   Default target when no argument supplied: dev6
+   Tracked files that will be permanently discarded: <N>
+   Untracked files/directories that will be permanently removed: <M>
+   Ignored files/directories: preserved
    Original branch after reset: unchanged
    Fresh branch upstream after reset: <TARGET_REF>
    ```
    Do not pause for a second confirmation prompt.
 
-6. **Create the fresh branch, then reset it**
+6. **Create the fresh branch, reset it, then remove normal untracked files**
    ```bash
    git switch -c "${NEW_BRANCH}"
    git reset --hard "${TARGET_REF}"
+   git clean -fd
    git branch --set-upstream-to="${TARGET_REF}" "${NEW_BRANCH}"
    ```
 
@@ -123,5 +129,6 @@ pre-reset summary is shown; do not ask for a second interactive confirmation.
    - Original branch, fresh branch, and resolved target ref used for the reset
    - Confirm the original branch pointer/upstream was left unchanged
    - Confirm the fresh branch upstream now points at the target ref
-   - List of files that were dropped
-   - Reminder that untracked files remain untouched
+   - List of tracked files that were dropped
+   - List of untracked files/directories that were removed
+   - Reminder that ignored files were preserved

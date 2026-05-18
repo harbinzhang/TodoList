@@ -1,126 +1,45 @@
 ---
 name: tdd
-description: Drive feature work or bug fixes using a Red-Green-Refactor test-driven development cycle with Vitest for unit/integration and Playwright for E2E tests
+description: "Drive feature work or bug fixes through a red-green-refactor cycle using the consumer repo's test commands and conventions. Use when implementing behavior with tests first or when a bug needs a proves-it regression test."
 ---
 
 # Test-Driven Development
 
-Use this skill when implementing new features, fixing bugs, or refactoring with a test-first approach.
+Read `.agents/repo-profile.yaml` before choosing commands.
+
+Defaults:
+- `commands.test`: `npm run test`
+- `commands.verify`: `npm run verify`
 
 ## Workflow
 
-### 1. Understand the requirement
+1. Clarify expected behavior and choose the smallest useful test layer:
+   - Unit: isolated logic, utilities, hooks, and pure functions.
+   - Integration: components or modules with realistic providers and boundaries.
+   - E2E: full user or system journeys when unit/integration tests cannot prove the behavior.
+2. RED: write the smallest failing test that captures the behavior or bug. Do not write production code first.
+3. Run the narrow test and confirm it fails for the expected reason.
+4. GREEN: implement the minimum production change needed to pass.
+5. Re-run the narrow test and confirm it passes.
+6. REFACTOR while keeping tests green. Remove duplication and simplify only without changing behavior.
+7. Repeat the red-green-refactor cycle until the behavior is complete.
+8. Run the relevant broader command from `commands.test` or `commands.verify`.
 
-- Clarify the expected behavior before writing any code.
-- Identify which test layer is appropriate:
-  - **Unit** (Vitest): isolated logic, utilities, hooks, pure functions
-  - **Integration** (Vitest + React Testing Library): components with providers, multi-module flows
-  - **E2E** (Playwright): full browser journeys, auth flows, multi-page interactions
-- Follow the test pyramid: ~80% unit, ~15% integration, ~5% E2E.
+## Bug Fix Pattern
 
-### 2. RED — Write a failing test first
+For bug fixes, start with a proves-it regression test:
 
-Write the smallest test that captures the requirement. Do not write production code yet.
-
-**Unit/Integration test pattern** (Vitest):
-```typescript
-import { describe, it, expect, vi } from 'vitest'
-
-describe('featureName', () => {
-  it('should behave as expected when given X', () => {
-    // Arrange
-    // Act
-    // Assert — one logical assertion per test
-  })
-})
-```
-
-**E2E test pattern** (Playwright):
-```typescript
-import { test, expect } from '@playwright/test'
-
-test.describe('Feature Journey', () => {
-  test('@pr @journey-core should complete the flow', async ({ page }) => {
-    await page.goto('/path')
-    await expect(page.getByTestId('element')).toBeVisible()
-  })
-})
-```
-
-**Conventions:**
-- Place unit/integration tests in `src/<feature>/**/__tests__/` next to the source.
-- Place E2E tests in `e2e/tests/`.
-- Tag E2E tests: `@pr` for emulator-safe, `@journey-core` for core loops, `@release` for staging, `@prod` for read-only production smoke.
-- Use `data-testid` attributes for stable E2E selectors.
-
-Run the test and confirm it fails for the right reason:
-```bash
-npx vitest run --reporter=verbose <test-file>        # unit/integration
-npx playwright test <spec-file> --grep "@pr"          # E2E
-```
-
-### 3. GREEN — Make the test pass
-
-Write the minimum production code to make the failing test pass. No more, no less.
-
-**Firebase mocking pattern:**
-```typescript
-vi.mock('firebase/auth', () => ({
-  getAuth: vi.fn(),
-  onAuthStateChanged: vi.fn(),
-}))
-```
-
-**React component testing pattern:**
-```typescript
-import { render, screen } from '@testing-library/react'
-
-// Wrap with necessary providers
-render(<Component />, { wrapper: TestProviders })
-await screen.findByText('Expected text')
-```
-
-Re-run the test and confirm it passes.
-
-### 4. REFACTOR — Clean up while green
-
-With tests passing, improve the code:
-- Remove duplication
-- Simplify logic
-- Extract helpers only if reused
-- Do not change behavior — tests must stay green
-
-Re-run all related tests after refactoring:
-```bash
-npx vitest run --reporter=verbose                     # all unit tests
-npm run test:journeys:unit                            # journey unit tests
-```
-
-### 5. Repeat
-
-Continue the Red-Green-Refactor cycle until the feature is complete.
-
-### 6. Verify the full suite
-
-Before finishing, run the broader test surface:
-```bash
-npm run test                    # all unit/integration tests
-npm run test:e2e:pr             # emulator-safe E2E tests (if E2E was added)
-```
-
-## Bug Fix Pattern — The Proves-It Test
-
-For bug fixes, always write a test that reproduces the bug first:
-
-1. Write a test that fails because of the bug (RED)
-2. Fix the bug (GREEN)
-3. The test now serves as a regression guard
+1. Write a test that fails because of the reported bug.
+2. Fix the bug with the smallest production change.
+3. Keep the regression test as the guard for that exact failure mode.
 
 ## Rules
 
-- Test behavior and outcomes, not implementation details. Avoid asserting on internal state or mock call counts when possible.
-- Prefer DAMP (Descriptive And Meaningful Phrases) over DRY in tests — clarity matters more than deduplication.
-- One logical assertion per test. Multiple `expect` calls are fine if they assert a single concept.
-- Do not mock what you do not own unless at system boundaries (Firebase, network, localStorage).
-- Use `e2e/seed-emulator.mjs` seed IDs for deterministic E2E test data.
-- Remove debug `console.log` calls before finishing.
+- Test behavior and outcomes, not implementation details.
+- For bug fixes, the first test must reproduce the bug.
+- Mock external boundaries only when the mocked layer has direct coverage elsewhere.
+- Prefer clear, descriptive tests over deduplicated tests that hide the scenario.
+- One logical assertion per test is ideal. Multiple `expect` calls are acceptable when they assert one coherent outcome.
+- Do not mock what the repo owns unless that boundary has direct companion coverage elsewhere.
+- Remove debug logging before finishing.
+- Report commands run and whether each passed or failed.

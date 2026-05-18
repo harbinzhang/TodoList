@@ -117,7 +117,7 @@ function appendSkillEntry(content, entry) {
   const entryLines = [
     `  - name: ${entry.name}`,
     `    path: ${entry.path}`,
-    `    description: ${entry.description}`,
+    `    description: ${yamlString(entry.description)}`,
     '    adapters:',
     `      claude: .claude/commands/${entry.name}.md`,
   ]
@@ -129,6 +129,65 @@ function appendSkillEntry(content, entry) {
   ]
 
   return `${nextLines.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd()}\n`
+}
+
+function yamlString(value) {
+  return JSON.stringify(value)
+}
+
+function helperScriptPathForMode(targetRoot, mode) {
+  const candidates = mode === 'vendored'
+    ? ['.agents/vendor/agent-workflow-kit/scripts/agent-pr-status.mjs']
+    : [
+        '.agents/vendor/agent-workflow-kit/scripts/agent-pr-status.mjs',
+        'scripts/agent-pr-status.mjs',
+      ]
+
+  return candidates.find((candidate) => existsSync(join(targetRoot, candidate))) ?? null
+}
+
+function shouldInstallAgentPrScripts(skillName) {
+  return skillName === 'pr-coding-loop' || skillName === 'pr-review-loop'
+}
+
+function ensureAgentPrPackageScripts(targetRoot, skillName, mode) {
+  if (!shouldInstallAgentPrScripts(skillName)) {
+    return { changed: false, skipped: false }
+  }
+
+  const packagePath = join(targetRoot, 'package.json')
+  if (!existsSync(packagePath)) {
+    return {
+      changed: false,
+      skipped: true,
+      reason: 'package.json is missing; use the helper directly from the vendored kit',
+    }
+  }
+
+  const helperPath = helperScriptPathForMode(targetRoot, mode)
+  if (!helperPath) {
+    return {
+      changed: false,
+      skipped: true,
+      reason: 'agent-pr-status helper is missing; vendor the current AWK ref before installing PR loop aliases',
+    }
+  }
+
+  const pkg = JSON.parse(read(packagePath))
+  pkg.scripts = {
+    ...(pkg.scripts ?? {}),
+    'agent-pr:status': `node ${helperPath} status`,
+    'agent-pr:ready': `node ${helperPath} ready`,
+  }
+
+  const original = read(packagePath)
+  const next = `${JSON.stringify(pkg, null, 2)}\n`
+  if (next !== original) {
+    writeFileSync(packagePath, next)
+    return { changed: true, skipped: false, helperPath }
+  }
+
+  return { changed: false, skipped: false, helperPath }
 }
 
 const targetArg = valueFor('--target')
@@ -205,3 +264,10 @@ writeFileSync(
 console.log(`Installed ${skillName} ${mode} skill routing in ${targetRoot}`)
 console.log(`Catalog: ${catalogPath}`)
 console.log(`Claude command: ${claudeCommandPath}`)
+
+const helperScripts = ensureAgentPrPackageScripts(targetRoot, skillName, mode)
+if (helperScripts.changed) {
+  console.log(`Package scripts: ${join(targetRoot, 'package.json')} -> ${helperScripts.helperPath}`)
+} else if (helperScripts.skipped) {
+  console.log(`Package scripts: skipped (${helperScripts.reason})`)
+}

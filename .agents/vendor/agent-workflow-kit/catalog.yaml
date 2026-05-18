@@ -39,6 +39,16 @@ skills:
     description: Upstream reusable skill or workflow behavior from a consumer repo into Agent Workflow Kit without modifying the source repo
     adapters:
       claude: adapters/claude/commands/upstream-from-repo.md
+  - name: consumer-onboarding
+    path: skills/consumer-onboarding/SKILL.md
+    description: Onboard a new consumer repo to vendored Agent Workflow Kit skills, catalog routing, and repo-profile defaults
+    adapters:
+      claude: adapters/claude/commands/consumer-onboarding.md
+  - name: upstream-and-broadcast
+    path: skills/upstream-and-broadcast/SKILL.md
+    description: Upstream reusable behavior from a consumer repo into AWK, then broadcast the committed AWK ref to registered consumers
+    adapters:
+      claude: adapters/claude/commands/upstream-and-broadcast.md
   - name: gha-monitor
     path: skills/gha-monitor/SKILL.md
     description: Check recent GitHub Actions workflow runs and classify failures or anomalies
@@ -53,3 +63,7 @@ workflows:
     path: workflows/pr-agent-loop.md
   - name: upstream-from-repo
     path: workflows/upstream-from-repo.md
+  - name: consumer-onboarding
+    path: workflows/consumer-onboarding.md
+  - name: upstream-and-broadcast
+    path: workflows/upstream-and-broadcast.md

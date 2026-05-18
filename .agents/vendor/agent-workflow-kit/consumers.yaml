@@ -19,6 +19,16 @@ consumers:
     syncVendor: true
     notes: Firebase/Functions repo with vendored generic AWK skills.
 
+  - name: hotel-pipeline
+    path: /Users/haibinzhang/mine/pipeline/hotel-pipeline
+    enabled: true
+    syncVendor: true
+    allowDirtyUntracked:
+      - docs/
+      - pipeline/.DS_Store
+      - tests/.DS_Store
+    notes: Legacy Python/Rust hotel pipeline repo with vendored rebase routing.
+
   - name: TodoList
     path: /Users/haibinzhang/mine/react/TodoList
     enabled: true

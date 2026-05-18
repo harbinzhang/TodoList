@@ -15,11 +15,11 @@ Use an existing card as reference (e.g., `amex-gold.json`). The file must confor
 ```json
 {
   "name": "Full Card Name",
-  "issuer": "Amex | Chase | Citi | Capital One | Discover | Wells Fargo | Bank of America | Barclays | US Bank | Other",
-  "network": "Visa | Mastercard | Amex | Discover",
+  "issuer": "Amex | Chase | Citi | Capital One | Discover | Wells Fargo | Bank of America | Barclays | US Bank | Hyatt | Marriott | Hilton | IHG | United | Delta | American Airlines | Alaska Airlines | Southwest | JetBlue | Air Canada | British Airways | Hertz | National | Priority Pass | Costco | Other",
+  "network": "Visa | Mastercard | Amex | Discover | Membership",
   "annualFee": 0,
   "cardArtUrl": "/images/cards/{issuer}-{product}.png",
-  "rewardProgram": "MR | UR | TYP | Cash Back | Miles | Other",
+  "rewardProgram": "MR | UR | TYP | Cash Back | Miles | World of Hyatt | Marriott Bonvoy | Hilton Honors | IHG One Rewards | United MileagePlus | Delta SkyMiles | American AAdvantage | Alaska Atmos Rewards | Southwest Rapid Rewards | JetBlue TrueBlue | Air Canada Aeroplan | British Airways Executive Club | Hertz Gold Plus Rewards | National Emerald Club | Priority Pass | Costco Membership | Other",
   "baseValuation": 1,
   "multipliers": [
     {
@@ -46,6 +46,19 @@ Use an existing card as reference (e.g., `amex-gold.json`). The file must confor
   ]
 }
 ```
+
+### Identity Field Rules
+
+Keep `issuer`, `network`, and `rewardProgram` separate:
+
+- `issuer` is the product issuer/provider.
+- `network` is the payment network for credit cards. Membership products should use `Membership` once that enum value is enabled.
+- `rewardProgram` is the loyalty, rewards, or status program where points, benefits, or status accrue.
+
+For co-branded cards, `issuer` and `rewardProgram` are usually different. Example: a Chase Hyatt card should use `issuer: "Chase"` and `rewardProgram: "World of Hyatt"`.
+
+For standalone memberships, use `.agents/workflows/add-membership.md`; those
+products live under `src/data/membership-products/`.
 
 ## 2. Add Card Art Image
 
@@ -74,6 +87,14 @@ For staged rollout of a real batch, follow `.agents/workflows/card-product-stagi
 
 The user will verify the card manually. Do NOT use the browser tool to verify.
 
+## AI-Assisted Seeding Policy
+
+AI may draft membership product JSON, but the agent must validate every enum value against `src/features/admin/types/cardProduct.ts`. If AI suggests a provider, network, reward program, benefit cadence, category, or benefit type outside the enum lists, stop and propose an enum expansion instead of writing the product.
+
+Use `.agents/workflows/add-membership.md` and the seeding prompt at
+`.agents/prompts/membership-product-seeding.md` for AI-drafted membership
+products.
+
 ## Reference Files
 
 | Purpose | Path |
@@ -83,8 +104,10 @@ The user will verify the card manually. Do NOT use the browser tool to verify.
 | Firestore loader | `src/data/card-products/loader.ts` |
 | Card JSON catalog | `src/data/card-products/cards/*.json` |
 | Card list registry | `src/data/card-products/card-list.json` |
+| Membership workflow | `.agents/workflows/add-membership.md` |
 | Card art ingestion guide | `card-assets/card-art-ingestion.md` |
 | Card product staging rollout | `.agents/workflows/card-product-staging-rollout.md` |
 | Admin card editor | `src/features/admin/components/CardProductEditor.tsx` |
 | User add-card page | `src/features/cards/pages/AddCardPage.tsx` |
 | Data ingestion guide | `src/data/card-products/cards/data_ingestion_guide.md` |
+| Membership seeding prompt | `.agents/prompts/membership-product-seeding.md` |

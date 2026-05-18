@@ -1,9 +1,9 @@
 ---
 name: gha-monitor
-description: Check recent GitHub Actions workflow runs and surface failures or anomalies
+description: Check recent GitHub Actions workflow runs and surface failures or anomalies.
 ---
 
-# GitHub Actions Monitor Skill
+# GitHub Actions Monitor
 
 Use this skill when the user asks to check CI status, review recent GitHub Actions runs, or investigate workflow failures.
 
@@ -13,48 +13,34 @@ Use this skill when the user asks to check CI status, review recent GitHub Actio
    ```bash
    gh run list --limit 20
    ```
-
-2. If there are any failed runs, fetch details for each failure:
+2. For failed runs, fetch details:
    ```bash
    gh run view <run-id>
    gh run view <run-id> --log-failed
    ```
+3. Classify each relevant run:
+   - Passing: latest relevant checks are green.
+   - Flaky: failed but a later run of the same workflow/branch passed.
+   - Broken: latest run for a branch still fails.
+   - Stale: scheduled workflow has not run when expected.
+4. For broken runs, identify the failed step and whether the cause looks like a test failure, build error, deployment problem, timeout, or external infrastructure issue.
 
-3. Analyze results and classify each run:
-   - **Passing**: All checks green — no action needed
-   - **Flaky**: Failed but the same workflow passed on a subsequent run of the same branch — note as flaky
-   - **Broken**: Failed on the latest run for a branch — needs attention
-   - **Stale**: Scheduled workflow that hasn't run recently — note as potentially misconfigured
+## Output
 
-4. For broken runs, look at the failed logs to identify:
-   - Which step failed
-   - Whether the failure is a test failure, build error, deployment issue, or infra/timeout
-   - Whether the failure is likely related to the code change or is an environment issue
+```md
+## GitHub Actions Status
 
-5. Report findings in this format:
+### Failed Runs
+- [workflow] branch - run #ID - failed step: X - cause: Y
 
-   ```
-   ## GitHub Actions Status
+### Flaky Runs
+- [workflow] branch - run #ID - intermittent failure in: X
 
-   ### Failed Runs (need attention)
-   - [workflow] branch — run #ID — failed step: X — cause: Y
+### Passing
+- N workflow runs passing across M branches
 
-   ### Flaky Runs (investigate if recurring)
-   - [workflow] branch — run #ID — intermittent failure in: X
+### Summary
+X total runs checked, Y failure(s), Z flaky.
+```
 
-   ### Passing
-   - N workflow runs passing across M branches
-
-   ### Summary
-   X total runs checked, Y failure(s), Z flaky.
-   Last successful run on main: <timestamp>
-   ```
-
-   If all runs are passing, report a clean status.
-
-## Notes
-
-- Always check `main` branch health first — it is the most critical.
-- For scheduled workflows (e.g., Daily E2E Smoke), note if they are running on schedule.
-- Do not re-run or cancel workflows unless the user explicitly asks.
-- Redact any secrets or tokens that may appear in logs.
+If all relevant runs are passing, report a clean status. Do not rerun or cancel workflows unless the user explicitly asks. Redact secrets from logs.

@@ -79,6 +79,6 @@ cd functions && npx ts-node --project tsconfig.json ../exp/functions-scripts/<na
 
 ## Existing Scripts
 
-- `exp/functions-scripts/fix-card-art-urls.ts` — Syncs `cardArtUrl` in Firestore `cards` collection to match local JSON files. Builds a displayName→cardArtUrl mapping from `src/data/card-products/cards/` and `non-benefit-cards/`, then updates any mismatched Firestore docs.
+- `exp/functions-scripts/fix-card-art-urls.ts` — Syncs `cardArtUrl` in Firestore `cards` collection to match local JSON files. Builds a displayName→cardArtUrl mapping from `src/data/card-products/cards/`, `src/data/card-products/non-benefit-cards/`, and `src/data/membership-products/memberships/`, then updates any mismatched Firestore docs.
 - `exp/functions-scripts/inspect-expiration-coverage.ts` — Inspects expiration field coverage across card benefits
 - `exp/functions-scripts/rename-expiration-field.ts` — Renames `expiration` to `expirationDays` for benefits collections with dry-run and execute modes

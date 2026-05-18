@@ -4,10 +4,16 @@ conventions:
 skills:
   - name: ship
     path: .agents/skills/ship/SKILL.md
-    description: Optionally sync a named remote branch, then sync remote main, commit intended changes, run a patch release, deploy the released build to Firebase staging, and run staging validation
+    description: Ship through the fixed release-branch branch by optionally syncing a named remote branch, syncing remote main, aligning root dependencies, taking over local emulator ports for targeted local checks, avoiding GitHub CI gates, running a patch release, deploying Firebase staging, validating staging, and deploying staging admin Hosting
   - name: deploy
     path: .agents/skills/deploy/SKILL.md
-    description: Deploy the application to Firebase using the shared staging/prod deploy workflow, including dedicated card-asset hosting and strict post-deploy staging QA for staging full/hosting deploys
+    description: Deploy the application to Firebase using the shared staging/prod deploy workflow, including Firestore index predeploy gating, dedicated card-asset hosting, and strict post-deploy staging QA for staging full/hosting deploys
+  - name: prod-deploy
+    path: .agents/skills/prod-deploy/SKILL.md
+    description: Prepare a production deploy readiness report by resolving the live production version and classifying changes since prod into automatic and manual verification
+    adapters:
+      openai: .agents/skills/prod-deploy/agents/openai.yaml
+      claude: .claude/commands/prod-deploy.md
   - name: release
     path: .agents/skills/release/SKILL.md
     description: Prepare a branch-based release from the currently checked out branch tip by merging it into main, applying version bump (major/minor/patch), creating the matching semver tag, and ending with a clean worktree
@@ -22,7 +28,7 @@ skills:
       claude: .claude/commands/feature.md
   - name: rebase
     path: .agents/skills/rebase/SKILL.md
-    description: Create a fresh branch in the current worktree, then hard-reset it to its upstream remote ref or a named remote branch such as dev6, discarding all uncommitted local tracked changes without a second confirmation prompt
+    description: Create a fresh branch in the current worktree, then hard-reset it to origin/dev6 by default or a named remote branch, discarding all uncommitted local tracked and untracked changes without a second confirmation prompt
     adapters:
       claude: .claude/commands/rebase.md
   - name: ios-release
@@ -78,7 +84,7 @@ skills:
       claude: .claude/commands/gha-monitor.md
   - name: android-release
     path: .agents/skills/android-release/SKILL.md
-    description: Prepare and ship an Android release to Google Play via CI or local build
+    description: Prepare and ship an Android release to Google Play via local fastlane build/upload
     adapters:
       claude: .claude/commands/android-release.md
   - name: android-screenshots
@@ -86,6 +92,11 @@ skills:
     description: Capture and upload Play Store screenshots for phone, 7-inch, and 10-inch tablets
     adapters:
       claude: .claude/commands/android-screenshots.md
+  - name: marketing-recordings
+    path: .agents/skills/marketing-recordings/SKILL.md
+    description: Capture, regenerate, verify, and promote Perkmon marketing screenshots and user-journey videos from staging or approved synthetic demo scenes
+    adapters:
+      openai: .agents/skills/marketing-recordings/agents/openai.yaml
   - name: seo-geo-audit
     path: .agents/skills/seo-geo-audit/SKILL.md
     description: Audit website SEO and GEO readiness across public surfaces, metadata, crawlability, structured data, rendering strategy, and AI citation readiness
@@ -127,10 +138,14 @@ skills:
 workflows:
   - name: add-card
     path: .agents/workflows/add-card.md
+  - name: add-membership
+    path: .agents/workflows/add-membership.md
   - name: ship
     path: .agents/workflows/ship.md
   - name: deploy
     path: .agents/workflows/deploy.md
+  - name: prod-deploy
+    path: .agents/workflows/prod-deploy.md
   - name: release
     path: .agents/workflows/release.md
     adapters:
@@ -141,6 +156,8 @@ workflows:
     path: .agents/workflows/feature.md
   - name: run-firestore-script
     path: .agents/workflows/run-firestore-script.md
+  - name: grant-welcome-card-slots
+    path: .agents/workflows/grant-welcome-card-slots.md
   - name: perkperks-ingestion
     path: .agents/workflows/perkperks-ingestion.md
   - name: card-product-staging-rollout
@@ -151,6 +168,8 @@ workflows:
     path: .agents/workflows/staging-tracker-verification.md
   - name: staging-user-journey-verification
     path: .agents/workflows/staging-user-journey-verification.md
+  - name: marketing-recordings
+    path: .agents/workflows/marketing-recordings.md
   - name: seo-geo-audit
     path: .agents/workflows/seo-geo-audit.md
   - name: pr-agent-loop

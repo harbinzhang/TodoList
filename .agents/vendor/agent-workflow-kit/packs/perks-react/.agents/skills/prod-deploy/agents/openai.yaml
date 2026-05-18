@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prod Deploy"
+  short_description: "Prepare production deploy verification"
+  default_prompt: "Use $prod-deploy to compare current production against the branch and prepare an auto/manual verification checklist."

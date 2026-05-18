@@ -7,6 +7,8 @@ This document captures important patterns, constraints, and conventions for the 
 ## Change Scope
 
 - Keep code changes narrowly scoped to the user request.
+- Treat planning or review prompts such as `WDYT?`, `review`, `确认一下`, `plan`, `before doing`, or `可以推进` as discussion-only. Do not edit files or run implementation/test commands from those prompts alone.
+- Only execute changes or tests after an explicit execution instruction such as `implement it`, `go ahead and change code`, `开始改`, `按这个做`, `make the changes`, or `run tests`.
 - Do not add opportunistic refactors, abstractions, behavior changes, or environment-specific logic unless the task requires them.
 - Fix presentation/reporting issues at the presentation/reporting layer; do not change lower-level semantics such as logging severity to make reports look cleaner.
 - Before committing, verify staged files contain only task-related changes.
@@ -37,7 +39,7 @@ FirebaseError: Function addDoc() called with invalid data. Unsupported field val
    ```typescript
    // ❌ Bad
    { expiration: value || undefined }
-   
+
    // ✅ Good
    { expiration: value || null }
    ```

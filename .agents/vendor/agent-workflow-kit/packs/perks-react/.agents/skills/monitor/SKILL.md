@@ -14,17 +14,22 @@ Pull recent production health signals from Firestore and surface unexpected issu
    npm run monitor:contract-signals:prod
    ```
 
-2. For a broader production health sweep, run:
+2. Run the raw client signal check for recent client errors and warnings:
+   ```bash
+   npm run monitor:client-signals:prod
+   ```
+
+3. For a broader production health sweep, run:
    ```bash
    npm run monitor:prod:health
    ```
 
-3. If you only need recent raw client errors, query recent client errors from Firestore:
+4. If you only need recent raw client errors, query recent client errors from Firestore:
    ```bash
    npx firebase-tools firestore:query clientErrors --order-by="timestamp=desc" --limit=50 --project=perks-react
    ```
 
-4. If the CLI query is not available or returns errors, use the Node.js Admin SDK approach:
+5. If the CLI query is not available or returns errors, use the Node.js Admin SDK approach:
    ```bash
    node -e "
    const admin = require('firebase-admin');

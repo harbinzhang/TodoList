@@ -47,11 +47,13 @@ This skill does not own:
 - Challenge hidden coupling, duplicated logic, broad fallback behavior, weak validation, stale compatibility paths, and migration debt that would raise future risk.
 - Findings should explain the long-term maintainability risk as well as the immediate bug or behavior gap.
 - Bundle Check is informational only. Mention its state in the human summary, but do not wait for queued Bundle Check runs and do not block `HUMAN_SUMMARY` or `GOOD_TO_GO` on it.
+- Prefer the shared helper (`npm run agent-pr:status` / `npm run agent-pr:ready`) when the consumer exposes those aliases. The helper must fetch top-level PR conversation comments, formal reviews, inline comments, and GraphQL review threads, then print the recent `AGENT-REVIEW:*` marker audit every run. `agent-pr:ready` blocks active `AGENT-REVIEW: FINDING` / `AGENT-REVIEW: DISCUSSION` markers found in top-level PR comments, formal reviews, or inline comments after the valid current-head approval. If the helper aliases are absent, use `node .agents/vendor/agent-workflow-kit/scripts/agent-pr-status.mjs ...` when the vendored helper exists; otherwise collect the same state manually with `gh pr view`, issue comments, inline comments, and GraphQL review threads.
 - Before posting `HUMAN_SUMMARY` or `GOOD_TO_GO`, confirm GitHub mergeability for the current head and run `git diff --check` on the fetched PR diff.
 - A default invocation is a real polling loop, not a single review pass. Continue until a stop condition fires or 10 cycles complete.
 - Post findings with `AGENT-REVIEW: FINDING` or `AGENT-REVIEW: DISCUSSION`.
 - End each finding or discussion comment with the exact sentence `What do you think?`
 - Posting `AGENT-REVIEW: FINDING` or `AGENT-REVIEW: DISCUSSION` is not a stop condition. After posting findings, wait the resolved interval, re-fetch the latest PR head, and continue the loop.
+- Merge conflicts, `DIRTY` / `CONFLICTING` merge state, missing required/expected checks, or blocked checks are current-head blockers to report as findings or discussions; they are not loop stop conditions unless they prevent fetching or resolving the PR head/base.
 - A clean technical review is not enough to post `GOOD_TO_GO`. First post `AGENT-REVIEW: HUMAN_SUMMARY` and wait for explicit human approval.
 - `AGENT-REVIEW: GOOD_TO_GO` must include the exact reviewed PR head SHA.
 - Loop mode must stop after 10 cycles even if no other stop condition has fired.

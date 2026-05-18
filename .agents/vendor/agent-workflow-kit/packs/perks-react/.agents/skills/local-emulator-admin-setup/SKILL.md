@@ -9,14 +9,35 @@ Bootstrap the Firebase Auth and Firestore emulators with an admin account and re
 
 ## Prerequisites
 
-Firebase emulators must be running:
+Firebase emulators must be running with the same project id as the local app.
+The default local project id is `perks-react` (`LOCAL_FIREBASE_PROJECT_ID`).
+
+Recommended one-command setup:
+
+```
+LOCAL_FIREBASE_PROJECT_ID=perks-react npm run emu:agent
+```
+
+Manual setup:
+
+```
+LOCAL_FIREBASE_PROJECT_ID=perks-react firebase emulators:start --project perks-react
+```
+
+Required emulator endpoints:
 - Auth emulator on `http://localhost:9099`
 - Firestore emulator on `http://localhost:8080`
+- Functions emulator on `http://localhost:5001`
+
+Do not start with plain `firebase emulators:start` in this repo unless your
+active Firebase project is already `perks-react`. `.firebaserc` may point the
+default project at staging (`perkly-staging-7dab8`), which makes local callable
+URLs like `/perks-react/us-central1/saveCardProduct` return `not-found`.
 
 ## Seed Script
 
 ```
-node e2e/seed-local-agent-data.mjs
+LOCAL_FIREBASE_PROJECT_ID=perks-react node e2e/seed-local-agent-data.mjs
 ```
 
 **File**: `e2e/seed-local-agent-data.mjs`
@@ -26,7 +47,7 @@ node e2e/seed-local-agent-data.mjs
 2. Deletes the existing admin user if present (idempotent)
 3. Creates the admin Auth account and verifies the email
 4. Writes the admin user profile to Firestore (`users/{uid}`) with `role: admin`
-5. Seeds `LOCAL_SEED_CARD_COUNT` card products (default: 5) from `src/data/card-products/cards/` into `cards/`, `cardBenefits/`, and `userCards/`
+5. Seeds `LOCAL_SEED_CARD_COUNT` products (default: 5) from `src/data/card-products/cards/` and `src/data/membership-products/memberships/` into `cards/`, `cardBenefits/`, and `userCards/`
 6. Seeds `config/homeBanner` with a local-test banner (including `message` Markdown content)
 7. Writes context output to `e2e/.agent/local-testing-context.json` and `e2e/.agent/local-testing-context.md`
 
@@ -64,6 +85,10 @@ After seeding, context is written to:
 
 ## Troubleshooting
 
-- **"Emulator not reachable"** — run `firebase emulators:start` first
+- **"Emulator not reachable"** — run `LOCAL_FIREBASE_PROJECT_ID=perks-react npm run emu:agent`
+- **Callable upload returns `not-found`** — the Functions emulator is likely
+  running under the wrong project id. Stop the emulator process and restart with
+  `LOCAL_FIREBASE_PROJECT_ID=perks-react npm run emu:agent`, or manually run
+  `firebase emulators:start --project perks-react`.
 - **Re-running is safe** — the script deletes and recreates the admin account each run (idempotent)
-- **Card data source** — cards are loaded from `src/data/card-products/cards/*.json`; the selection is deterministic based on the admin email/password hash
+- **Product data source** — cards are loaded from `src/data/card-products/cards/*.json` and memberships from `src/data/membership-products/memberships/*.json`; the selection is deterministic based on the admin email/password hash

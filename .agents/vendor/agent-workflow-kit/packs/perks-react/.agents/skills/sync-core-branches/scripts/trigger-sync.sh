@@ -39,7 +39,7 @@ Defaults:
 
 Examples:
   $0
-  $0 --extra-branches "dev6"
+  $0 --extra-branches "release-branch"
   $0 --conflict-strategy target-wins
   $0 --skip-main-sync --extra-branches "release/1.2"
 USAGE

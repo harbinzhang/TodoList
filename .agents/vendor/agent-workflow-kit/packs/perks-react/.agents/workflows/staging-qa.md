@@ -66,6 +66,7 @@ This adds:
 2. **Cross-collection consistency** — verify every staging user `userCard` has at least one `userCardBenefitsTracking` doc
 3. **Tracking doc shape validation** — sample up to 5 tracking docs, assert required fields present
 4. **Client errors spike check** — warn if > 10 `clientErrors` docs in the last hour
+5. **Suggest-update + approve symmetry** — submits a forward and reverse suggestion against the dedicated `STAGING-QA Suggest Card`, approves each via the `approveCardUpdateSuggestion` callable, asserts card-product state and that the user's existing tracking doc survives both approvals.
 
 Deep mode adds ~10-15 seconds of Firestore queries. Use it when a deploy touches functions, triggers, or data model changes.
 

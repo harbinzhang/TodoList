@@ -5,7 +5,7 @@ description: "Create and maintain implementation pull requests from a coding-age
 
 # PR Coding Loop
 
-Canonical workflow doc: `.agents/workflows/pr-agent-loop.md`
+Canonical workflow doc: `.agents/vendor/agent-workflow-kit/workflows/pr-agent-loop.md`
 
 Use this skill for the implementation side of the PR agent loop. The PR itself is the shared state source; do not use local state files, hidden automation state, or agent-specific memory as the source of truth.
 
@@ -45,13 +45,18 @@ This skill does not own:
 - If no upstream exists, stop and report the blocker. Do not guess or fall back to another branch.
 - Treat `AGENT-REVIEW: GOOD_TO_GO` as valid only when the comment includes the exact latest PR head SHA.
 - If the PR head changes after `GOOD_TO_GO`, the approval is stale and the loop must continue.
-- Address only actionable comments authored by another participant. Do not act on your own comments as reviewer feedback.
-- Before merging, confirm the PR is open, the latest head SHA matches the valid `GOOD_TO_GO`, checks are acceptable under repo policy, and review threads are not blocking.
+- Treat role markers, not GitHub author login, as the authority. Do not discard `AGENT-REVIEW:*` comments because the author matches the coding account; review agents may post through the same account.
+- Inspect all PR comment surfaces before concluding reviewer feedback is clear. `AGENT-REVIEW: FINDING`, `AGENT-REVIEW: DISCUSSION`, `AGENT-REVIEW: STOP`, `AGENT-REVIEW: HUMAN_SUMMARY`, and `AGENT-REVIEW: GOOD_TO_GO` may appear in top-level PR conversation comments from `issues/<n>/comments`, not only inline review comments from `pulls/<n>/comments`.
+- Treat `Unresolved review threads: 0` as only the current inline `reviewThreads` count. It does not prove issue-level PR conversation comments are clear.
+- Never rely on `repos/.../pulls/<n>/comments` alone when polling or deciding merge readiness.
+- Prefer the shared helper (`npm run agent-pr:status` / `npm run agent-pr:ready`) when the consumer exposes those aliases. The helper must fetch top-level PR conversation comments, formal reviews, inline comments, and GraphQL review threads, then print the recent `AGENT-REVIEW:*` marker audit every run. If the helper aliases are absent, use `node .agents/vendor/agent-workflow-kit/scripts/agent-pr-status.mjs ...` when the vendored helper exists; otherwise collect the same state manually with `gh pr view`, issue comments, inline comments, and GraphQL review threads.
+- Address only actionable `AGENT-REVIEW: FINDING` or `AGENT-REVIEW: DISCUSSION` comments that apply to the current head or remain unresolved. Ignore `AGENT-CODING:*` status comments and unmarked self chatter as reviewer feedback.
+- Before merging, confirm the PR is open, the latest head SHA matches the valid `GOOD_TO_GO`, GitHub reports `mergeStateStatus: CLEAN` with no conflict, any present checks are acceptable under repo policy, and review threads are not blocking. Do not require GitHub status checks to exist when the PR otherwise has no check rollup, but report missing checks as a warning instead of evidence that CI passed.
 - Stop polling when the PR is merged, closed, or contains `AGENT-REVIEW: STOP`.
 
 ## Execution
 
-1. Load `.agents/workflows/pr-agent-loop.md`.
+1. Load `.agents/vendor/agent-workflow-kit/workflows/pr-agent-loop.md`.
 2. Follow the **Coding Agent Flow** section.
 3. Use the shared marker protocol exactly as written.
 4. Keep all reports tied to the PR number, branch, upstream-derived base, and latest head SHA.

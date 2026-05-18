@@ -16,6 +16,7 @@ Use this file for repo-specific context when reporting current test coverage and
 - `npm run test:coverage` is not full-system coverage. [vitest.config.ts](/Users/haibinzhang/mine/react/perks-react/vitest.config.ts) excludes `functions`, `tests`, and `e2e`, so its percentage only reflects frontend `src/` files.
 - Contract and integration are logical categories in this repo, not separate runners. Report them as a test inventory and boundary map, not as a single authoritative percentage unless the user explicitly asks for instrumentation.
 - The Playwright suite mixes strong journey assertions with smoke tests. Distinguish “page loads” coverage from outcome-based coverage.
+- Boundary confidence is not proven by same-runtime happy paths alone. For persisted data, SDK values, callable payloads, triggers, rules, and external APIs, check whether tests exercise realistic read-boundary shapes, write-boundary constraints, and negative cases.
 
 ## Layer Heuristics
 
@@ -59,12 +60,14 @@ When asked for a coverage report:
 1. Start with the inventory script output.
 2. Convert file counts into product-surface coverage, not just file counts.
 3. Separate line coverage from behavioral coverage.
-4. Call out meaningful gaps in this order:
+4. For contract-heavy areas, separate read/external boundary adapters from write/internal constraints before assigning confidence.
+5. Call out meaningful gaps in this order:
    - missing core user journeys
    - weak boundary contracts
+   - same-runtime-only or nominal-only boundary tests that miss realistic external shapes
    - smoke-only flows that should assert outcomes
    - low-confidence or flaky surfaces
-5. End with the next 3-5 highest-value tests to add.
+6. End with the next 3-5 highest-value tests to add.
 
 ## Scoring Rubric
 
@@ -85,4 +88,5 @@ Use a simple `0-5` confidence score for each layer or product surface.
 - Do not award `4` or `5` to areas dominated by render-smoke tests.
 - A feature with only unit tests and no behavioral checks usually caps at `2`.
 - A feature with only e2e smoke and no unit or contract support usually caps at `2`.
+- A contract surface whose tests only use native constructors, `instanceof`, TypeScript types, or single happy-path mocks usually caps at `2` until it covers realistic boundary shapes and negative cases.
 - Core journeys with local runnable regression paths deserve higher scores than equally-tested secondary surfaces.

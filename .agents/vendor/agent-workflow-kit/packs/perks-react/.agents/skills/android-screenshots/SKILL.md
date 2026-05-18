@@ -88,7 +88,7 @@ $ADB shell am instrument --no-window-animation -w \
   com.perkly.app.test/androidx.test.runner.AndroidJUnitRunner
 
 # Pull screenshots (note: locale dir may be en-US or en_US)
-OUT=fastlane/metadata/android/en-US/images/<deviceDir>  
+OUT=fastlane/metadata/android/en-US/images/<deviceDir>
 # deviceDir: phoneScreenshots, sevenInchScreenshots, or tenInchScreenshots
 mkdir -p $OUT
 LOCALE_DIR=$($ADB shell "run-as com.perkly.app ls app_screengrab/" | tr -d '\r' | head -1)

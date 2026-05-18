@@ -1,0 +1,4 @@
+interface:
+  display_name: "Marketing Recordings"
+  short_description: "Record and promote Perkmon marketing videos and screenshots"
+  default_prompt: "Record or refresh Perkmon marketing assets from staging, verify them, and promote clean outputs."

@@ -50,7 +50,8 @@ Before the version bump on `main`, verify that the exact release source commit f
 
 - Record `RELEASE_SOURCE_HEAD` from the starting branch after the release-prep commit(s) are finalized.
 - Do not substitute `main`'s previous tip, a temporary branch, or another branch tip as the release source unless the user explicitly changes the source branch.
-- If `git merge-base --is-ancestor "${RELEASE_SOURCE_HEAD}" main` fails, stop. Do not create the version bump commit until the correct source commit is merged into `main`.
+- If `git merge-base --is-ancestor "${RELEASE_SOURCE_HEAD}" main` fails after a squash merge, first verify that `main` and `${RELEASE_SOURCE_HEAD}` have identical trees. If they do, create a no-content ancestry-preserving merge commit with `git merge --no-ff -s ours "${RELEASE_SOURCE_HEAD}" -m "chore: preserve release source ancestry"`, then rerun the ancestry check. This proves the verified source commit is part of the release lineage without changing the already-squashed `main` tree.
+- If the trees differ, or if the ancestry check still fails after the preserve-ancestry merge, stop. Do not create the version bump commit until the correct source commit is merged into `main`.
 
 ## Release Scope Cleanliness
 
@@ -96,7 +97,7 @@ Required coverage:
 - Admin staging build
 - Admin production build
 - Functions build
-- Staging deploy precheck (`npm run check:deploy:staging`) so release also catches deploy-script blockers such as functions lockfile drift and functions install/lint/build preflight failures before the actual staging deploy step
+- Staging deploy precheck (`npm run check:deploy:staging`) so release also catches deploy-script blockers such as Functions vendor tarball integrity drift, functions lockfile drift, and functions install/lint/build preflight failures before the actual staging deploy step
 
 Canonical command:
 
@@ -201,12 +202,19 @@ git checkout main
 git pull origin main
 ```
 
-5. Verify the exact current-branch release source is now in `main` ancestry before creating the bump commit:
+5. Verify the exact current-branch release source is now in `main` ancestry before creating the bump commit. Because this workflow squash-merges the PR, preserve the source ancestry when the squashed `main` tree is identical to the release source:
 ```bash
+if ! git merge-base --is-ancestor "${RELEASE_SOURCE_HEAD}" main; then
+  git diff --quiet main "${RELEASE_SOURCE_HEAD}" || {
+    echo "main tree differs from RELEASE_SOURCE_HEAD; stop before version bump"
+    exit 1
+  }
+  git merge --no-ff -s ours "${RELEASE_SOURCE_HEAD}" -m "chore: preserve release source ancestry"
+fi
 git merge-base --is-ancestor "${RELEASE_SOURCE_HEAD}" main
 ```
 
-   If this check fails, stop. The release would otherwise be cut from the wrong lineage.
+   If the final check fails, stop. The release would otherwise be cut from the wrong lineage.
 
 6. Run the full release verification gate on `main`:
 ```bash

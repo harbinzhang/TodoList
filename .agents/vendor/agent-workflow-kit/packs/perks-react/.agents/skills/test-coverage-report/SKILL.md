@@ -11,6 +11,7 @@ Treat "coverage" as two separate concepts:
 
 - **Line coverage**: instrumented percentages from the Vitest frontend suite
 - **Behavioral coverage**: which product areas, boundaries, and user journeys are actually asserted by tests
+- **Boundary confidence**: whether tests exercise real external/read-boundary shapes, failure modes, and write-boundary constraints instead of only same-runtime happy paths
 
 Unless the user explicitly asks for percentages, prioritize behavioral coverage.
 Default to a scorecard-style report that is easy to scan in Markdown.
@@ -47,7 +48,14 @@ Default to a scorecard-style report that is easy to scan in Markdown.
    - `e2e`: browser or device flows
    - The inventory script is heuristic. Correct obvious misclassifications instead of repeating them blindly.
 
-4. Map tests to product surfaces.
+4. Inspect boundary quality when contracts are in scope.
+   - Separate **read/external boundaries** from **write/internal boundaries** before scoring.
+   - For read boundaries, check that tests cover semantic-compatible inputs from realistic SDK, network, cache, serialization, mock, or runtime edges. A test that only uses the native SDK constructor in the same runtime is a happy-path unit test, not strong boundary coverage.
+   - For write boundaries, strict nominal checks can be valid, but tests should prove the accepted write payloads and rejected invalid payloads.
+   - For Firestore timestamp-like values and similar SDK types, look for adapter/decoder tests that cover valid semantic shapes, invalid dates, throwing converters, out-of-range fields, and any explicit decision about accepting or rejecting plain serialized objects.
+   - Flag gaps when tests only assert TypeScript types, `instanceof`, schema presence, or a single mock object without negative cases and cross-boundary shape variation.
+
+5. Map tests to product surfaces.
    - Group by feature or journey, not just by file count.
    - Separate strong outcome-based tests from smoke tests that only prove a page renders.
    - For user-facing reporting, use the current core loop unless the user asks otherwise:
@@ -57,17 +65,19 @@ Default to a scorecard-style report that is easy to scan in Markdown.
      4. perks
      5. tracker
 
-5. Report gaps in priority order.
+6. Report gaps in priority order.
    - Missing core user-journey outcomes
    - Missing boundary or contract assertions
+   - Boundary tests that are too nominal or same-runtime-only to catch real read-edge drift
    - Smoke-only coverage that should become behavioral coverage
    - Areas with no local regression path
    - Secondary surfaces that are intentionally de-prioritized
 
-6. Score each section.
+7. Score each section.
    - Use the scoring rubric from `references/current-test-surface.md`.
    - Score both layer-level confidence and major product surfaces when it helps the user.
    - Keep the score honest. A large number of smoke tests should not score highly.
+   - Cap contract confidence conservatively when boundary tests miss realistic external shapes or failure modes.
 
 ## Output Format
 
@@ -116,6 +126,7 @@ Prefer short tables over long bullets when summarizing inventory. Use bullets fo
 - Do not equate test-file count with confidence. Prefer outcome coverage over raw volume.
 - Call out uncertainty when a classification is heuristic or a test only partially covers a surface.
 - If the user asks about a changed area, inspect the relevant files and tests directly instead of relying only on the inventory script.
+- If the changed area touches persisted data, SDK values, callable payloads, rules, triggers, or external APIs, explicitly report whether tests cover read-boundary adapters, write-boundary constraints, and negative cases.
 - Use score meanings consistently:
   - `0`: effectively uncovered
   - `1`: smoke or fragmentary coverage only

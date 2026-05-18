@@ -85,10 +85,52 @@ function rewriteVendoredSkillPaths(file) {
       '.agents/skills/$1/SKILL.md',
     )
     .replace(
+      /\.agents\/vendor\/agent-workflow-kit\/workflows\/([^/\s]+\.md)/g,
+      '.agents/workflows/$1',
+    )
+    .replace(
       /^- Generic skills may resolve to `\.agents\/vendor\/agent-workflow-kit\/`; project-specific overrides stay under `\.agents\/skills\/`\.$/m,
       '- In this pack snapshot, skill entries resolve to pack-local `.agents/skills/` files so the pack can be copied as a self-contained starting point.',
     )
   if (rewritten !== original) writeFileSync(file, rewritten)
+}
+
+function materializeVendoredCatalogReferences(sourceRoot, packRoot) {
+  const catalogPath = join(packRoot, '.agents', 'catalog.yaml')
+  if (!existsSync(catalogPath)) return []
+
+  const copied = []
+  for (const entry of parseCatalogPaths(read(catalogPath))) {
+    const skillMatch = entry.match(/^\.agents\/vendor\/agent-workflow-kit\/skills\/([^/]+)\/SKILL\.md$/)
+    const workflowMatch = entry.match(/^\.agents\/vendor\/agent-workflow-kit\/workflows\/([^/]+\.md)$/)
+    if (!skillMatch && !workflowMatch) continue
+
+    const source = join(sourceRoot, entry)
+    if (!existsSync(source)) {
+      throw new Error(`Pack catalog references missing vendored source path: ${entry}`)
+    }
+
+    const target = skillMatch
+      ? join(packRoot, '.agents', 'skills', skillMatch[1], 'SKILL.md')
+      : join(packRoot, '.agents', 'workflows', workflowMatch[1])
+    mkdirSync(dirname(target), { recursive: true })
+    cpSync(source, target, { dereference: false })
+    copied.push(relative(packRoot, target))
+  }
+
+  return copied
+}
+
+function stripMarkdownTrailingWhitespace(root) {
+  for (const file of listFiles(root)) {
+    if (!file.endsWith('.md')) continue
+    const original = read(file)
+    const rewritten = original
+      .split('\n')
+      .map((line) => line.replace(/[ \t]+$/g, ''))
+      .join('\n')
+    if (rewritten !== original) writeFileSync(file, rewritten)
+  }
 }
 
 function validatePackCatalog(packRoot) {
@@ -187,6 +229,8 @@ cpSync(sourceAgents, packAgents, {
   filter: (src) => !relative(sourceAgents, src).split('/').includes('vendor'),
 })
 
+materializeVendoredCatalogReferences(sourceRoot, packRoot)
+
 if (existsSync(sourceClaudeCommands)) {
   const packClaudeCommands = join(packRoot, '.claude', 'commands')
   rmSync(packClaudeCommands, { recursive: true, force: true })
@@ -231,6 +275,8 @@ The pack catalog and Claude command wrappers point to pack-local \`.agents/skill
 node scripts/backup-repo-pack.mjs --source ${metadata.sourcePath} --pack ${packName}
 \`\`\`
 `)
+
+stripMarkdownTrailingWhitespace(packRoot)
 
 const pathCount = validatePackCatalog(packRoot)
 console.log(`Backed up ${sourceFiles.length} files to ${packRoot}`)

@@ -62,6 +62,17 @@ node scripts/install-skill-to-repo.mjs --target /path/to/consumer-repo --skill r
 Run the vendoring step first. `--mode override` expects a repo-local skill at
 `.agents/skills/<name>/SKILL.md`.
 
+Installing `pr-coding-loop` or `pr-review-loop` also adds root npm aliases for
+the shared read-only PR helper when the consumer has `package.json`:
+
+```json
+"agent-pr:status": "node .agents/vendor/agent-workflow-kit/scripts/agent-pr-status.mjs status",
+"agent-pr:ready": "node .agents/vendor/agent-workflow-kit/scripts/agent-pr-status.mjs ready"
+```
+
+Without those aliases, agents can call the vendored helper directly with
+`node .agents/vendor/agent-workflow-kit/scripts/agent-pr-status.mjs`.
+
 ## Profile Contract
 
 Each consumer repo should provide `.agents/repo-profile.yaml`:
@@ -115,6 +126,16 @@ Update only this Agent Workflow Kit repo with the reusable behavior.
 Do not modify the source repo.
 ```
 
+For the recurring full maintenance loop, use `upstream-and-broadcast`: upstream
+the reusable behavior into AWK, validate/commit/push AWK, then broadcast that
+committed AWK ref to the registered consumers in `consumers.yaml`.
+
+```text
+Use upstream-and-broadcast. Source repo: /path/to/consumer-repo.
+Compare all AWK-overlapping skills, update AWK, commit and push AWK, then
+broadcast to all enabled consumers and commit vendor-only consumer updates.
+```
+
 ## Vendoring
 
 Use vendoring to give another repository the generic skills and workflows from
@@ -161,10 +182,19 @@ node scripts/install-skill-to-repo.mjs --target /path/to/consumer-repo --skill r
 node scripts/install-skill-to-repo.mjs --target /path/to/consumer-repo --skill verify --mode vendored
 ```
 
+Registering `pr-coding-loop` or `pr-review-loop` after vendoring also wires the
+`agent-pr:status` and `agent-pr:ready` npm aliases when the consumer has
+`package.json`.
+
 Finally, add or update `.agents/repo-profile.yaml` in the consumer repo with
 that repo's branch, verification, and review defaults. Keep repo-specific
 behavior in `.agents/skills/<name>/SKILL.md` overrides or `.agents/conventions.md`;
 do not edit vendored files for local policy.
+
+For first-time setup, use `consumer-onboarding`. It vendors AWK, registers only
+the selected skills, creates or reviews `.agents/repo-profile.yaml`, validates
+the routing, and keeps unrelated consumer repo dirt out of the onboarding
+commit.
 
 Before committing the consumer repo, validate the routing:
 

@@ -138,6 +138,15 @@ Pick one card and record:
 
 Insert a temporary shared `userCard` for the staging test user.
 Use a distinctive nickname such as `codex-staging-tracker-check`.
+Place the temporary card inside the user's active tracking slots. Staging
+test users can have more wallet cards than their effective tracking limit; an
+inactive card is expected to create no tracking docs. Either assign/adjust
+`displayOrder` so the temporary card is in the active window before waiting
+for trigger output, or explicitly report that the verification covered
+inactive-card skip behavior rather than trigger-created tracking rows.
+Use only contract-valid, non-negative integer `displayOrder` values. Do not use
+negative ordering shortcuts to force the card to the top; they create avoidable
+contract-validation noise in staging monitoring.
 
 ```bash
 cd functions && npx tsx -e "
@@ -151,6 +160,7 @@ const payload = {
   nickname: 'codex-staging-tracker-check',
   issuedOn: null,
   createdAt: new Date().toISOString(),
+  displayOrder: 0,
 };
 const ref = await db.collection('userCards').add(payload);
 console.log(JSON.stringify({ userCardId: ref.id, ...payload }, null, 2));
@@ -194,6 +204,10 @@ Verify:
 - `once` benefits use `9999-12-31` as the end date
 - deterministic doc ids include `userId__benefitId__userCardId__periodStart__periodEnd`
 - initial rows are not unexpectedly marked used
+
+If no tracking docs appear, first verify the temporary `userCard` is in the
+active tracking slot set for that user. Do not classify zero docs as a trigger
+failure until active-slot eligibility has been ruled out.
 
 ## Step 7: Verify Used-State Persistence
 

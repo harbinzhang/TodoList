@@ -1,82 +1,38 @@
 ---
 name: verify
-description: Run all test suites (unit, TypeScript, build, E2E, Firestore rules) and report a pass/fail summary
+description: "Run the repository's canonical verification command set from repo-profile.yaml. Use when the user asks for full verification, all tests, or a comprehensive check before completion."
 ---
 
 # Verify Skill
 
-Use this skill when the user asks to fully verify, run all tests, or do a comprehensive check of the codebase.
+Read `.agents/repo-profile.yaml` and run the configured commands.
+
+## Defaults
+
+```yaml
+commands:
+  test: npm run test
+  verify: npm run verify
+  build: npm run build
+```
 
 ## Execution
 
-Run the following steps, parallelizing where possible:
-
-### 1. Unit tests
-
-```bash
-npm test
-```
-
-### 2. TypeScript type checking (parallel)
-
-Frontend:
-```bash
-npx tsc --noEmit
-```
-
-Functions (install deps if needed):
-```bash
-cd functions && npm install --prefer-offline && npx tsc --noEmit
-```
-
-### 3. Production build and bundle budget
-
-```bash
-npm run bundle:check
-```
-
-### 4. E2E local tests
-
-```bash
-npm run test:e2e:local:auto
-```
-
-This auto-starts emulators, runs Playwright E2E tests, and shuts down.
-
-### 5. Firestore rules tests
-
-Wait until E2E tests finish (they share emulator ports), then run:
-
-```bash
-npm run test:rules
-```
-
-If port 8080 is still occupied, find and kill the leftover emulator process before retrying:
-
-```bash
-lsof -i :8080
-kill <PID>
-npm run test:rules
-```
+1. Prefer `commands.verify` when present; it is the repo's canonical full gate.
+2. If `commands.verify` is missing, run the available `commands.test` and `commands.build`.
+3. If the profile defines additional explicit verification commands, run them in the safest order described by repo conventions.
+4. Run independent checks in parallel when they do not share ports, databases, build output, or other mutable state.
+5. Do not run checks in parallel when repo conventions say they share resources, such as emulators, databases, ports, or generated files.
+6. Continue independent checks after a failure when doing so does not hide or compound the failure.
 
 ## Reporting
 
-Report results in this table format:
+Report:
 
-```
-| Test type                         | Result               |
-|-----------------------------------|----------------------|
-| Unit tests                        | X files, Y passed    |
-| TypeScript (frontend + functions) | No errors / N errors |
-| Production build + bundle budget  | Success / Failed     |
-| E2E local                         | X passed             |
-| Firestore rules                   | X passed             |
+```md
+| Check | Command | Result |
+|---|---|---|
+| canonical verify | ... | pass/fail |
 ```
 
-If any step fails, include the error summary and continue running remaining steps.
-
-## Notes
-
-- E2E and rules tests share Firebase emulator ports — do not run them in parallel.
-- Unit tests, TypeScript checks, and `npm run bundle:check` can run in parallel.
-- Functions `node_modules` may not exist in worktrees — install before type checking.
+Include a concise error summary for failures and state which checks were skipped with reasons.

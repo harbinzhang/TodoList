@@ -1,17 +1,17 @@
 ---
 name: pr-review-loop
-description: "Use when a review agent receives a PR URL and should run a bounded PR discussion loop from the primary review worktree across separate coding tools such as Codex, Claude Code, or Gemini Code."
+description: "Use when a review agent receives a PR URL and should run a bounded PR discussion loop from the primary review worktree across separate coding tools such as Codex, Claude Code, Gemini Code, or other coding tools."
 ---
 
 # PR Review Loop
 
-Canonical workflow doc: `.agents/workflows/pr-agent-loop.md`
+Canonical workflow doc: `workflows/pr-agent-loop.md`.
 
 Use this skill for the reviewer side of the PR agent loop. The review agent uses GitHub PR state and fetched PR heads as the source of truth; it must not infer review status from unrelated local worktree dirt.
 
 ## Parameters
 
-Default invocation shape:
+Default invocation:
 
 ```text
 $pr-review-loop <PR URL or number>
@@ -47,22 +47,28 @@ This skill does not own:
 - Challenge hidden coupling, duplicated logic, broad fallback behavior, weak validation, stale compatibility paths, and migration debt that would raise future risk.
 - Findings should explain the long-term maintainability risk as well as the immediate bug or behavior gap.
 - Bundle Check is informational only. Mention its state in the human summary, but do not wait for queued Bundle Check runs and do not block `HUMAN_SUMMARY` or `GOOD_TO_GO` on it.
+- Prefer the shared helper (`npm run agent-pr:status` / `npm run agent-pr:ready`) when the consumer exposes those aliases. The helper must fetch top-level PR conversation comments, formal reviews, inline comments, and GraphQL review threads, then print the recent `AGENT-REVIEW:*` marker audit every run. `agent-pr:ready` blocks active `AGENT-REVIEW: FINDING` / `AGENT-REVIEW: DISCUSSION` markers found in top-level PR comments, formal reviews, or inline comments after the valid current-head approval. If the helper aliases are absent, use `node .agents/vendor/agent-workflow-kit/scripts/agent-pr-status.mjs ...` when the vendored helper exists; otherwise collect the same state manually with `gh pr view`, issue comments, inline comments, and GraphQL review threads.
+- Before posting `HUMAN_SUMMARY` or `GOOD_TO_GO`, confirm GitHub mergeability for the current head and run `git diff --check` on the fetched PR diff.
+- A default invocation is a real polling loop, not a single review pass. Continue until a stop condition fires or 10 cycles complete.
 - Post findings with `AGENT-REVIEW: FINDING` or `AGENT-REVIEW: DISCUSSION`.
 - End each finding or discussion comment with the exact sentence `What do you think?`
+- Posting `AGENT-REVIEW: FINDING` or `AGENT-REVIEW: DISCUSSION` is not a stop condition. After posting findings, wait the resolved interval, re-fetch the latest PR head, and continue the loop.
+- Merge conflicts, `DIRTY` / `CONFLICTING` merge state, missing required/expected checks, or blocked checks are current-head blockers to report as findings or discussions; they are not loop stop conditions unless they prevent fetching or resolving the PR head/base.
 - A clean technical review is not enough to post `GOOD_TO_GO`. First post `AGENT-REVIEW: HUMAN_SUMMARY` and wait for explicit human approval.
 - `AGENT-REVIEW: GOOD_TO_GO` must include the exact reviewed PR head SHA.
 - Loop mode must stop after 10 cycles even if no other stop condition has fired.
-- Stop the current loop after posting `AGENT-REVIEW: HUMAN_SUMMARY` for the current head; wait for explicit human approval before `GOOD_TO_GO`.
+- Stop the current loop after posting `AGENT-REVIEW: HUMAN_SUMMARY` for a safe current head; that one-cycle exit is intentional because the next step is explicit human approval before `GOOD_TO_GO`.
 - After posting `AGENT-REVIEW: HUMAN_SUMMARY` to the PR, paste the full same summary directly in the current conversation. Do not only provide a PR comment link.
 - Stop polling after posting valid `GOOD_TO_GO`, when the PR is merged or closed, or when instructed with `AGENT-REVIEW: STOP`.
 
 ## Execution
 
-1. Load `.agents/workflows/pr-agent-loop.md`.
+1. Load `workflows/pr-agent-loop.md`.
 2. Follow the **Review Agent Flow** section.
 3. Use the shared marker protocol exactly as written.
 4. Keep all review reports tied to the PR number, base branch, latest head SHA, and whether human approval has been received.
-5. Wait the resolved interval between cycles and report the current cycle count out of 10.
+5. If the current cycle posted findings/discussions and no stop condition fired, wait the resolved interval and continue from fresh PR metadata instead of ending the invocation.
+6. Wait the resolved interval between non-terminal cycles and report the current cycle count out of 10.
 
 ## Outputs
 

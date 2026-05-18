@@ -13,9 +13,11 @@ It is repo-specific reference material. Other repositories can copy individual s
   repo-profile.yaml
   skills/
   workflows/
+.claude/
+  commands/
 ```
 
-The pack catalog points to pack-local `.agents/skills/...` entries so the pack can be copied as a self-contained starting point. It is not registered in the root generic `catalog.yaml`.
+The pack catalog and Claude command wrappers point to pack-local `.agents/skills/...` entries so the pack can be copied as a self-contained starting point. It is not registered in the root generic `catalog.yaml`.
 
 ## Refresh
 

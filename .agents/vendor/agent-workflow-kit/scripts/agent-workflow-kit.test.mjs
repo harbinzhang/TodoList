@@ -80,7 +80,7 @@ test('install-skill-to-repo creates a catalog entry and thin Claude command wrap
   mkdirSync(join(target, '.agents'), { recursive: true })
   writeFileSync(
     join(target, '.agents', 'vendor', 'agent-workflow-kit', 'skills', 'rebase', 'SKILL.md'),
-    ['---', 'name: rebase', 'description: Reset a worktree', '---', '', '# Rebase', ''].join('\n'),
+    ['---', 'name: rebase', 'description: Reset a worktree: safely', '---', '', '# Rebase', ''].join('\n'),
   )
   writeFileSync(
     join(target, '.agents', 'catalog.yaml'),
@@ -115,6 +115,7 @@ test('install-skill-to-repo creates a catalog entry and thin Claude command wrap
   const catalog = readFileSync(join(target, '.agents', 'catalog.yaml'), 'utf8')
   assert.match(catalog, /name: rebase/)
   assert.match(catalog, /path: \.agents\/vendor\/agent-workflow-kit\/skills\/rebase\/SKILL\.md/)
+  assert.match(catalog, /description: "Reset a worktree: safely"/)
   assert.match(catalog, /claude: \.claude\/commands\/rebase\.md/)
   assert.match(catalog, /^workflows:$/m)
   assert.match(catalog, /path: \.agents\/workflows\/feature\.md/)
@@ -126,10 +127,64 @@ test('install-skill-to-repo creates a catalog entry and thin Claude command wrap
   assert.match(command, /Load `\.agents\/vendor\/agent-workflow-kit\/skills\/rebase\/SKILL\.md`/)
 })
 
+test('install-skill-to-repo adds PR helper npm aliases for PR loop skills', () => {
+  const target = tempDir('install-pr-loop-target')
+  initGitRepo(target)
+  mkdirSync(join(target, '.agents', 'vendor', 'agent-workflow-kit', 'skills', 'pr-review-loop'), { recursive: true })
+  mkdirSync(join(target, '.agents', 'vendor', 'agent-workflow-kit', 'scripts'), { recursive: true })
+  writeFileSync(
+    join(target, '.agents', 'vendor', 'agent-workflow-kit', 'skills', 'pr-review-loop', 'SKILL.md'),
+    ['---', 'name: pr-review-loop', 'description: Review PRs', '---', '', '# PR Review Loop', ''].join('\n'),
+  )
+  writeFileSync(
+    join(target, '.agents', 'vendor', 'agent-workflow-kit', 'scripts', 'agent-pr-status.mjs'),
+    '#!/usr/bin/env node\n',
+  )
+  writeFileSync(
+    join(target, 'package.json'),
+    `${JSON.stringify({
+      name: 'consumer',
+      scripts: {
+        test: 'node --test',
+      },
+    }, null, 2)}\n`,
+  )
+
+  const result = spawnSync(
+    'node',
+    [
+      resolve(kitRoot, 'scripts', 'install-skill-to-repo.mjs'),
+      '--target',
+      target,
+      '--skill',
+      'pr-review-loop',
+      '--mode',
+      'vendored',
+    ],
+    { cwd: kitRoot, encoding: 'utf8' },
+  )
+
+  assert.equal(result.status, 0, result.stderr)
+  assert.match(result.stdout, /Package scripts:/)
+
+  const pkg = JSON.parse(readFileSync(join(target, 'package.json'), 'utf8'))
+  assert.equal(pkg.scripts.test, 'node --test')
+  assert.equal(
+    pkg.scripts['agent-pr:status'],
+    'node .agents/vendor/agent-workflow-kit/scripts/agent-pr-status.mjs status',
+  )
+  assert.equal(
+    pkg.scripts['agent-pr:ready'],
+    'node .agents/vendor/agent-workflow-kit/scripts/agent-pr-status.mjs ready',
+  )
+})
+
 test('backup-repo-pack includes Claude command wrappers with the .agents snapshot', () => {
   const source = tempDir('pack-source')
   initGitRepo(source)
   mkdirSync(join(source, '.agents', 'skills', 'rebase'), { recursive: true })
+  mkdirSync(join(source, '.agents', 'vendor', 'agent-workflow-kit', 'skills', 'pr-review-loop'), { recursive: true })
+  mkdirSync(join(source, '.agents', 'vendor', 'agent-workflow-kit', 'workflows'), { recursive: true })
   mkdirSync(join(source, '.claude', 'commands'), { recursive: true })
   writeFileSync(
     join(source, '.agents', 'catalog.yaml'),
@@ -140,12 +195,26 @@ test('backup-repo-pack includes Claude command wrappers with the .agents snapsho
       '    description: Reset a worktree',
       '    adapters:',
       '      claude: .claude/commands/rebase.md',
+      '  - name: pr-review-loop',
+      '    path: .agents/vendor/agent-workflow-kit/skills/pr-review-loop/SKILL.md',
+      '    description: Review PRs',
+      'workflows:',
+      '  - name: pr-agent-loop',
+      '    path: .agents/vendor/agent-workflow-kit/workflows/pr-agent-loop.md',
       '',
     ].join('\n'),
   )
   writeFileSync(
     join(source, '.agents', 'skills', 'rebase', 'SKILL.md'),
     ['---', 'name: rebase', 'description: Reset a worktree', '---', '', '# Rebase', ''].join('\n'),
+  )
+  writeFileSync(
+    join(source, '.agents', 'vendor', 'agent-workflow-kit', 'skills', 'pr-review-loop', 'SKILL.md'),
+    ['---', 'name: pr-review-loop', 'description: Review PRs', '---', '', '# PR Review Loop', ''].join('\n'),
+  )
+  writeFileSync(
+    join(source, '.agents', 'vendor', 'agent-workflow-kit', 'workflows', 'pr-agent-loop.md'),
+    ['---', 'description: PR workflow', '---', '', '# PR Workflow  ', ''].join('\n'),
   )
   writeFileSync(
     join(source, '.claude', 'commands', 'rebase.md'),
@@ -164,7 +233,11 @@ test('backup-repo-pack includes Claude command wrappers with the .agents snapsho
 
   assert.equal(result.status, 0, result.stderr)
   assert.equal(existsSync(join(packRoot, '.agents', 'catalog.yaml')), true)
+  assert.equal(existsSync(join(packRoot, '.agents', 'skills', 'pr-review-loop', 'SKILL.md')), true)
+  assert.equal(existsSync(join(packRoot, '.agents', 'workflows', 'pr-agent-loop.md')), true)
   assert.equal(existsSync(join(packRoot, '.claude', 'commands', 'rebase.md')), true)
+  assert.doesNotMatch(readFileSync(join(packRoot, '.agents', 'catalog.yaml'), 'utf8'), /\.agents\/vendor/)
+  assert.doesNotMatch(readFileSync(join(packRoot, '.agents', 'workflows', 'pr-agent-loop.md'), 'utf8'), / +$/m)
   assert.match(readFileSync(join(packRoot, 'README.md'), 'utf8'), /\.claude\/[\s\S]*commands/)
 })
 
