@@ -1,0 +1,4 @@
+interface:
+  display_name: "Feature Lifecycle"
+  short_description: "Create, finish, merge, and clean up a short-lived feature worktree"
+  default_prompt: "Create a feature worktree from the current branch tip, keep it gated by plan and design, and finish with PR squash merge plus branch/worktree cleanup."

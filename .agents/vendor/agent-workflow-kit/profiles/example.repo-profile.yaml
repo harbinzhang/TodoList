@@ -1,0 +1,16 @@
+repo:
+  defaultBranch: main
+  branchPrefix: codex/
+  worktreeRoot: ~/.codex/worktrees
+  conventionsPath: .agents/conventions.md
+
+commands:
+  test: npm run test
+  verify: npm run verify
+  build: npm run build
+
+review:
+  baseFallbacks:
+    - origin/main
+    - main
+  riskPaths: []

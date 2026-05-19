@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sync Core Branches"
+  short_description: "Sync main into core release branches"
+  default_prompt: "Sync main into core branches and report merge conflicts."

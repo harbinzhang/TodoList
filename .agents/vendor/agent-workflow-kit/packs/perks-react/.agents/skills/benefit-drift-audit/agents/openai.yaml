@@ -1,0 +1,4 @@
+interface:
+  display_name: "Benefit Drift Audit"
+  short_description: "Read-only cadence-aware benefit tracking drift audit"
+  default_prompt: "Run the read-only benefit tracking drift audit (staging first, then prod) and report cadence-aware residuals."

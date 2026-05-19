@@ -1,0 +1,4 @@
+interface:
+  display_name: "Test Coverage Report"
+  short_description: "Report current test coverage and gaps"
+  default_prompt: "Use $test-coverage-report to summarize current unit, contract, integration, and e2e coverage plus the main gaps."
