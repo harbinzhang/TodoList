@@ -1,0 +1,4 @@
+interface:
+  display_name: "ReviewL"
+  short_description: "Alias for PR Review Loop"
+  default_prompt: "Use $reviewl to independently review each latest PR head, post marked findings and a Chinese human summary, and only post GOOD_TO_GO for the exact reviewed head."

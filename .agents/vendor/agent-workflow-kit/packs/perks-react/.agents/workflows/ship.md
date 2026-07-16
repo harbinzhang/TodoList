@@ -13,6 +13,7 @@ Every ship run uses the fixed branch named `release-branch` as the release sourc
 This workflow composes existing canonical workflows:
 
 - `.agents/workflows/release.md` for `release-branch` -> `main` -> `release-branch` patch release
+- `.agents/workflows/i18n-staging-sync.md` for pre-staging i18n catalog and changed-key review-ledger blockers
 - `.agents/workflows/deploy.md` for Firebase staging deploy
 - `.agents/workflows/staging-qa.md` for the default post-deploy staging gate
 - `.agents/workflows/staging-user-journey-verification.md` for broader journey validation when needed
@@ -26,6 +27,7 @@ This workflow composes existing canonical workflows:
 - Sync `release-branch` from remote `main` before final release-prep commits.
 - Push `release-branch`.
 - Align root dependencies and run a scope-aware local verification gate before the release workflow.
+- Run the read-only i18n staging sync gate before the release workflow and repair only i18n blockers that belong to the release scope.
 - Use local verification only. Do not use GitHub Actions, GitHub PR checks, or remote CI as a ship gate.
 - Run a `patch` release only.
 - Deploy the released build to Firebase staging.
@@ -67,6 +69,7 @@ Stop and report before continuing if any of these occur:
 - A separate worktree holding `main` has local changes or cannot be removed cleanly before the release step.
 - Root dependency alignment fails, or `npm install` changes `package.json` / `package-lock.json` in a way that is not clearly an intentional lockfile alignment for the finalized release source.
 - The scope-aware local verification gate fails before the release workflow.
+- The i18n staging sync gate fails and the blockers cannot be repaired, reviewed, committed, pushed, and reverified safely within the release scope.
 - Ship-local emulator takeover fails: standard Firebase emulator or local E2E dev-server ports remain occupied after verified emulator/test/dev listeners are terminated and rechecked.
 - The Functions vendor integrity preflight finds that `functions/vendor/*.tgz` does not match `functions/package-lock.json`, unless the mismatch is refreshed, verified, committed, and pushed before release.
 - `npm run release:verify` fails during the release workflow and the failure cannot be fixed, verified, committed, pushed, and retried safely within the ship scope.
@@ -76,6 +79,18 @@ Stop and report before continuing if any of these occur:
 - Staging QA or targeted staging verification fails and the failure cannot be fixed, verified, committed, pushed, and retried safely within the ship scope.
 - `npm run deploy:staging:admin` fails or reports unusual Firebase/environment errors that cannot be fixed, verified, committed, pushed, and retried safely within the ship scope.
 - Temporary staging records cannot be cleaned up.
+
+Callable public-access postcheck exception: if `npm run deploy:staging` has
+already completed the Firebase staging deploy body and fails only in the
+post-deploy callable public-access smoke with a timeout or network
+`request_failed`, retry only that callable smoke once, or rely on the
+checker's built-in per-function retry. Continue to staging validation only if
+every callable returns an expected callable JSON response such as
+`UNAUTHENTICATED` or `INVALID_ARGUMENT`. This exception does not apply to 403
+platform access failures, 404 missing functions, unexpected response bodies,
+missing env/config/secrets, billing or minimum-cost prompts, failures during
+the deploy body, staging QA failures, product/runtime validation failures, or
+anything requiring product or infrastructure judgment.
 
 If a release verification, deploy, or staging-validation blocker is clearly repairable and belongs to the current release scope, repair it before stopping: make the narrow fix, run the smallest local command that proves the fix, commit only the intended files, push the affected branch, and retry from the failed phase. Do not continue past the failed phase on an uncommitted or unpushed fix. Still hard stop immediately for safety issues, secrets, ambiguous unrelated changes, merge uncertainty, unclean cleanup, or blockers that remain after the focused retry.
 
@@ -279,6 +294,19 @@ git diff --name-only origin/main...HEAD
 
 The release workflow still owns the baseline local release gate: it will run `npm run release:verify` on the source branch before merging to `main`, then rerun it on `main` and on the final bumped release commit. This phase adds only the targeted local checks that are not already guaranteed by that baseline.
 
+Run the pre-staging i18n sync gate before release:
+
+```bash
+npm run i18n:staging-gate -- --base origin/main
+```
+
+Rules:
+
+- Treat `test-results/i18n-staging-sync-report.json` as the source of truth.
+- If the gate fails only on missing locale keys, placeholder/tag/plural drift, quality errors, or changed P0/P1 review-ledger blockers, use `.agents/workflows/i18n-staging-sync.md` to repair them in the current `release-branch` scope, commit only the i18n files, push, and rerun the gate.
+- If the gate report has `needsCriticalSmoke: true`, add `npm run test:e2e:i18n-critical` to the targeted local checks in this phase.
+- Hard stop on gate runtime errors, unrelated product/layout/runtime issues, or translations that cannot be reviewed well enough to mark changed P0/P1 copy.
+
 Always run the Functions vendor integrity preflight in this phase because `ship` performs a full staging deploy that includes Cloud Functions. This catches stale or regenerated local tarballs before Cloud Build runs `npm ci` against `functions/package-lock.json`:
 
 ```bash
@@ -304,6 +332,7 @@ Do not defer this mismatch to `npm run release:verify` or `npm run deploy:stagin
 Select targeted local checks based on the changed paths and behavior:
 
 - Run `npm run test:rules` when the diff touches Firestore rules, rules tests, auth/admin role enforcement, write-boundary code, or any Firestore read/write permission behavior.
+- Run `npm run test:e2e:i18n-critical` when the i18n staging sync report sets `needsCriticalSmoke: true`.
 - Run the smallest relevant local E2E or journey lane when the diff touches auth, dashboard, wallet/cards, tracker UI, settings, routing, onboarding, or other user-visible flows where unit/build coverage does not exercise the workflow.
 - Run tracker-focused local tests when the diff touches benefit cadence logic, `userCards`, `userCardBenefitsTracking`, deterministic tracking IDs, deadline/date normalization, or trigger-generated tracker rows.
 - Run functions-focused targeted tests/builds when the diff touches Cloud Functions runtime code, scheduled jobs, triggers, or callable contracts and the specific changed surface needs more than the baseline Functions suite.
@@ -337,6 +366,14 @@ Rules:
 
 ## Phase 4: Patch Release
 
+Before invoking the release workflow, capture the base used for the later staging Functions diff-aware deploy:
+
+```bash
+SHIP_FUNCTIONS_DIFF_BASE="$(git rev-parse origin/main)"
+```
+
+Record this value in the ship notes. Capture it after the final `origin/main` sync and prep commits, but before release changes advance `main`, so the staging deploy can compare the released checkout against the pre-release production baseline.
+
 Run the canonical release workflow with bump type `patch`.
 
 Required behavior from `.agents/workflows/release.md`:
@@ -369,8 +406,10 @@ node -p "require('./package.json').version"
 Run the full staging deploy from `.agents/workflows/deploy.md`:
 
 ```bash
-npm run deploy:staging
+FUNCTIONS_DIFF_BASE="${SHIP_FUNCTIONS_DIFF_BASE}" npm run deploy:staging
 ```
+
+This remains a full staging deploy for Hosting, Firestore rules/indexes, and Storage. `FUNCTIONS_DIFF_BASE` only lets the deploy script narrow the Functions resource list when confidence is high or medium; low-confidence backend/runtime diffs still deploy full `functions`, and no-Functions-impact diffs remove Functions from the staging deploy.
 
 Do not run production deploy commands. Do not deploy card-asset hosting unless card assets changed and the user explicitly requested card assets.
 
@@ -410,9 +449,10 @@ Report:
 - prep commits created, or why no prep commit was needed
 - `main` worktree cleanup result before release
 - root dependency alignment result, including any package-lock repair commit
-- scope-aware local verification diff categories, commands run, skipped checks, and result
+- scope-aware local verification diff categories, i18n staging sync gate result/report path, commands run, skipped checks, and result
 - confirmation that GitHub Actions / PR checks / remote CI were not used as ship gates
 - Functions vendor integrity preflight result, including any lockfile/vendor refresh commit
+- captured `SHIP_FUNCTIONS_DIFF_BASE` and the staging Functions diff-aware deploy confidence/result
 - patch version and tag
 - release verification result
 - branch sync result (`release-branch -> main -> release-branch`)

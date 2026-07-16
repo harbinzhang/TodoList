@@ -1,0 +1,4 @@
+interface:
+  display_name: "PR Retro Audit"
+  short_description: "Audit recent PRs for missed critical gaps"
+  default_prompt: "Use $pr-retro-audit to audit recent merged and closed PRs for missed critical issues and comment on the PRs if needed."

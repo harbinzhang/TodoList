@@ -1,1 +1,0 @@
-/Users/haibinzhang/mine/react/perks-react/.agents/skills/sync-core-branches/SKILL.md

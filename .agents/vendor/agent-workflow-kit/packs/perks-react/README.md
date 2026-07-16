@@ -10,8 +10,11 @@ It is repo-specific reference material. Other repositories can copy individual s
 .agents/
   catalog.yaml
   conventions.md
+  plans/
+  prompts/
   repo-profile.yaml
   skills/
+  templates/
   workflows/
 .claude/
   commands/

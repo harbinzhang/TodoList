@@ -93,4 +93,4 @@ When the user asks for specifics, drill into the nested section reports inside
 - **Read-only.** Never run the `exp/functions-scripts/repair-*.ts` scripts from this skill. Those are the separate human-driven remediation path.
 - Never modify or delete any Firestore documents from this skill.
 - If credentials fail, inform the user and stop — do not attempt alternative queries.
-- The same script is included in `npm run monitor:prod:health`, so running this skill is a direct invocation of the same check the daily sweep uses.
+- The same script is included in `npm run monitor:prod:health:deep`. It is intentionally excluded from the default light production sweep because it full-scans `userCardBenefitsTracking`.

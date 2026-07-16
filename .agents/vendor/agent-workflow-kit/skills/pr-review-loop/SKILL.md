@@ -30,12 +30,12 @@ This skill owns:
 - applying a maintainability-first review bar instead of proposing narrow or hacky patches
 - asking the implementation agent to evaluate findings with `What do you think?`
 - generating a Chinese human-review summary when the PR appears safe
-- posting `AGENT-REVIEW: GOOD_TO_GO` only after human approval
+- posting `AGENT-REVIEW: GOOD_TO_GO` automatically after posting `AGENT-REVIEW: HUMAN_SUMMARY` for the same current head
 
 This skill does not own:
 - merging the PR
 - editing implementation files in the coding worktree
-- posting `GOOD_TO_GO` before human approval
+- posting `GOOD_TO_GO` without first posting `HUMAN_SUMMARY` for the same current head
 - approving a stale head SHA
 - repeating already-fixed findings without re-fetching the latest head
 
@@ -53,12 +53,14 @@ This skill does not own:
 - Post findings with `AGENT-REVIEW: FINDING` or `AGENT-REVIEW: DISCUSSION`.
 - End each finding or discussion comment with the exact sentence `What do you think?`
 - Posting `AGENT-REVIEW: FINDING` or `AGENT-REVIEW: DISCUSSION` is not a stop condition. After posting findings, wait the resolved interval, re-fetch the latest PR head, and continue the loop.
-- Merge conflicts, `DIRTY` / `CONFLICTING` merge state, missing required/expected checks, or blocked checks are current-head blockers to report as findings or discussions; they are not loop stop conditions unless they prevent fetching or resolving the PR head/base.
-- A clean technical review is not enough to post `GOOD_TO_GO`. First post `AGENT-REVIEW: HUMAN_SUMMARY` and wait for explicit human approval.
+- Merge conflicts and `DIRTY` / `CONFLICTING` merge state are current-head blockers to report as findings or discussions; they are not loop stop conditions unless they prevent fetching or resolving the PR head/base.
+- CI/status checks are informational only for this review loop. Do not block `HUMAN_SUMMARY`, `GOOD_TO_GO`, or merge-readiness discussion on missing, pending, failed, or blocked status checks; mention them in the human summary when useful.
+- If a previous `AGENT-REVIEW: FINDING` or `AGENT-REVIEW: DISCUSSION` is solely about CI/status checks, treat it as informational and non-blocking for later cycles.
+- A clean technical review is not enough to post `GOOD_TO_GO`. First post `AGENT-REVIEW: HUMAN_SUMMARY` for the same current head, then immediately post `AGENT-REVIEW: GOOD_TO_GO` for that exact head.
 - `AGENT-REVIEW: GOOD_TO_GO` must include the exact reviewed PR head SHA.
 - Loop mode must stop after 10 cycles even if no other stop condition has fired.
-- Stop the current loop after posting `AGENT-REVIEW: HUMAN_SUMMARY` for a safe current head; that one-cycle exit is intentional because the next step is explicit human approval before `GOOD_TO_GO`.
-- After posting `AGENT-REVIEW: HUMAN_SUMMARY` to the PR, paste the full same summary directly in the current conversation. Do not only provide a PR comment link.
+- Stop the current loop after posting `AGENT-REVIEW: HUMAN_SUMMARY` and the paired `AGENT-REVIEW: GOOD_TO_GO` for a safe current head.
+- After posting `AGENT-REVIEW: HUMAN_SUMMARY` and `AGENT-REVIEW: GOOD_TO_GO` to the PR, paste the full same human summary directly in the current conversation and report the reviewed SHA that was marked `GOOD_TO_GO`. Do not only provide PR comment links.
 - Stop polling after posting valid `GOOD_TO_GO`, when the PR is merged or closed, or when instructed with `AGENT-REVIEW: STOP`.
 
 ## Execution
@@ -66,7 +68,7 @@ This skill does not own:
 1. Load `workflows/pr-agent-loop.md`.
 2. Follow the **Review Agent Flow** section.
 3. Use the shared marker protocol exactly as written.
-4. Keep all review reports tied to the PR number, base branch, latest head SHA, and whether human approval has been received.
+4. Keep all review reports tied to the PR number, base branch, latest head SHA, and whether the paired `GOOD_TO_GO` was posted.
 5. If the current cycle posted findings/discussions and no stop condition fired, wait the resolved interval and continue from fresh PR metadata instead of ending the invocation.
 6. Wait the resolved interval between non-terminal cycles and report the current cycle count out of 10.
 
@@ -77,4 +79,4 @@ This skill does not own:
 - findings posted, skipped, or resolved
 - readable Chinese human-review summary pasted directly in the current conversation when ready
 - maintainability and design-risk assessment in the human summary
-- `GOOD_TO_GO` status and reviewed SHA, if human approved
+- `GOOD_TO_GO` status and reviewed SHA when the human summary is posted

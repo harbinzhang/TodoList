@@ -186,7 +186,7 @@ Do not mix these into the same change unless explicitly requested:
 
 | Purpose | Path |
 |---------|------|
-| Membership authoring plan | `docs/superpowers/plans/2026-05-09-membership-product-authoring.md` |
+| Membership authoring plan | `docs/deprecated/superpowers/plans/2026-05-09-membership-product-authoring.md` |
 | Membership seeding prompt | `.agents/prompts/membership-product-seeding.md` |
 | Card product schema docs | `src/data/card-products/SCHEMA.md` |
 | Membership product schema docs | `src/data/membership-products/SCHEMA.md` |

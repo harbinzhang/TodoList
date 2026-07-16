@@ -1,0 +1,4 @@
+interface:
+  display_name: "Email Campaign Ops"
+  short_description: "Prepare and send Perkmon email campaigns"
+  default_prompt: "Use $email-campaign-ops to prepare a Perkmon email campaign draft."

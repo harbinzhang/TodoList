@@ -86,6 +86,15 @@ Never use `confirm()`. Always use `ConfirmationModal`:
 import { ConfirmationModal } from '@/shared/components/ConfirmationModal';
 ```
 
+### Mobile-safe rows (no-crush)
+Never place variable-length text (a `t(...)` call or `{expr}`) with `whitespace-nowrap` + `flex-shrink-0`/`shrink-0` beside flexible content in one flex row — at ~390px WebView widths the badge refuses to shrink and crushes the title. Use a blessed pattern instead:
+```typescript
+import { SafeChipGroup, EllipsisText } from '@/shared/components/SafeLayoutPrimitives';
+// wrap badges in SafeChipGroup (flex-wrap + per-child ellipsis), or give the title truncate + min-w-0,
+// or use `hidden sm:inline` to drop the label on mobile, or an overflow-x-auto scroller.
+```
+Split long compound copy (e.g. `Upcoming · Available {{date}}`) onto its own line at narrow widths. `npm run layout:scan` flags new offenders; the `@layout-guard` e2e lane detects rendered crush.
+
 ---
 
 ## Type Safety

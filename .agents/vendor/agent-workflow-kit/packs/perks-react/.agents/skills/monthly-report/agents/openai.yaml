@@ -1,0 +1,4 @@
+interface:
+  display_name: "Monthly Report"
+  short_description: "Draft board-ready monthly reports"
+  default_prompt: "Use $monthly-report to draft a board-ready Perkmon monthly update with KPIs, product wins, risks, priorities, and asks."

@@ -98,6 +98,25 @@ Review Cards: 7 cards found
 All Done: 7 cards added
 ```
 
+### Launch-Set Recording
+
+Use the launch-set catalog when the user asks for the FAQ/manual driven first batch:
+
+```bash
+node scripts/marketing-record-real-faq-journeys.mjs \
+  --first-launch \
+  --out-dir /tmp/perkmon-video-launch-set \
+  --ffmpeg-path "$FFMPEG_BIN"
+```
+
+The run writes:
+
+- `manifest.json` for recorder evidence
+- `perkmon-dot-com-handoff.json` for later website publishing
+- per-journey website MP4, poster PNG, clean 1080x1920 social MP4, screenshots, and 4fps contact sheet
+
+Do not promote any launch-set output if `manifest.records[*].warnings` is non-empty or if a click-first record lacks valid `clicks[]` evidence.
+
 ## Synthetic FAQ Recordings
 
 Use synthetic scenes only for features that do not exist yet, feature-gap placeholders, or intentionally fake marketing screenshots.

@@ -37,6 +37,7 @@ Default to the automated fastlane path unless the user explicitly requests other
 | Path | Command | When to use |
 |------|---------|-------------|
 | **Automated TestFlight release (default)** | `npm run ios:auto-release` | Fresh build + TestFlight upload in one step without touching App Store metadata |
+| **Public App Store review release** | `npm run ios:public-release -- --yes` | Fresh build + TestFlight upload + automatic build-processing retry + App Store review submission without changing listing metadata |
 | **Full automated release with metadata** | `npm run appstore:upload` | Use only when the task explicitly includes App Store metadata or version-page updates |
 | **Upload existing IPA** | `npm run appstore:testflight` | IPA already built, just need to upload |
 | **Metadata only** | `npm run appstore:metadata` | Update App Store listing text |
@@ -102,6 +103,21 @@ npm run appstore:upload
 ```
 
 This runs `cd ios && bundle exec fastlane release_with_metadata` (build + metadata + TestFlight upload).
+
+For public distribution / App Store review:
+
+```bash
+npm run ios:public-release -- --yes
+```
+
+This wraps the TestFlight upload, retries `submit_review` while App Store
+Connect is still processing the new build, and verifies that the version reaches
+`WAITING_FOR_REVIEW` / `IN_REVIEW`. If a new build number is required before the
+release, use:
+
+```bash
+npm run ios:public-release -- --yes --bump-build --commit-version
+```
 
 For upload-only (IPA already exists):
 

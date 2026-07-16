@@ -1,0 +1,51 @@
+skills:
+  - name: adversarial-review
+    path: .agents/vendor/agent-workflow-kit/skills/adversarial-review/SKILL.md
+    description: "Use when an independent reviewer must challenge one exact PR head or commit SHA for merge-blocking risks, especially after implementation or before SHA-bound approval."
+    adapters:
+      claude: .claude/commands/adversarial-review.md
+  - name: codex-relay
+    path: .agents/vendor/agent-workflow-kit/skills/codex-relay/SKILL.md
+    description: "Use when the user wants Claude to plan a change, have the human confirm the plan, then hand each task off to the OpenAI Codex CLI (codex:codex-rescue subagent) one at a time with checkpoint commits, and finish with a Codex + Claude dual adversarial review. Trigger on \"codex-relay\", \"relay to codex\", \"plan then let codex build it\", \"let codex execute the tasks\", \"codex as executor\", or any request to orchestrate Codex-as-executor under a human-confirmed plan."
+    adapters:
+      claude: .claude/commands/codex-relay.md
+  - name: cr
+    path: .agents/vendor/agent-workflow-kit/skills/cr/SKILL.md
+    description: "Alias for codex-relay. Use when the user invokes $cr as shorthand for the Codex relay workflow."
+    adapters:
+      claude: .claude/commands/cr.md
+  - name: pr-adversarial-loop
+    path: .agents/vendor/agent-workflow-kit/skills/pr-adversarial-loop/SKILL.md
+    description: "Use when the user explicitly invokes $pr-adversarial-loop for an existing pull request or the current implementation branch and wants the work carried through merge rather than receiving a one-pass review."
+    adapters:
+      claude: .claude/commands/pr-adversarial-loop.md
+  - name: pal
+    path: .agents/vendor/agent-workflow-kit/skills/pal/SKILL.md
+    description: "Alias for pr-adversarial-loop. Use when the user invokes $pal as shorthand for the adversarial PR loop."
+    adapters:
+      claude: .claude/commands/pal.md
+  - name: pcl
+    path: .agents/vendor/agent-workflow-kit/skills/pcl/SKILL.md
+    description: "Alias for pr-coding-loop. Use when the user invokes $pcl as shorthand for the PR coding loop."
+    adapters:
+      claude: .claude/commands/pcl.md
+  - name: pr-retro-audit
+    path: .agents/vendor/agent-workflow-kit/skills/pr-retro-audit/SKILL.md
+    description: "Audit recent, open, merged, or closed GitHub pull requests for missed critical issues, review-comment quality, stale approvals, unresolved gaps, and risky post-merge follow-up needs. Use when the user asks to review recent PRs including closed/merged PRs, evaluate whether comments caught critical issues, score PR review quality, find gaps after merge, or comment retroactive findings back on PRs."
+    adapters:
+      claude: .claude/commands/pr-retro-audit.md
+  - name: prl
+    path: .agents/vendor/agent-workflow-kit/skills/prl/SKILL.md
+    description: "Alias for pr-review-loop. Use when the user invokes $prl as shorthand for the PR review loop."
+    adapters:
+      claude: .claude/commands/prl.md
+  - name: reviewl
+    path: .agents/vendor/agent-workflow-kit/skills/reviewl/SKILL.md
+    description: "Alias for pr-review-loop. Use when the user invokes $reviewl, /reviewl, or searches reviewl as shorthand for the PR review loop."
+    adapters:
+      claude: .claude/commands/reviewl.md
+  - name: add-high-quality-tests
+    path: .agents/vendor/agent-workflow-kit/skills/add-high-quality-tests/SKILL.md
+    description: "Use when adding or strengthening TypeScript, React, Firebase, Vitest, or Playwright tests for existing behavior, especially during coverage backfills, mock-heavy suites, flaky async flows, or suspicious green tests."
+    adapters:
+      claude: .claude/commands/add-high-quality-tests.md

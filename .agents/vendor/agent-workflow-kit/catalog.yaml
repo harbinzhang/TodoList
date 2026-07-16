@@ -34,6 +34,51 @@ skills:
     description: Review PRs using a bounded interval-based PR agent marker loop, Chinese human summaries, and SHA-bound approval markers
     adapters:
       claude: adapters/claude/commands/pr-review-loop.md
+  - name: pcl
+    path: skills/pcl/SKILL.md
+    description: Alias for pr-coding-loop
+    adapters:
+      claude: adapters/claude/commands/pcl.md
+  - name: prl
+    path: skills/prl/SKILL.md
+    description: Alias for pr-review-loop
+    adapters:
+      claude: adapters/claude/commands/prl.md
+  - name: reviewl
+    path: skills/reviewl/SKILL.md
+    description: Alias for pr-review-loop, matching review-loop slash-command search terms
+    adapters:
+      claude: adapters/claude/commands/reviewl.md
+  - name: adversarial-review
+    path: skills/adversarial-review/SKILL.md
+    description: Independently challenge an exact code change for evidence-backed merge blockers without modifying it
+    adapters:
+      claude: adapters/claude/commands/adversarial-review.md
+  - name: codex-relay
+    path: skills/codex-relay/SKILL.md
+    description: Plan a change, confirm the plan with the user, delegate each task to Codex with checkpoint commits, and finish with dual adversarial review
+    adapters:
+      claude: adapters/claude/commands/codex-relay.md
+  - name: cr
+    path: skills/cr/SKILL.md
+    description: Alias for codex-relay
+    adapters:
+      claude: adapters/claude/commands/cr.md
+  - name: pr-adversarial-loop
+    path: skills/pr-adversarial-loop/SKILL.md
+    description: Carry an implementation branch or existing PR through independent adversarial review, fixes, full verification, and merge
+    adapters:
+      claude: adapters/claude/commands/pr-adversarial-loop.md
+  - name: pal
+    path: skills/pal/SKILL.md
+    description: Alias for pr-adversarial-loop
+    adapters:
+      claude: adapters/claude/commands/pal.md
+  - name: pr-retro-audit
+    path: skills/pr-retro-audit/SKILL.md
+    description: Audit recent, open, merged, or closed PRs for missed critical issues and review-quality gaps
+    adapters:
+      claude: adapters/claude/commands/pr-retro-audit.md
   - name: upstream-from-repo
     path: skills/upstream-from-repo/SKILL.md
     description: Upstream reusable skill or workflow behavior from a consumer repo into Agent Workflow Kit without modifying the source repo
@@ -55,12 +100,19 @@ skills:
   - name: test-quality-audit
     path: skills/test-quality-audit/SKILL.md
     description: Assess whether tests provide real behavioral confidence rather than only file-count coverage
+  - name: add-high-quality-tests
+    path: skills/add-high-quality-tests/SKILL.md
+    description: Add or strengthen tests that catch named regressions and prove their effectiveness
+    adapters:
+      claude: adapters/claude/commands/add-high-quality-tests.md
 
 workflows:
   - name: feature
     path: workflows/feature.md
   - name: pr-agent-loop
     path: workflows/pr-agent-loop.md
+  - name: pr-adversarial-loop
+    path: workflows/pr-adversarial-loop.md
   - name: upstream-from-repo
     path: workflows/upstream-from-repo.md
   - name: consumer-onboarding

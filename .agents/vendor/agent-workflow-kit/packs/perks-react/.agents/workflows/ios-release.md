@@ -19,12 +19,20 @@ From the repo root:
 
 1. Confirm you are on the default iOS release branch (`native-release`) unless the user explicitly requested another release branch.
 
-2. Merge from `main`:
+2. Ensure ignored local native release inputs are present:
+```bash
+npm run native:bootstrap:ios
+npm run native:preflight:ios
+```
+
+`native:bootstrap:ios` copies from `$PERKMON_RELEASE_CONFIG_DIR` when set, otherwise from `~/Library/Mobile Documents/com~apple~CloudDocs/Project/perkmon`. It only copies gitignored local release inputs. `native:preflight:ios` must pass before syncing, building, or uploading an iOS release.
+
+3. Merge from `main`:
 ```bash
 git fetch origin main && git merge origin/main
 ```
 
-3. Run standard checks:
+4. Run standard checks:
 ```bash
 npm run version:check
 npm run lint
@@ -66,7 +74,37 @@ npm run appstore:upload
 
 This runs `cd ios && bundle exec fastlane release_with_metadata` (build + metadata + TestFlight upload).
 
-### 3. Prepare iOS release branch and sync native project (no upload)
+### 3. Public App Store review release
+
+Use this when the task is public distribution / App Store review, not just
+internal TestFlight. It wraps the TestFlight upload, waits for App Store Connect
+to expose the processed build, submits the selected build for review without
+changing the existing listing metadata, and treats `WAITING_FOR_REVIEW` /
+`IN_REVIEW` as the successful terminal status:
+
+```bash
+npm run ios:public-release -- --yes
+```
+
+When the build number must be advanced first, use the cross-platform version
+pipeline and commit the release metadata before upload:
+
+```bash
+npm run ios:public-release -- --yes --bump-build --commit-version
+```
+
+For a build that was already uploaded but not yet selectable, retry only the
+review submission/polling step:
+
+```bash
+npm run ios:public-release -- --yes --skip-upload
+```
+
+The script requires explicit `--yes` (or `IOS_PUBLIC_RELEASE_APPROVED=true`) for
+real App Store Connect actions. Use `--dry-run` to inspect commands without
+uploading or submitting.
+
+### 4. Prepare iOS release branch and sync native project (no upload)
 
 Use the built-in helper when you only need to sync the native project without uploading:
 
@@ -82,7 +120,7 @@ What it does:
 - runs `npm install`
 - runs `npm run ios:sync`
 
-### 4. Manual Xcode archive (alternative)
+### 5. Manual Xcode archive (alternative)
 
 If the automated path is unavailable or the user specifically requests a manual Xcode archive/upload flow:
 
@@ -92,7 +130,7 @@ npm run release:ios
 
 This builds the web app, syncs Capacitor iOS, and opens the Xcode project. The user then archives and uploads manually through Xcode.
 
-### 5. Upload individual release components
+### 6. Upload individual release components
 
 When a task only covers metadata, screenshots, or an IPA upload:
 

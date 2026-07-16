@@ -1,0 +1,4 @@
+interface:
+  display_name: "Add High-Quality Tests"
+  short_description: "Add tests that catch real regressions"
+  default_prompt: "Use $add-high-quality-tests to add behavior-focused tests for this scope."

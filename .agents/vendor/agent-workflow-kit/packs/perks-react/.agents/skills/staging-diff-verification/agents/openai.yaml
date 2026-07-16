@@ -1,0 +1,4 @@
+interface:
+  display_name: "Staging Diff Verification"
+  short_description: "Verify staging diffs without rerunning broad QA"
+  default_prompt: "Use $staging-diff-verification to verify the current staging diff by reusing deploy QA evidence, doing only targeted browser or Firestore checks for uncovered changed surfaces, and noting features that should gain automated test coverage."

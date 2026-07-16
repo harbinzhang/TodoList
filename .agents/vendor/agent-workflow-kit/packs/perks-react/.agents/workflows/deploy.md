@@ -26,11 +26,66 @@ Examples of hard-stop blockers:
 
 Only continue after blockers are fixed and checks are rerun cleanly.
 
+Exception for staging callable post-deploy smoke only: `scripts/check-callable-public-access.mjs`
+has per-function request timeouts and retries only transient `request_failed`
+failures for the same callable. If the Firebase staging deploy body already
+completed and the only failure is a callable public-access timeout/network
+`request_failed`, rerun only that callable smoke once, or rely on the script's
+built-in per-function retry. Continue only when every callable returns an
+expected callable JSON response such as `UNAUTHENTICATED` or `INVALID_ARGUMENT`.
+Do not apply this exception to 403 platform access failures, 404 missing
+functions, unexpected response bodies, missing env/config/secrets, billing or
+minimum-cost prompts, deploy-body failures, staging QA failures, or anything
+that requires product or infrastructure judgment.
+
+## Downtime / Outage Risk Framing
+
+Firebase Hosting deploys are expected to be atomic and should not create a traditional downtime window. Still, deploys can cause application-level outages if Functions, Firestore rules, Storage rules, indexes, secrets/IAM, or frontend/backend contracts are wrong or roll out in the wrong order.
+
+Treat deploy success as verified surface health, not just a successful Firebase CLI exit. For Hosting, prove the live build marker. For Functions, rules, indexes, and Storage, use the relevant post-deploy checks below and report each requested surface separately.
+
 ## Completion and Partial-Failure Rules
 
 Treat deploy completion as surface-specific. A full deploy requests these production surfaces: `Hosting`, `Functions`, `Firestore rules`, `Firestore indexes`, and `Storage rules`. If a full deploy fails partway and a follow-up deploy retries only one surface, report only that surface as complete unless every originally requested surface is reverified.
 
 HTTP 200 is not Hosting deploy proof. It only proves an old or new app shell is reachable. For `full` and `hosting` deploys, the proof is the live `sw-build-meta.js` marker matching the just-built `dist/sw-build-meta.js`.
+
+## Production Version Baseline
+
+Before any production deploy command, read and record the currently live production web build markers. Do this before running the deploy build, because after deployment the old marker is overwritten and cannot be reconstructed reliably from local Git.
+
+```bash
+node --input-type=module <<'NODE'
+import { parseSwBuildMeta } from './scripts/lib/sw-build-meta.mjs'
+
+const endpoints = [
+  'https://perks-react.web.app',
+  'https://perks-react.firebaseapp.com',
+  'https://perkmon.app',
+]
+
+for (const baseUrl of endpoints) {
+  const markerUrl = `${baseUrl}/sw-build-meta.js?preDeployCheck=${Date.now()}`
+  const response = await fetch(markerUrl, { cache: 'no-store' })
+  if (!response.ok) {
+    throw new Error(`${markerUrl} returned HTTP ${response.status}`)
+  }
+  const metadata = parseSwBuildMeta(await response.text())
+  console.log(JSON.stringify({ baseUrl, ...metadata }))
+}
+NODE
+```
+
+Hard stop before production deploy if any production entrypoint cannot be read, returns malformed metadata, or disagrees on `appVersion`, `buildId`, or `releaseTag` when present. Report the mismatch instead of inferring production state from local `package.json`, local tags, or the active branch.
+
+Resolve the production baseline from this live marker before deciding deploy scope:
+
+1. Prefer `releaseTag` when present.
+2. If no `releaseTag` exists, derive `v<appVersion>` and explicitly warn that this is version-derived rather than marker-proven.
+3. Fetch tags if needed and verify the baseline ref exists.
+4. Compare `PROD_REF..TARGET_REF` and the dirty worktree before choosing `full`, `hosting`, `admin`, `functions`, `rules`, `storage`, or `card-assets`.
+
+The deploy report must include the pre-deploy production `appVersion`, `buildId`, endpoint consistency, resolved `PROD_REF`, target ref, changed runtime/config surfaces, and the reason each requested surface was included or skipped. Do not justify a selective production deploy from local branch/tag state alone.
 
 For production `full` and `hosting` deploys, verify all production web entrypoints:
 
@@ -131,14 +186,20 @@ This runs the shared staging workflow script, which:
 - runs `npm run build:staging`
 - runs Functions vendor integrity, install, lint, and build checks
 - deploys `hosting:web,hosting:legacyStagingRedirect,functions,firestore:rules,firestore:indexes,storage` to Firebase project alias `staging`
+- when `FUNCTIONS_DIFF_BASE=<ref>` is provided, compares `<ref>...HEAD` and narrows the staging Functions deploy only when the analyzer can prove the affected exported Functions; ambiguous backend/runtime changes keep the full `functions` deploy
 - keeps `perkmon-staging.web.app` as the canonical staging app host and turns the legacy `perkly-staging-7dab8.web.app` site into a Hosting-only redirect entrypoint
 - leaves `perkmon-staging-card-assets.web.app` unchanged unless `npm run deploy:staging:card-assets` is run explicitly
+- auto-runs strict `npm run staging:qa` against the just-built `sw-build-meta.js` identity after a successful Firebase deploy
 
-After a successful staging deploy, run the fast staging QA gate:
-
+Optional diff-aware staging Functions narrowing:
 ```bash
-npm run staging:qa
+FUNCTIONS_DIFF_BASE=<base-ref> npm run deploy:staging
+FUNCTIONS_DIFF_BASE=<base-ref> npm run deploy:staging:functions
 ```
+
+This feature is staging-only and default-gated by `FUNCTIONS_DIFF_BASE`; without that env var, staging deploys preserve the full Functions behavior. The analyzer returns `high` confidence for direct exported function entrypoint changes, `medium` confidence for helper changes whose reverse import graph resolves to exported Functions, `none` for no Functions runtime impact, and `low` for ambiguous changes. Low confidence includes `functions/src/index.ts`, deleted Functions sources, `functions/package*.json`, `functions/vendor/**`, `packages/contracts/**`, `packages/shared-runtime/**`, and `firebase.json`; low confidence must widen to full `functions`, not under-deploy.
+
+Manual `npm run staging:qa` is only needed for troubleshooting, when auto-QA was explicitly skipped, or after staging scopes that do not auto-run QA.
 
 Dry-run the checks without deploying:
 ```bash
@@ -179,6 +240,7 @@ npm run deploy:staging:hosting
 ```
 
 For staging, this deploys both the canonical app host and the legacy redirect-only host together so the two staging URLs cannot drift.
+It also auto-runs strict `npm run staging:qa` against the just-built `sw-build-meta.js` identity after a successful Firebase deploy.
 
 Production hosting only:
 ```bash
@@ -186,6 +248,29 @@ npm run deploy:prod:hosting
 ```
 
 Production hosting deploys must end with marker verification against all production web entrypoints. The deploy script performs this automatically; when troubleshooting manually, compare each live `/sw-build-meta.js` response with `dist/sw-build-meta.js`.
+
+### Admin Hosting Only (admin frontend changes)
+
+Admin hosting deploys only the separate admin Hosting site. It does not deploy the public web app, Functions, Firestore rules/indexes, Storage rules, or card assets.
+
+Staging admin hosting:
+```bash
+npm run deploy:staging:admin
+```
+
+Production admin hosting:
+```bash
+npm run deploy:prod:admin
+```
+
+Admin hosting does not currently expose `/sw-build-meta.js`; verify the deploy by command success, the Hosting URL, and an HTTP 200/HTML response from the admin entrypoint:
+
+```bash
+curl -fsSI https://stage-admin-perkmon.web.app
+curl -fsSI https://admin-perkmon.web.app
+```
+
+For production admin deploys, still complete the Production Version Baseline first. The live production web marker establishes the deployed app baseline used for deciding whether admin-only deploy is appropriate, even though the admin site has separate Hosting verification.
 
 ### Card Asset Hosting Only (dedicated image site)
 
@@ -209,6 +294,13 @@ If the functions change depends on a new Firestore index, complete the Firestore
 ```bash
 npm run deploy:staging:functions
 ```
+
+For staging only, you may narrow the Functions target with an explicit diff base:
+```bash
+FUNCTIONS_DIFF_BASE=<base-ref> npm run deploy:staging:functions
+```
+
+If the analyzer reports no Functions impact, the command exits without deploying Firebase resources. If it reports high or medium confidence, the deploy script uses `functions:name` resources and runs callable public-access smoke only for deployed browser-callable Functions. If it reports low confidence, it falls back to full `functions`.
 
 Production functions:
 ```bash
@@ -262,6 +354,8 @@ npm run deploy:prod:storage
 
 ## Pre-Deploy Checklist
 
+- [ ] For production deploys, capture live production `/sw-build-meta.js` from all production web entrypoints before any deploy command and resolve `PROD_REF`.
+- [ ] Compare `PROD_REF..TARGET_REF` plus dirty deploy-relevant files before choosing deploy surfaces.
 - [ ] `npm run lint` passes with no errors
 - [ ] `npm run build:staging` or `npm run build:prod` completes successfully for the target env
 - [ ] Functions vendor integrity: `npm run functions:prepare && npm run functions:check-vendor-integrity`
@@ -279,12 +373,16 @@ If any item above fails, **stop deployment** and fix issues first.
 ## Post-Deploy Verification
 
 - [ ] For Hosting deploys, verify the live build marker, not just page reachability. Production `full` and `hosting` deploys must match `dist/sw-build-meta.js` on `https://perks-react.web.app/sw-build-meta.js`, `https://perks-react.firebaseapp.com/sw-build-meta.js`, and `https://perkmon.app/sw-build-meta.js`.
+- [ ] For Admin Hosting deploys, verify the admin Hosting URL returns HTTP 200/HTML (`https://stage-admin-perkmon.web.app` or `https://admin-perkmon.web.app`).
 - [ ] Visit the live site and verify pages load after marker verification
-- [ ] For staging deploys, run `npm run staging:qa`
-  `scripts/deploy-firebase.sh` now auto-runs strict `staging:qa` after staging `full` or `hosting` deploys by passing the built `sw-build-meta.js` identity into the QA step.
+- [ ] For staging `full` and `hosting` deploys, confirm `scripts/deploy-firebase.sh` auto-ran strict `npm run staging:qa` with the built `sw-build-meta.js` identity. Run `npm run staging:qa` manually only for troubleshooting, skipped auto-QA, or scopes that do not auto-run QA.
 - [ ] If `hosting:cardAssets` was deployed, verify a known card image returns `200 image/png`
 - [ ] Check the Firebase Console → Functions for any deployment errors
 - [ ] For Functions deploys, confirm browser-callable Functions pass `npm run staging:qa:callables` or the equivalent target-specific callable access smoke. A healthy Firebase callable should return a callable JSON error such as `UNAUTHENTICATED` without credentials, not a Google Frontend `403` HTML page.
+  The callable smoke uses per-function request timeouts and retries only
+  transient `request_failed` network/timeouts for the same callable, so a single
+  slow Cloud Functions request cannot hang the deploy indefinitely. Persistent
+  failures still block deploy completion.
 - [ ] Check Firebase Console → Hosting for the new deployment entry
 - [ ] If the Firestore Index Predeploy Gate ran, confirm no relevant Firestore index operation remains in progress
 - [ ] Monitor Cloud Functions logs: `firebase functions:log`

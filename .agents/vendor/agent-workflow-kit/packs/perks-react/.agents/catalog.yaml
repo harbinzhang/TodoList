@@ -4,10 +4,13 @@ conventions:
 skills:
   - name: ship
     path: .agents/skills/ship/SKILL.md
-    description: Ship through the fixed release-branch branch by optionally syncing a named remote branch, syncing remote main, aligning root dependencies, taking over local emulator ports for targeted local checks, avoiding GitHub CI gates, running a patch release, deploying Firebase staging, validating staging, and deploying staging admin Hosting
+    description: Ship through the fixed release-branch branch by optionally syncing a named remote branch, syncing remote main, aligning root dependencies, taking over local emulator ports for targeted local checks, running the i18n staging sync gate, avoiding GitHub CI gates, running a patch release, deploying Firebase staging, validating staging, and deploying staging admin Hosting
+  - name: i18n-staging-sync
+    path: .agents/skills/i18n-staging-sync/SKILL.md
+    description: Use when staging or ship is blocked by missing, stale, or structurally invalid i18n catalogs before deploy
   - name: deploy
     path: .agents/skills/deploy/SKILL.md
-    description: Deploy the application to Firebase using the shared staging/prod deploy workflow, including Firestore index predeploy gating, dedicated card-asset hosting, and strict post-deploy staging QA for staging full/hosting deploys
+    description: Deploy the application to Firebase using the shared staging/prod deploy workflow, including live production marker baselining, admin hosting, Firestore index predeploy gating, dedicated card-asset hosting, and strict post-deploy staging QA for staging full/hosting deploys
   - name: prod-deploy
     path: .agents/skills/prod-deploy/SKILL.md
     description: Prepare a production deploy readiness report by resolving the live production version and classifying changes since prod into automatic and manual verification
@@ -41,7 +44,7 @@ skills:
     description: Inspect or modify Firestore data using the shared Firestore workflow and project conventions
   - name: monitor
     path: .agents/skills/monitor/SKILL.md
-    description: Run read-only production health monitoring scripts and analyze unexpected Firestore signals
+    description: Run lifecycle-aware production health sweeps (observing/enforcing monitors via monitor-manifest.json), analyze unexpected Firestore signals, and commit the resulting monitoring/ledger/ diff
     adapters:
       openai: .agents/skills/monitor/agents/openai.yaml
       claude: .claude/commands/monitor.md
@@ -50,12 +53,21 @@ skills:
     description: Run the read-only userCardBenefitsTracking drift audit, or use the aggregate user-level tracking wrapper for one-user investigations
     adapters:
       openai: .agents/skills/benefit-drift-audit/agents/openai.yaml
-  - name: sync-core-branches
-    path: .agents/skills/sync-core-branches/SKILL.md
-    description: Execute a two-stage branch sync (current->main, main->configured release/core branches) with optional auto conflict resolution
+  - name: email-campaign-ops
+    path: .agents/skills/email-campaign-ops/SKILL.md
+    description: Prepare and operate Perkmon email campaigns, including unified campaign Firestore drafts, email template updates, test sends, unsubscribe filtering, audience preview, legacy benefit-reminder handling, and final send safety checks
     adapters:
-      openai: .agents/skills/sync-core-branches/agents/openai.yaml
-      claude: .claude/commands/sync-core-branches.md
+      openai: .agents/skills/email-campaign-ops/agents/openai.yaml
+  - name: generate-card-update-suggestion
+    path: .agents/skills/generate-card-update-suggestion/SKILL.md
+    description: Research the latest public benefits for an existing card and prepare or create a pending cardUpdateSuggestions document for admin review
+    adapters:
+      openai: .agents/skills/generate-card-update-suggestion/agents/openai.yaml
+  - name: weekly-offer-candidates
+    path: .agents/skills/weekly-offer-candidates/SKILL.md
+    description: Find and rank high-value weekly offer candidates for Perkmon consumer emails, offer roundups, and offers-to-check blocks using internal offer signals, external heat, and official terms verification
+    adapters:
+      openai: .agents/skills/weekly-offer-candidates/agents/openai.yaml
   - name: local-emulator-admin-setup
     path: .agents/skills/local-emulator-admin-setup/SKILL.md
     description: Set up local Firebase emulators with a seeded admin test account and real card products for local testing
@@ -72,11 +84,63 @@ skills:
     description: Create and maintain implementation PRs from coding-agent worktrees using upstream-derived PR bases and the shared PR agent comment protocol
     adapters:
       claude: .claude/commands/pr-coding-loop.md
+  - name: pcl
+    path: .agents/skills/pcl/SKILL.md
+    description: Alias for pr-coding-loop
+    adapters:
+      claude: .claude/commands/pcl.md
+  - name: adversarial-review
+    path: .agents/skills/adversarial-review/SKILL.md
+    description: Independently challenge an exact code change for evidence-backed merge blockers without modifying it
+    adapters:
+      openai: .agents/skills/adversarial-review/agents/openai.yaml
+      claude: .claude/commands/adversarial-review.md
+  - name: codex-relay
+    path: .agents/skills/codex-relay/SKILL.md
+    description: Plan a change (brainstorm), gate on explicit human plan approval, delegate each task one at a time to the OpenAI Codex CLI (codex:codex-rescue subagent) with checkpoint commits in the current worktree, then finish with a Codex + Claude dual adversarial review
+    adapters:
+      claude: .claude/commands/codex-relay.md
+  - name: cr
+    path: .agents/skills/cr/SKILL.md
+    description: Alias for codex-relay
+    adapters:
+      claude: .claude/commands/cr.md
+  - name: pr-adversarial-loop
+    path: .agents/skills/pr-adversarial-loop/SKILL.md
+    description: Carry the current implementation branch or an existing PR through independent adversarial review, fixes, full verification, and merge
+    adapters:
+      openai: .agents/skills/pr-adversarial-loop/agents/openai.yaml
+      claude: .claude/commands/pr-adversarial-loop.md
+  - name: pal
+    path: .agents/skills/pal/SKILL.md
+    description: Alias for pr-adversarial-loop
+    adapters:
+      openai: .agents/skills/pal/agents/openai.yaml
+      claude: .claude/commands/pal.md
   - name: pr-review-loop
     path: .agents/skills/pr-review-loop/SKILL.md
-    description: Review PRs from a primary review worktree using a bounded interval-based PR agent comment loop, Chinese human summaries, and SHA-bound GOOD_TO_GO signals
+    description: Review every latest PR head through a fresh adversarial pass using the bounded agent comment loop, Chinese human summaries, and SHA-bound GOOD_TO_GO signals
     adapters:
+      openai: .agents/skills/pr-review-loop/agents/openai.yaml
       claude: .claude/commands/pr-review-loop.md
+  - name: pr-retro-audit
+    path: .agents/skills/pr-retro-audit/SKILL.md
+    description: Audit recent, open, merged, or closed GitHub PRs for missed critical issues, stale approvals, review-comment quality, and post-merge follow-up gaps, optionally commenting AGENT-RETRO-AUDIT findings back on PRs when explicitly requested
+    adapters:
+      openai: .agents/skills/pr-retro-audit/agents/openai.yaml
+      claude: .claude/commands/pr-retro-audit.md
+  - name: prl
+    path: .agents/skills/prl/SKILL.md
+    description: Alias for pr-review-loop
+    adapters:
+      openai: .agents/skills/prl/agents/openai.yaml
+      claude: .claude/commands/prl.md
+  - name: reviewl
+    path: .agents/skills/reviewl/SKILL.md
+    description: Alias for pr-review-loop, matching review-loop slash-command search terms
+    adapters:
+      openai: .agents/skills/reviewl/agents/openai.yaml
+      claude: .claude/commands/reviewl.md
   - name: gha-monitor
     path: .agents/skills/gha-monitor/SKILL.md
     description: Check recent GitHub Actions workflow runs and surface failures or anomalies
@@ -87,6 +151,15 @@ skills:
     description: Prepare and ship an Android release to Google Play via local fastlane build/upload
     adapters:
       claude: .claude/commands/android-release.md
+  - name: chrome-extension-release
+    path: .agents/skills/chrome-extension-release/SKILL.md
+    description: Prepare and publish the Perkmon Chrome extension through Chrome Web Store, including prod env/auth validation, Google OAuth client checks, Apple auth backend readiness, live Web Store status, version bump, local dry-run gate, provider replay safe gate before upload, zip verification, listing asset checks, and explicit approval before upload/publish
+  - name: chrome-extension-provider-replay
+    path: .agents/skills/chrome-extension-provider-replay/SKILL.md
+    description: Use local or sanitized provider captures to record and replay Perkmon Chrome extension provider flows, merchant alert replay, raw issuer capture validation, and isolated extension mock testing without live third-party logins
+    adapters:
+      openai: .agents/skills/chrome-extension-provider-replay/agents/openai.yaml
+      claude: .claude/commands/chrome-extension-provider-replay.md
   - name: android-screenshots
     path: .agents/skills/android-screenshots/SKILL.md
     description: Capture and upload Play Store screenshots for phone, 7-inch, and 10-inch tablets
@@ -97,6 +170,11 @@ skills:
     description: Capture, regenerate, verify, and promote Perkmon marketing screenshots and user-journey videos from staging or approved synthetic demo scenes
     adapters:
       openai: .agents/skills/marketing-recordings/agents/openai.yaml
+  - name: monthly-report
+    path: .agents/skills/monthly-report/SKILL.md
+    description: Draft Perkmon monthly reports for board members, investors, advisors, community updates, product snapshots, operational summaries, or docs under docs/monthly-reports
+    adapters:
+      openai: .agents/skills/monthly-report/agents/openai.yaml
   - name: seo-geo-audit
     path: .agents/skills/seo-geo-audit/SKILL.md
     description: Audit website SEO and GEO readiness across public surfaces, metadata, crawlability, structured data, rendering strategy, and AI citation readiness
@@ -110,16 +188,16 @@ skills:
     description: Assess whether tests provide behavioral confidence across trigger, boundary, side effect, reader, and edge-case coverage
     adapters:
       openai: .agents/skills/test-quality-audit/agents/openai.yaml
+  - name: add-high-quality-tests
+    path: .agents/skills/add-high-quality-tests/SKILL.md
+    description: Add or strengthen TypeScript, React, Firebase, Vitest, or Playwright tests that catch named regressions and prove their effectiveness
+    adapters:
+      openai: .agents/skills/add-high-quality-tests/agents/openai.yaml
   - name: tdd
     path: .agents/skills/tdd/SKILL.md
     description: Drive feature work or bug fixes using a Red-Green-Refactor test-driven development cycle with Vitest and Playwright
     adapters:
       claude: .claude/commands/tdd.md
-  - name: test-gen
-    path: .agents/skills/test-gen/SKILL.md
-    description: Generate unit, integration, or E2E tests for uncovered code by analyzing source and matching existing patterns
-    adapters:
-      claude: .claude/commands/test-gen.md
   - name: verify
     path: .agents/skills/verify/SKILL.md
     description: Run all test suites (unit, TypeScript, build, E2E, Firestore rules) and report a pass/fail summary
@@ -134,6 +212,16 @@ skills:
   - name: staging-user-journey-verification
     path: .agents/skills/staging-user-journey-verification/SKILL.md
     description: Verify core hosted-staging user journeys with read-only smoke, staging-safe writes, direct Firestore inspection, and cleanup
+  - name: staging-diff-verification
+    path: .agents/skills/staging-diff-verification/SKILL.md
+    description: Verify deploy-relevant diffs on hosted staging by reusing deploy QA, doing targeted browser or Firestore checks, and exercising staging-safe user writes with readback and cleanup
+    adapters:
+      openai: .agents/skills/staging-diff-verification/agents/openai.yaml
+  - name: refactor-safety
+    path: .agents/skills/refactor-safety/SKILL.md
+    description: Prove an N/M-series consolidation refactor is behavior-preserving before merge — mechanical stale-vendor/orphaned-duplicate/parity-test gate plus a required behavior-preservation proof and drift-canary checklist
+    adapters:
+      claude: .claude/commands/refactor-safety.md
 
 workflows:
   - name: add-card
@@ -142,6 +230,8 @@ workflows:
     path: .agents/workflows/add-membership.md
   - name: ship
     path: .agents/workflows/ship.md
+  - name: i18n-staging-sync
+    path: .agents/workflows/i18n-staging-sync.md
   - name: deploy
     path: .agents/workflows/deploy.md
   - name: prod-deploy
@@ -154,8 +244,12 @@ workflows:
     path: .agents/workflows/hotfix.md
   - name: feature
     path: .agents/workflows/feature.md
+  - name: chrome-extension-release
+    path: .agents/workflows/chrome-extension-release.md
   - name: run-firestore-script
     path: .agents/workflows/run-firestore-script.md
+  - name: publish-ask-ai-product-knowledge
+    path: .agents/workflows/publish-ask-ai-product-knowledge.md
   - name: grant-welcome-card-slots
     path: .agents/workflows/grant-welcome-card-slots.md
   - name: perkperks-ingestion
@@ -168,6 +262,8 @@ workflows:
     path: .agents/workflows/staging-tracker-verification.md
   - name: staging-user-journey-verification
     path: .agents/workflows/staging-user-journey-verification.md
+  - name: staging-diff-verification
+    path: .agents/workflows/staging-diff-verification.md
   - name: marketing-recordings
     path: .agents/workflows/marketing-recordings.md
   - name: seo-geo-audit

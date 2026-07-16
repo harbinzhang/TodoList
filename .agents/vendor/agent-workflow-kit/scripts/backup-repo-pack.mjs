@@ -8,7 +8,7 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
-  statSync,
+  lstatSync,
   writeFileSync,
 } from 'node:fs'
 import { basename, dirname, join, relative, resolve } from 'node:path'
@@ -61,7 +61,7 @@ function listFiles(root) {
   const results = []
   for (const entry of readdirSync(root)) {
     const path = join(root, entry)
-    const stats = statSync(path)
+    const stats = lstatSync(path)
     if (stats.isDirectory()) {
       results.push(...listFiles(path))
     } else if (stats.isFile() || stats.isSymbolicLink()) {
@@ -260,8 +260,11 @@ It is repo-specific reference material. Other repositories can copy individual s
 .agents/
   catalog.yaml
   conventions.md
+  plans/
+  prompts/
   repo-profile.yaml
   skills/
+  templates/
   workflows/
 .claude/
   commands/

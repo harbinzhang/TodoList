@@ -1,0 +1,4 @@
+interface:
+  display_name: "Chrome Extension Provider Replay"
+  short_description: "Capture provider data and replay extension or merchant-alert flows"
+  default_prompt: "Use $chrome-extension-provider-replay to prepare local provider captures, run merchant alert replay, and test Chrome extension flows without touching real sessions."

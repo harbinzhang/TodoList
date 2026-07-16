@@ -73,6 +73,16 @@ the shared read-only PR helper when the consumer has `package.json`:
 Without those aliases, agents can call the vendored helper directly with
 `node .agents/vendor/agent-workflow-kit/scripts/agent-pr-status.mjs`.
 
+The generic workflow skills also include slash-friendly aliases for common PR
+and review flows:
+
+- `pcl`: alias for `pr-coding-loop`
+- `prl` and `reviewl`: aliases for `pr-review-loop`
+- `pal`: alias for `pr-adversarial-loop`
+- `cr`: alias for `codex-relay`
+
+Install them with the same `install-skill-to-repo.mjs` command after vendoring.
+
 ## Profile Contract
 
 Each consumer repo should provide `.agents/repo-profile.yaml`:

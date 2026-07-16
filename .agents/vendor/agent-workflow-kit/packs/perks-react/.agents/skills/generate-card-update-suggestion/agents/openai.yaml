@@ -1,0 +1,4 @@
+interface:
+  display_name: "Generate Card Update Suggestion"
+  short_description: "Research a card and draft admin suggestions"
+  default_prompt: "Use $generate-card-update-suggestion to research current public card benefits and create an admin-reviewable suggest update."

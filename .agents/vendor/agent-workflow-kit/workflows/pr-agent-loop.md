@@ -29,7 +29,7 @@ If neither helper path exists, use the `gh pr view`, issue-comment,
 inline-comment, and GraphQL review-thread commands in the flows below and treat
 that as equivalent manual status collection.
 
-`agent-pr:status` summarizes markers, latest head SHA, mergeability, status checks, active review feedback markers, a recent `AGENT-REVIEW:*` marker audit, an inline thread audit with blocking thread URLs and locations, unresolved review threads, blockers, and warnings. `agent-pr:ready` performs the same checks and exits non-zero unless the PR has a valid `AGENT-REVIEW: GOOD_TO_GO` for the latest head, GitHub reports `mergeStateStatus: CLEAN`, no merge conflict is reported, present status checks are acceptable, no active `AGENT-REVIEW: FINDING` / `AGENT-REVIEW: DISCUSSION` marker remains after that valid approval, and no review-thread blockers remain. Treat these helpers as readiness gates, not as the only source of PR discussion truth: `Unresolved review threads: 0` only means there are no current blocking inline `reviewThreads`; it does not prove every top-level PR conversation comment is semantically resolved. An empty status-check rollup (no CI attached) is a warning, not a hard blocker; verify that the target branch intentionally has no attached CI or rely on branch protection / GitHub mergeability to block protected-check gaps. Bundle Check is the sole informational check exception: queued or failed Bundle Check runs should be mentioned in summaries but must not block review progress, `HUMAN_SUMMARY`, `GOOD_TO_GO`, or merge readiness.
+`agent-pr:status` summarizes markers, latest head SHA, mergeability, status checks, active review feedback markers, a recent `AGENT-REVIEW:*` marker audit, an inline thread audit with blocking thread URLs and locations, unresolved review threads, blockers, and warnings. `agent-pr:ready` performs the same checks and exits non-zero unless the PR has a valid `AGENT-REVIEW: GOOD_TO_GO` for the latest head, GitHub reports `mergeStateStatus: CLEAN`, no merge conflict is reported, no active `AGENT-REVIEW: FINDING` / `AGENT-REVIEW: DISCUSSION` marker remains after that valid approval, and no review-thread blockers remain. Treat these helpers as readiness gates, not as the only source of PR discussion truth: `Unresolved review threads: 0` only means there are no current blocking inline `reviewThreads`; it does not prove every top-level PR conversation comment is semantically resolved. CI/status checks are informational only for this review loop: missing, pending, failed, blocked, or empty status-check rollups must not block review progress, `HUMAN_SUMMARY`, `GOOD_TO_GO`, or merge readiness. Mention status-check state in summaries when useful. If an earlier `AGENT-REVIEW: FINDING` or `AGENT-REVIEW: DISCUSSION` is solely about CI/status checks, treat that marker as informational and non-blocking even if the helper still counts it as active feedback.
 
 ## Loop Parameters
 
@@ -57,10 +57,10 @@ $pr-review-loop <PR URL or number>
 - `interval_minutes`, when provided, must be a positive number.
 - A cycle means: fetch PR metadata, fetch the latest PR head, review the current diff against the actual base branch, then post any new current marker comments or the human summary.
 - A default review invocation is a polling loop, not a one-shot review. After posting `AGENT-REVIEW: FINDING` or `AGENT-REVIEW: DISCUSSION`, keep the invocation alive, wait the resolved interval, and repeat from fresh PR metadata unless a stop condition fired.
-- Merge conflicts, `DIRTY` / `CONFLICTING` merge state, missing required/expected checks, or blocked checks are non-terminal current-head blockers. Report them as findings or discussions and keep polling until the PR changes, a real stop condition appears, or the cycle cap is reached.
+- Merge conflicts and `DIRTY` / `CONFLICTING` merge state are non-terminal current-head blockers. Report them as findings or discussions and keep polling until the PR changes, a real stop condition appears, or the cycle cap is reached. CI/status checks are informational only and must not be reported as review blockers.
 - Wait the resolved interval between cycles. Do not create a background scheduler or Codex automation unless the human explicitly asks for one.
 - Stop conditions always take precedence over the 10-cycle cap.
-- Posting `AGENT-REVIEW: HUMAN_SUMMARY` for a safe current head stops the current loop invocation; this is an intentional human-approval handoff, not a failed loop. Wait for human approval or a new invocation instead of reposting the same summary.
+- Posting `AGENT-REVIEW: HUMAN_SUMMARY` for a safe current head is immediately followed by a paired `AGENT-REVIEW: GOOD_TO_GO` for that exact head, then stops the current loop invocation.
 
 ## Shared Protocol
 
@@ -111,7 +111,7 @@ AGENT-REVIEW: HUMAN_SUMMARY
 
 Reviewed head: <sha>
 PR: <url>
-Recommendation: <merge | wait | block>
+Recommendation: merge
 Risk level: <low | medium | high>
 Bundle Check: <passed | queued | failed | missing> (informational only)
 
@@ -139,7 +139,7 @@ Bundle Check: <passed | queued | failed | missing> (informational only)
 ### 验证结果
 <Chinese summary>
 
-### 需要人工确认
+### 合并注意事项
 <Chinese summary>
 ```
 
@@ -147,7 +147,7 @@ Bundle Check: <passed | queued | failed | missing> (informational only)
 AGENT-REVIEW: GOOD_TO_GO
 
 Reviewed head: <sha>
-Human approved the AGENT-REVIEW: HUMAN_SUMMARY for this exact head.
+Automatically marked GOOD_TO_GO after posting AGENT-REVIEW: HUMAN_SUMMARY for this exact head.
 Safe to merge from the review-agent side.
 ```
 
@@ -194,26 +194,26 @@ Run from the coding worktree that owns the implementation branch.
    ```
    Top-level PR conversation comments (`issues/<n>/comments`) are where review agents often post `AGENT-REVIEW:*` markers. Inline review comments (`pulls/<n>/comments`) and GraphQL `reviewThreads` are separate surfaces.
 8. For each cycle:
-   - Run `npm run agent-pr:status -- <pr>` when available, or the direct vendored helper if the npm alias is absent. Its `Active review feedback` count covers `AGENT-REVIEW: FINDING` / `AGENT-REVIEW: DISCUSSION` markers found in top-level PR comments, formal reviews, inline comments, and GraphQL inline review-thread comments. Its `Unresolved review threads` count only describes inline `reviewThreads`; do not use it as proof that issue-level PR comments are semantically clear.
+   - Run `npm run agent-pr:status -- <pr>` when available, or the direct vendored helper if the npm alias is absent. Its `Active review feedback` count covers `AGENT-REVIEW: FINDING` / `AGENT-REVIEW: DISCUSSION` markers found in top-level PR comments, formal reviews, inline comments, and GraphQL inline review-thread comments. Its `Unresolved review threads` count only describes inline `reviewThreads`; do not use it as proof that issue-level PR comments are semantically clear. If active feedback is solely about CI/status checks, treat it as informational and non-blocking.
    - Read the recent `AGENT-REVIEW:*` marker audit printed by the helper every cycle. If it is empty, confirm the empty audit line is present instead of inferring that no markers exist from review-thread counts.
    - Read the `Inline thread audit` printed by the helper every cycle. For every `unresolved current` entry, follow the printed URL/location and either address the thread or explain why it is not actionable. A current unresolved inline thread blocks readiness even when the latest thread comment has no `AGENT-REVIEW:*` marker.
    - Refresh PR state and latest head SHA.
    - Stop if the PR is merged, closed, or contains `AGENT-REVIEW: STOP`.
    - Do not pre-filter by GitHub author. First inspect live PR conversation comments, PR reviews, inline review comments, and `reviewThreads` for marker prefixes; treat `AGENT-REVIEW:*` as reviewer state even if the author login matches the coding account.
    - Ignore ordinary unmarked approval text.
-   - Address actionable `AGENT-REVIEW: FINDING` or `AGENT-REVIEW: DISCUSSION` comments that apply to the current head or remain unresolved, including top-level PR conversation comments even when all inline threads are resolved or outdated.
+   - Address actionable `AGENT-REVIEW: FINDING` or `AGENT-REVIEW: DISCUSSION` comments that apply to the current head or remain unresolved, including top-level PR conversation comments even when all inline threads are resolved or outdated. CI/status-check-only markers are informational and do not require coding-agent action.
    - Ignore `AGENT-CODING:*` status comments and unmarked self chatter as reviewer feedback.
    - If no reviewer updates appear but the PR discussion looks unexpected, verify both `issues/<n>/comments` and `pulls/<n>/comments` live URLs before concluding that markers are missing.
    - Reference failure mode: inline findings can appear under `pulls/<n>/comments` and GraphQL `reviewThreads`, while blocking `AGENT-REVIEW:*` discussion can appear under `issues/<n>/comments`. Clearing inline threads does not clear issue-level discussion.
    - Push fixes and reply with `AGENT-CODING: ADDRESSED`, including the new commit SHA and verification.
 9. Before merging:
-   - Run `npm run agent-pr:ready -- <pr>` when available, or the direct vendored helper if the npm alias is absent, and treat a non-zero exit as a hard blocker.
+   - Run `npm run agent-pr:ready -- <pr>` when available, or the direct vendored helper if the npm alias is absent, and inspect its blockers. Treat non-status-check blockers as hard blockers; ignore blockers that are only about missing, pending, failed, blocked, or empty CI/status checks.
    - Confirm a valid `AGENT-REVIEW: GOOD_TO_GO` exists for the latest PR head SHA.
    - Confirm no newer commits appeared after that marker.
    - Confirm GitHub mergeability is clean (`mergeStateStatus: CLEAN`, no `mergeable: CONFLICTING`).
-   - Confirm present status checks are acceptable under repo policy. An empty status-check rollup (no CI attached) is a warning, not a hard blocker; explicitly report it and rely on branch protection / GitHub mergeability for protected-check enforcement. Bundle Check is the sole informational exception: queued or failed Bundle Check does not block merge.
+   - Treat CI/status checks as informational only for this workflow. Missing, pending, failed, blocked, or empty status-check rollups do not block merge-readiness discussion; mention them in summaries when useful and rely on branch protection / GitHub mergeability for enforced checks.
    - Confirm no unresolved blocking review threads remain.
-   - Confirm no top-level, formal-review, or inline `AGENT-REVIEW: FINDING` / `AGENT-REVIEW: DISCUSSION` comments remain actionable or unanswered for the latest PR head.
+   - Confirm no top-level, formal-review, or inline `AGENT-REVIEW: FINDING` / `AGENT-REVIEW: DISCUSSION` comments remain actionable or unanswered for the latest PR head, ignoring CI/status-check-only markers.
    - Confirm the helper's `Inline thread audit` has `unresolved current: 0`.
    - Confirm whitespace hygiene with `git diff --check "origin/<base-ref>...origin/pr/<number>"` from the fetched PR head.
 10. Merge only after all pre-merge checks pass. If any check fails, continue the loop or stop with the blocker.
@@ -245,7 +245,7 @@ Run from the primary review worktree or any clean review environment. The review
    git diff --check "origin/<base-ref>...origin/pr/<number>"
    ```
 7. Check mergeability and review readiness for the current head:
-   - Treat `DIRTY` / `CONFLICTING` merge state, merge-tree conflicts, missing required/expected checks, blocked checks, and unresolved blocking threads as current-head blockers.
+   - Treat `DIRTY` / `CONFLICTING` merge state, merge-tree conflicts, and unresolved blocking threads as current-head blockers. Treat CI/status checks as informational only.
    - Post them as `AGENT-REVIEW: FINDING` or `AGENT-REVIEW: DISCUSSION` with the reviewed head SHA and `What do you think?`
    - Do not convert those blockers into a loop stop condition unless PR metadata, the head ref, or the base ref cannot be fetched or resolved.
    - Do not repost the same blocker for the same head unless there is new evidence; still wait the resolved interval and continue the loop from fresh PR metadata.
@@ -261,14 +261,13 @@ Run from the primary review worktree or any clean review environment. The review
    - Post `AGENT-REVIEW: HUMAN_SUMMARY`.
    - Write the summary in Chinese.
    - Use the readable Markdown section format from the recommended comment shape.
-   - Include recommendation, risk level, Bundle Check informational status, purpose, input/trigger, output/behavior change, scope, main risks, maintainability, design risk, verification, and human-review notes.
+   - Include `Recommendation: merge`, risk level, Bundle Check informational status, purpose, input/trigger, output/behavior change, scope, main risks, maintainability, design risk, verification, and merge notes.
    - Mention Bundle Check status if it is queued, pending, failed, missing, or passed; do not wait on it.
-   - Present the full same `HUMAN_SUMMARY` directly in the current agent conversation after posting it to the PR. Do not only provide a PR comment link or say that the summary was posted elsewhere.
-   - Do not post `GOOD_TO_GO` yet.
-   - Stop the current loop invocation after posting the summary for this head.
+   - Immediately re-check that the current PR head SHA still matches the summarized SHA. If it changed, do not post `GOOD_TO_GO`; continue the loop from fresh PR metadata.
+   - If the head still matches, post `AGENT-REVIEW: GOOD_TO_GO` for that exact SHA.
+   - Present the full same `HUMAN_SUMMARY` directly in the current agent conversation after posting it to the PR, and report that `GOOD_TO_GO` was posted for the reviewed SHA. Do not only provide PR comment links or say that the summary was posted elsewhere.
+   - Stop the current loop invocation after posting the summary and paired `GOOD_TO_GO` for this head.
 11. If no stop condition fired, wait the resolved interval, then repeat from step 3 until 10 cycles have completed.
-12. After explicit human approval, re-fetch PR metadata and confirm the head SHA still matches the summarized SHA.
-13. Post `AGENT-REVIEW: GOOD_TO_GO` for that exact SHA, then stop polling.
 
 ## Stop Conditions
 
@@ -279,8 +278,8 @@ Both agents stop when:
 - required GitHub metadata cannot be fetched
 - the PR head or base cannot be resolved
 - the current invocation reaches 10 review cycles
-- the review agent posts `AGENT-REVIEW: HUMAN_SUMMARY` for a safe current head
+- the review agent posts `AGENT-REVIEW: HUMAN_SUMMARY` and the paired `AGENT-REVIEW: GOOD_TO_GO` for a safe current head
 
-Posting `AGENT-REVIEW: FINDING` or `AGENT-REVIEW: DISCUSSION` is not a stop condition. Merge conflicts, `DIRTY` / `CONFLICTING` merge state, missing required/expected checks, blocked checks, and unresolved blocking review threads are also not stop conditions for the review loop; they are current-head blockers to report, then re-check on the next cycle. After posting those comments, continue the bounded review loop from fresh PR metadata on the next cycle.
+Posting `AGENT-REVIEW: FINDING` or `AGENT-REVIEW: DISCUSSION` is not a stop condition. Merge conflicts, `DIRTY` / `CONFLICTING` merge state, and unresolved blocking review threads are also not stop conditions for the review loop; they are current-head blockers to report, then re-check on the next cycle. CI/status checks are informational only and must not be reported as blockers. After posting those comments, continue the bounded review loop from fresh PR metadata on the next cycle.
 
 The review agent also stops after posting valid `GOOD_TO_GO`. The coding agent stops after the PR is merged or after reporting a hard blocker that prevents merge.

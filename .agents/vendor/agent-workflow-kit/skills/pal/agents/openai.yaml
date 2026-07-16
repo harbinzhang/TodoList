@@ -1,0 +1,6 @@
+interface:
+  display_name: "PAL"
+  short_description: "Alias for PR Adversarial Loop"
+  default_prompt: "Use $pal to carry the current branch or an existing PR through independent adversarial review, fixes, verification, and merge."
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Chrome Extension Release"
+  short_description: "Prepare Chrome Web Store releases"
+  default_prompt: "Use $chrome-extension-release to prepare a Chrome Web Store release for the Perkmon extension."

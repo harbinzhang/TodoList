@@ -1,0 +1,4 @@
+interface:
+  display_name: "PR Review Loop"
+  short_description: "Review each PR head with an independent adversarial pass"
+  default_prompt: "Use $pr-review-loop to independently review each latest PR head, post marked findings and a Chinese human summary, and only post GOOD_TO_GO for the exact reviewed head."

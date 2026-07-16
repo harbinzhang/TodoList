@@ -11,9 +11,9 @@ commands:
   bundleCheck: npm run bundle:check
   e2eLocal: npm run test:e2e:local:auto
   rules: npm run test:rules
-  typecheck: npx tsc --noEmit
+  typecheck: npm run typecheck
   functionsTypecheck: cd functions && npm install --prefer-offline && npx tsc --noEmit
-  verify: npm run test && npx tsc --noEmit && cd functions && npm install --prefer-offline && npx tsc --noEmit && cd .. && npm run bundle:check && npm run test:e2e:local:auto && npm run test:rules
+  verify: npm run test && npm run typecheck && cd functions && npm install --prefer-offline && npx tsc --noEmit && cd .. && npm run bundle:check && npm run test:e2e:local:auto && npm run test:rules
 
 review:
   baseFallbacks:

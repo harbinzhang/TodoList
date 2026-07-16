@@ -1,0 +1,4 @@
+interface:
+  display_name: "Weekly Offer Candidates"
+  short_description: "Find high-value weekly offer candidates"
+  default_prompt: "Use $weekly-offer-candidates to find 3-5 high-value offers for the next Perkmon consumer email."
