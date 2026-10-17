@@ -1,0 +1,4 @@
+interface:
+  display_name: "Native Staging Verification"
+  short_description: "Verify native staging smoke on simulators"
+  default_prompt: "Use $native-staging-verification to verify iOS and Android staging shell behavior, preserve safe evidence, and separate product failures from harness failures."

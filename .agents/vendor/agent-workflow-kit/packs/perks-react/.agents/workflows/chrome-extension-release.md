@@ -20,6 +20,8 @@ Stop and report blockers before upload/publish if any of these fail:
 - Web Store status cannot be checked and the user has not explicitly accepted proceeding without live status.
 - `manifest.json`, `package.json`, and `package-lock.json` versions disagree.
 - Candidate version is not greater than the currently published Web Store version.
+- `npm run webstore:sensitive-gate` detects any non-version difference from `apps/chrome-extension/release-sensitive-baseline.json`.
+- Source, built, or packaged manifests differ from the approved sensitive baseline. `webstore:package` and `webstore:publish` enforce this independently.
 - `apps/chrome-extension/.env.production` points at staging or mixes staging/prod values.
 - `apps/chrome-extension/.env.production` uses a Google OAuth client that is not the production Chrome extension client.
 - The built `dist/` contains any staging Firebase project id, staging Function URL, staging API key, or staging Google OAuth client.
@@ -32,6 +34,35 @@ Stop and report blockers before upload/publish if any of these fail:
 - Production `dist/manifest.json` is missing `<all_urls>` in `host_permissions` (broad site access is intentional — see "Broad Host Access" below).
 - Generated zip is missing `manifest.json`, `background.js`, `sidepanel.html`, or required icons.
 - The package was submitted for review before the Chrome Web Store Dashboard Privacy Practices / permission justification for broad host access was reviewed by the user.
+
+## Mandatory Sensitive-Change Hard Stop
+
+Run from `apps/chrome-extension` before build, package, upload, or publish:
+
+```bash
+npm run webstore:sensitive-gate
+```
+
+`release-sensitive-baseline.json` is the reviewed security-surface contract.
+The executable gate compares every manifest field except `version` and
+`version_name`; permission arrays are treated as unordered sets. It therefore
+hard-stops changes to permissions/hosts and to all other current or future
+manifest surfaces, including CSP, background execution, content scripts,
+externally connectable origins, web-accessible resources, OAuth/signing
+identity, actions, side panel, commands, descriptions, and icons.
+
+This is defense in depth:
+
+- `release:webstore` and `release:webstore:dry-run` run the gate before other work.
+- `webstore:package` checks the built manifest.
+- `webstore:publish` checks the manifest inside the exact zip before obtaining a token or making an upload call.
+
+On `HARD STOP`, do not upload or submit, and do not add a bypass flag. Generic
+release approval does not approve the sensitive delta. Report the exact changed
+fields and start a separate security/privacy review. Update
+`release-sensitive-baseline.json` only in a dedicated reviewed change with
+explicit human approval naming those differences and any required Web Store
+disclosure updates; then begin a new release attempt.
 
 ## Broad Host Access (Intentional)
 
@@ -70,6 +101,8 @@ npm run webstore:status
 ```
 
 Record the observed `publishedItemRevisionStatus.distributionChannels[].crxVersion`.
+Also run `npm run webstore:sensitive-gate` and record the approved baseline
+version before continuing.
 
 ## 2. Verify Production Extension Env
 
@@ -186,7 +219,9 @@ From `apps/chrome-extension`:
 npm run release:webstore:dry-run
 ```
 
-This runs typecheck, tests, production build, zip packaging, then invokes `publish-webstore --dry-run`, which skips token, upload, publish, and status calls.
+This runs the sensitive-change hard stop, typecheck, tests, production build,
+zip packaging, then invokes `publish-webstore --dry-run`, which rechecks the
+packaged manifest and skips token, upload, publish, and status calls.
 
 ## 6. Verify Built Artifact
 
@@ -317,6 +352,7 @@ Include:
 - extension production env status, including Google OAuth client id and Apple start URL
 - Apple auth backend/deploy status when Apple sign-in is in scope
 - exact commands run and pass/fail result
+- sensitive-change gate result, approved baseline version, and exact changed fields when blocked
 - provider replay safe gate result, including baseline commands, targeted providers/scenarios when applicable, and whether raw data/profiles stayed untracked under `tmp`
 - zip path and size
 - `dist/manifest.json` host permission check (including `<all_urls>` present, `http://localhost/*` absent)

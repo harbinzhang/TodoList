@@ -11,14 +11,16 @@ Use this skill when the user asks to build, upload, or release an iOS app to App
 
 ## Why this skill exists
 
-Uploading an iOS build involves multiple platforms (web, iOS, Android) sharing a single version source of truth. Manually bumping the iOS build number (e.g. via `agvtool`) without going through the project's version sync system causes version drift — the iOS build number diverges from `release/version.json`, `package.json`, and Android's `build.gradle`. This skill ensures every iOS release follows the correct version management pipeline.
+Uploading an iOS build involves multiple platforms (web, iOS, Android) sharing a single version source of truth. Manually bumping the iOS build number (e.g. via `agvtool`) without going through the project's version sync system causes version drift — the iOS build number diverges from `release/version.json`, `package.json`, and Android's `build.gradle`. A successful IPA upload without its matching dSYM also leaves Crashlytics unable to symbolicate production crashes. This skill ensures every iOS release follows the correct version management and symbol-upload pipeline.
 
 ## Safety
 
 - **Production uploads require explicit user approval** before any App Store Connect upload command runs.
 - Check `.agents/conventions.md` for production safety rules before proceeding.
 - Never use `agvtool` directly to change build numbers. Always use `node scripts/bump-version.mjs` to keep all platforms in sync.
-- If any pre-upload check fails (version mismatch, lint error, build failure), stop and report the issue before proceeding.
+- If any pre-upload check fails (version mismatch, lint error, build failure,
+  missing/mismatched dSYM, or Crashlytics symbol-upload failure), stop and
+  report the issue before proceeding.
 - The `release` lane automatically checks App Store Connect for versions in review (`WAITING_FOR_REVIEW` / `IN_REVIEW`). If one is found, the release aborts. Cancel the existing review or wait for it to complete before retrying.
 
 ## Execution
@@ -39,7 +41,7 @@ Default to the automated fastlane path unless the user explicitly requests other
 | **Automated TestFlight release (default)** | `npm run ios:auto-release` | Fresh build + TestFlight upload in one step without touching App Store metadata |
 | **Public App Store review release** | `npm run ios:public-release -- --yes` | Fresh build + TestFlight upload + automatic build-processing retry + App Store review submission without changing listing metadata |
 | **Full automated release with metadata** | `npm run appstore:upload` | Use only when the task explicitly includes App Store metadata or version-page updates |
-| **Upload existing IPA** | `npm run appstore:testflight` | IPA already built, just need to upload |
+| **Upload existing IPA** | `DSYM_PATH=/absolute/path/to/App.app.dSYM.zip npm run appstore:testflight` | IPA and its matching dSYM already exist |
 | **Metadata only** | `npm run appstore:metadata` | Update App Store listing text |
 | **Screenshots only** | `npm run appstore:screenshots` | Update App Store screenshots |
 | **Manual Xcode archive (alternative)** | `npm run ios:prepare-archive` then open Xcode | User specifically wants to archive/upload manually via Xcode |
@@ -94,7 +96,8 @@ This runs `scripts/ios-prepare-archive.sh --upload`, which:
 3. Runs `bump-version.mjs sync`
 4. Runs `npm install`
 5. Runs `npm run ios:sync` (production web build + Capacitor sync)
-6. Runs `cd ios && bundle exec fastlane release` (build + TestFlight upload)
+6. Runs `cd ios && bundle exec fastlane release` (build + dSYM
+   validation/preservation/Crashlytics upload + TestFlight upload)
 
 For the full metadata + upload path:
 
@@ -122,8 +125,12 @@ npm run ios:public-release -- --yes --bump-build --commit-version
 For upload-only (IPA already exists):
 
 ```bash
-npm run appstore:testflight
+DSYM_PATH=/absolute/path/to/App.app.dSYM.zip npm run appstore:testflight
 ```
+
+The dSYM must come from the same archive as the IPA. The lane fails before
+uploading the IPA if the symbols are missing, invalid, or rejected by
+Crashlytics.
 
 ### Step 6: Handle upload errors
 
@@ -133,13 +140,22 @@ Common errors and correct fixes:
 |-------|-----------|-------------|
 | "bundle version already used" | `agvtool new-version` | `node scripts/bump-version.mjs sync --bump-build` then rebuild |
 | Version mismatch | Edit `project.pbxproj` manually | `node scripts/bump-version.mjs sync` |
+| Firebase "Missing dSYM" | Upload any dSYM with the same version | Locate the original archive and run `npm run appstore:dsym:upload -- --dsym <path> --expected-uuid <uuid> --version <version> --build-number <build>` |
 
 After fixing, re-run `npm run version:check` before retrying the upload.
+
+For a missing-symbol alert, the recovery command validates the UUID before it
+contacts Firebase. `--skip-upload` performs local validation and preserves the
+artifact without uploading it.
 
 ### Step 7: Verification
 
 - `npm run version:check` passes
 - `ios/App/App.xcodeproj/project.pbxproj` shows the correct MARKETING_VERSION and CURRENT_PROJECT_VERSION
+- Fastlane prints the generated dSYM UUIDs
+- The matching symbol artifact exists under
+  `ios/build/dsyms/<version>-<build>/`
+- Crashlytics symbol upload succeeds before the IPA is sent to TestFlight
 - Build appears in App Store Connect / TestFlight (may take a few minutes)
 - Report whether distribution is internal only or intended for external testers
 
@@ -148,6 +164,7 @@ After fixing, re-run `npm run version:check` before retrying the upload.
 - Release path chosen and why
 - Version sync status (all platforms)
 - Pre-upload check results
+- dSYM UUIDs, preserved artifact path, and Crashlytics upload result
 - Commands executed
 - Upload result and App Store Connect status
 - Any follow-up actions needed

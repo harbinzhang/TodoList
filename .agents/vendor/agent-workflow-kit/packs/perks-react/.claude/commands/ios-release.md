@@ -1,1 +1,1 @@
-/Users/haibinzhang/mine/react/perks-react/.agents/workflows/ios-release.md
+../../.agents/workflows/ios-release.md

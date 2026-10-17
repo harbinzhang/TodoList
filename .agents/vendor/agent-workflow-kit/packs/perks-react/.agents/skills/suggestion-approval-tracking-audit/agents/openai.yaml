@@ -1,0 +1,4 @@
+interface:
+  display_name: "Suggestion Approval Tracking Audit"
+  short_description: "Audit tracking effects after suggestion approval"
+  default_prompt: "Use $suggestion-approval-tracking-audit to verify one card update suggestion's catalog and userCardBenefitsTracking effects, staging first."

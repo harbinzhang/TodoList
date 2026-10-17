@@ -49,3 +49,13 @@ skills:
     description: "Use when adding or strengthening TypeScript, React, Firebase, Vitest, or Playwright tests for existing behavior, especially during coverage backfills, mock-heavy suites, flaky async flows, or suspicious green tests."
     adapters:
       claude: .claude/commands/add-high-quality-tests.md
+  - name: pall
+    path: .agents/vendor/agent-workflow-kit/skills/pall/SKILL.md
+    description: "Use when the user explicitly invokes $pall or confirms a Codex Relay, Codex Collaboration, or Multi-CC manifest that delegates a PR to the risk-tiered final pull-request gate."
+    adapters:
+      claude: .claude/commands/pall.md
+  - name: roadmap
+    path: .agents/vendor/agent-workflow-kit/skills/roadmap/SKILL.md
+    description: "Operate an in-repository epic roadmap under docs/roadmap, including current-state summaries, candidate triage, drift checks, idea capture, approved epic promotion, track updates, and plan-to-mission linkage."
+    adapters:
+      claude: .claude/commands/roadmap.md

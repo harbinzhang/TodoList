@@ -1,0 +1,4 @@
+interface:
+  display_name: "Suggestion Approval Ops"
+  short_description: "Safely promote and audit card suggestions end to end"
+  default_prompt: "Use $suggestion-approval-ops to stage, approve, audit, and promote card update suggestions with explicit safety gates."

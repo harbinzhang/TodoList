@@ -1,0 +1,4 @@
+interface:
+  display_name: "Firebase Functions Best Practices"
+  short_description: "Review Firebase Functions performance and safety"
+  default_prompt: "Use $firebase-functions-best-practices to audit these Firebase Functions for performance, reliability, security, and cost risks."

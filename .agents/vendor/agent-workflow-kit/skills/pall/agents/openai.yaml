@@ -1,0 +1,6 @@
+interface:
+  display_name: "PALL"
+  short_description: "Run a risk-tiered exact-SHA adversarial PR gate"
+  default_prompt: "Use $pall to carry this PR through fresh adversarial review, risk-tiered exact-head verification, and merge."
+policy:
+  allow_implicit_invocation: false

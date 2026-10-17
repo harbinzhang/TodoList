@@ -8,7 +8,7 @@ Use this workflow after `npm run deploy:staging` to confirm the hosted staging a
 
 This is the default staging gate. It intentionally stays shorter and less invasive than the tracker deep verification workflow.
 
-By default, the Firebase build-marker check validates that staging is serving a readable, recent build. It does not assume the current checkout is the deploy source of truth.
+By default, the Firebase build-marker check validates that staging is serving a readable, recent build. It does not assume the current checkout is the deploy source of truth. During a canonical ship, the deploy workflow passes the frozen artifact's exact build ID and version so this same gate becomes strict and its result is recorded as the `strict_qa` checkpoint phase.
 
 ## Prerequisites
 
@@ -50,7 +50,7 @@ This runs:
 - If the Auth user is missing, disabled, or not email verified, repair only the staging E2E user.
 - If stale cleanup fails, stop and inspect the affected staging records before rerunning.
 - If the build marker version mismatches `package.json`, confirm staging was deployed from the current branch/build.
-- If you just deployed and want strict verification that staging picked up that exact web build, run `scripts/staging-qa.mjs` with `--expect-build-id=<buildId>` (or set `STAGING_QA_EXPECT_BUILD_ID` / `STAGING_QA_EXPECT_VERSION`).
+- If you just deployed and want strict verification that staging picked up that exact web build, run `scripts/staging-qa.mjs` with `--expect-build-id=<buildId>` (or set `STAGING_QA_EXPECT_BUILD_ID` / `STAGING_QA_EXPECT_VERSION`). A ship retry must reuse the build ID read from the verified frozen artifact; it must not rebuild first.
 
 ## Deep Mode
 

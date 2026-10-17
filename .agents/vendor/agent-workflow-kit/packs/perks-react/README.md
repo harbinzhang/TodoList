@@ -25,5 +25,5 @@ The pack catalog and Claude command wrappers point to pack-local `.agents/skills
 ## Refresh
 
 ```bash
-node scripts/backup-repo-pack.mjs --source /Users/haibinzhang/mine/react/perks-react --pack perks-react
+node scripts/backup-repo-pack.mjs --source /private/tmp/perks-react-latest.NOaD5Y --pack perks-react
 ```

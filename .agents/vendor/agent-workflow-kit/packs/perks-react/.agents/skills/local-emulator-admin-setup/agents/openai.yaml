@@ -1,4 +1,4 @@
 interface:
   display_name: "Local Emulator Admin Setup"
-  short_description: "Start emulators and seed local admin test data"
-  default_prompt: "Set up local Firebase emulators with an admin account and seeded card products for testing."
+  short_description: "Seed local Firebase with safe feature flags"
+  default_prompt: "Use $local-emulator-admin-setup to start and seed local Firebase emulators with admin data and the local-safe feature profile."

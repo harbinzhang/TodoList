@@ -4,7 +4,9 @@ description: Onboard a consumer repository to Agent Workflow Kit vendoring, skil
 
 # Consumer Onboarding
 
-Use this workflow to make a repository consume AWK through `.agents/vendor/agent-workflow-kit/` with explicit catalog routing.
+Use this workflow to make a repository consume AWK through
+`.agents/vendor/agent-workflow-kit/`, selected-skill catalog metadata, and
+native Codex symlinks under `.agents/skills/`.
 
 ## Inputs
 
@@ -41,7 +43,11 @@ Rules:
 
 - Target path must be the consumer repo root.
 - Do not clean or revert consumer dirt.
-- If committing later, stage only `.agents/vendor/agent-workflow-kit`, `.agents/catalog.yaml`, `.agents/repo-profile.yaml`, `.agents/conventions.md`, generated `.claude/commands/*`, and root `package.json` npm aliases that belong to this onboarding.
+- If committing later, stage only `.agents/vendor/agent-workflow-kit`, the
+  generated `.agents/skills/<selected-skill>` symlinks, `.agents/catalog.yaml`,
+  `.agents/repo-profile.yaml`, `.agents/conventions.md`, generated
+  `.claude/commands/*`, and root `package.json` npm aliases that belong to this
+  onboarding.
 
 ## Vendor AWK
 
@@ -66,6 +72,16 @@ For each selected vendored skill:
 ```bash
 node scripts/install-skill-to-repo.mjs --target <consumer-repo> --skill <skill-name> --mode vendored
 ```
+
+The installer keeps the vendored directory canonical and creates:
+
+```text
+.agents/skills/<skill-name> -> ../vendor/agent-workflow-kit/skills/<skill-name>
+```
+
+Codex discovers the skill through that symlink. The catalog remains AWK and
+Claude adapter metadata. The installer stops rather than replacing an existing
+local directory or unexpected symlink.
 
 When `<skill-name>` is `pr-coding-loop` or `pr-review-loop`, the installer also
 adds these root `package.json` aliases when the consumer has `package.json` and
@@ -120,6 +136,8 @@ From the consumer repo:
 
 ```bash
 ruby -ryaml -e 'YAML.load_file(".agents/catalog.yaml"); YAML.load_file(".agents/repo-profile.yaml")'
+test "$(readlink .agents/skills/<skill-name>)" = "../vendor/agent-workflow-kit/skills/<skill-name>"
+test -f .agents/skills/<skill-name>/SKILL.md
 git diff --check
 ```
 
@@ -138,7 +156,7 @@ Only if requested:
 
 ```bash
 git status --short
-git add .agents/vendor/agent-workflow-kit .agents/catalog.yaml .agents/repo-profile.yaml .agents/conventions.md .claude/commands package.json
+git add .agents/vendor/agent-workflow-kit .agents/skills/<selected-skill> .agents/catalog.yaml .agents/repo-profile.yaml .agents/conventions.md .claude/commands package.json
 git diff --cached --stat
 git commit -m "chore: onboard agent workflow kit"
 git push

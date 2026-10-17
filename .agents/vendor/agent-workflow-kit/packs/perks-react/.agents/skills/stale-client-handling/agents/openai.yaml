@@ -1,0 +1,4 @@
+interface:
+  display_name: "Stale Client Handling"
+  short_description: "Detect and handle stale-client tracking writes"
+  default_prompt: "Use $stale-client-handling to investigate and handle suspected stale-client tracking writes."

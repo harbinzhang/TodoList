@@ -4,13 +4,19 @@ conventions:
 skills:
   - name: ship
     path: .agents/skills/ship/SKILL.md
-    description: Ship through the fixed release-branch branch by optionally syncing a named remote branch, syncing remote main, aligning root dependencies, taking over local emulator ports for targeted local checks, running the i18n staging sync gate, avoiding GitHub CI gates, running a patch release, deploying Firebase staging, validating staging, and deploying staging admin Hosting
+    description: Prepare an exact patch-tagged candidate on release-branch, fully validate immutable staging inputs, promote the same tag/SHA to main, publish Latest, and reconcile ship-created support fixes to dev
+  - name: shipc
+    path: .agents/skills/shipc/SKILL.md
+    description: Follow the full fixed release-branch patch ship while skipping automated test suites and retaining release, deploy, roadmap, Admin, and live-outcome safety checks
+    adapters:
+      openai: .agents/skills/shipc/agents/openai.yaml
+      claude: .claude/commands/shipc.md
   - name: i18n-staging-sync
     path: .agents/skills/i18n-staging-sync/SKILL.md
     description: Use when staging or ship is blocked by missing, stale, or structurally invalid i18n catalogs before deploy
   - name: deploy
     path: .agents/skills/deploy/SKILL.md
-    description: Deploy the application to Firebase using the shared staging/prod deploy workflow, including live production marker baselining, admin hosting, Firestore index predeploy gating, dedicated card-asset hosting, and strict post-deploy staging QA for staging full/hosting deploys
+    description: Deploy or recover immutable Firebase surfaces with production baselining, surface-sequenced full rollouts, exact Function reconciliation, fail-closed marker and digest gates, and target-specific rebuilds
   - name: prod-deploy
     path: .agents/skills/prod-deploy/SKILL.md
     description: Prepare a production deploy readiness report by resolving the live production version and classifying changes since prod into automatic and manual verification
@@ -19,7 +25,7 @@ skills:
       claude: .claude/commands/prod-deploy.md
   - name: release
     path: .agents/skills/release/SKILL.md
-    description: Prepare a branch-based release from the currently checked out branch tip by merging it into main, applying version bump (major/minor/patch), creating the matching semver tag, and ending with a clean worktree
+    description: Prepare a branch-based semver release through either the direct main-first flow or the ship-only staging-first tagged-candidate and post-staging main-promotion flow
   - name: hotfix
     path: .agents/skills/hotfix/SKILL.md
     description: Prepare a short-lived production hotfix from a released tag, optionally cherry-pick reviewed commits, run patch release verification, feed the fix through main, and clean up the hotfix branch/worktree
@@ -36,7 +42,7 @@ skills:
       claude: .claude/commands/rebase.md
   - name: ios-release
     path: .agents/skills/ios-release/SKILL.md
-    description: Build and upload iOS app to App Store Connect / TestFlight with correct cross-platform version syncing
+    description: Build and upload iOS app to App Store Connect / TestFlight with cross-platform version syncing plus fail-fast dSYM validation, preservation, Crashlytics upload, and UUID-based recovery
     adapters:
       claude: .claude/commands/ios-release.md
   - name: firestore
@@ -53,16 +59,41 @@ skills:
     description: Run the read-only userCardBenefitsTracking drift audit, or use the aggregate user-level tracking wrapper for one-user investigations
     adapters:
       openai: .agents/skills/benefit-drift-audit/agents/openai.yaml
+  - name: suggestion-approval-tracking-audit
+    path: .agents/skills/suggestion-approval-tracking-audit/SKILL.md
+    description: Audit the read-only catalog and userCardBenefitsTracking effects of one approved card update suggestion, staging first and production only with explicit authorization
+    adapters:
+      openai: .agents/skills/suggestion-approval-tracking-audit/agents/openai.yaml
+  - name: suggestion-approval-ops
+    path: .agents/skills/suggestion-approval-ops/SKILL.md
+    description: Run the end-to-end card suggestion lifecycle from Staging generation or intake through approval, exact-one tracking audit, Production preflight, promotion, resume, and summary with explicit write gates
+    adapters:
+      openai: .agents/skills/suggestion-approval-ops/agents/openai.yaml
   - name: email-campaign-ops
     path: .agents/skills/email-campaign-ops/SKILL.md
     description: Prepare and operate Perkmon email campaigns, including unified campaign Firestore drafts, email template updates, test sends, unsubscribe filtering, audience preview, legacy benefit-reminder handling, and final send safety checks
     adapters:
       openai: .agents/skills/email-campaign-ops/agents/openai.yaml
+  - name: prepare-agent-handoff
+    path: .agents/skills/prepare-agent-handoff/SKILL.md
+    description: Use when handing prior conversation or referenced context to another agent through a concise follow-up or copy-paste prompt that leaves room for further design discussion
+    adapters:
+      openai: .agents/skills/prepare-agent-handoff/agents/openai.yaml
+  - name: roadmap
+    path: .agents/skills/roadmap/SKILL.md
+    description: Operate the agent roadmap under docs/roadmap/ — show current epic / big-feature state, collect and triage candidate backlogs against current repo and GitHub evidence, reuse existing epics before proposing a new one, regenerate the derived progress dashboard, check for drift, capture ideas, add or advance a track, or turn a plan into a tracked mission
+    adapters:
+      claude: .claude/commands/roadmap.md
   - name: generate-card-update-suggestion
     path: .agents/skills/generate-card-update-suggestion/SKILL.md
     description: Research the latest public benefits for an existing card and prepare or create a pending cardUpdateSuggestions document for admin review
     adapters:
       openai: .agents/skills/generate-card-update-suggestion/agents/openai.yaml
+  - name: add-card
+    path: .agents/skills/add-card/SKILL.md
+    description: Deduplicate a genuinely new card in Staging, generate one canonical JSON artifact, ship it through the script-only uploader, and reuse that exact artifact for a separately authorized Production promotion
+    adapters:
+      openai: .agents/skills/add-card/agents/openai.yaml
   - name: weekly-offer-candidates
     path: .agents/skills/weekly-offer-candidates/SKILL.md
     description: Find and rank high-value weekly offer candidates for Perkmon consumer emails, offer roundups, and offers-to-check blocks using internal offer signals, external heat, and official terms verification
@@ -70,7 +101,7 @@ skills:
       openai: .agents/skills/weekly-offer-candidates/agents/openai.yaml
   - name: local-emulator-admin-setup
     path: .agents/skills/local-emulator-admin-setup/SKILL.md
-    description: Set up local Firebase emulators with a seeded admin test account and real card products for local testing
+    description: Start or seed local Firebase emulators with an admin test account, real card products, and a local-safe all-features operational flag profile for agent testing
     adapters:
       openai: .agents/skills/local-emulator-admin-setup/agents/openai.yaml
       claude: .claude/commands/local-emulator-admin-setup.md
@@ -79,6 +110,11 @@ skills:
     description: Review current-branch git changes in the active worktree for bugs, conventions compliance, code quality, and Cloud Functions entrypoint test parity (matrix sync + high-risk helper coverage)
     adapters:
       claude: .claude/commands/re.md
+  - name: firebase-functions-best-practices
+    path: .agents/skills/firebase-functions-best-practices/SKILL.md
+    description: Audit, design, implement, or refactor Node.js Cloud Functions for Firebase across callable security, Firestore I/O, async waterfalls, cold starts, retries, scaling, observability, load testing, and cost
+    adapters:
+      openai: .agents/skills/firebase-functions-best-practices/agents/openai.yaml
   - name: pr-coding-loop
     path: .agents/skills/pr-coding-loop/SKILL.md
     description: Create and maintain implementation PRs from coding-agent worktrees using upstream-derived PR bases and the shared PR agent comment protocol
@@ -97,7 +133,7 @@ skills:
       claude: .claude/commands/adversarial-review.md
   - name: codex-relay
     path: .agents/skills/codex-relay/SKILL.md
-    description: Plan a change (brainstorm), gate on explicit human plan approval, delegate each task one at a time to the OpenAI Codex CLI (codex:codex-rescue subagent) with checkpoint commits in the current worktree, then finish with a Codex + Claude dual adversarial review
+    description: Plan a change, gate on human approval, delegate each task to Codex with checkpoint commits, then finish through the lightweight PALL exact-SHA adversarial PR gate
     adapters:
       claude: .claude/commands/codex-relay.md
   - name: cr
@@ -105,6 +141,27 @@ skills:
     description: Alias for codex-relay
     adapters:
       claude: .claude/commands/cr.md
+  - name: crc
+    path: .agents/skills/crc/SKILL.md
+    description: Clarify a change with bounded compact grilling, confirm once, execute as many small Codex tasks as the goal decomposes into, then finish through the lightweight exact-SHA adversarial PR gate
+    adapters:
+      openai: .agents/skills/crc/agents/openai.yaml
+      claude: .claude/commands/crc.md
+  - name: cc
+    path: .agents/skills/cc/SKILL.md
+    description: Clarify a change with bounded compact grilling, confirm once, execute ordered tasks through native Codex collaboration agents, then finish through the lightweight exact-SHA adversarial PR gate
+    adapters:
+      openai: .agents/skills/cc/agents/openai.yaml
+  - name: multi-cc
+    path: .agents/skills/multi-cc/SKILL.md
+    description: Plan one multi-PR mission, confirm it once, then execute and merge every sequential Compact Codex Collaboration PR through roadmap closure
+    adapters:
+      openai: .agents/skills/multi-cc/agents/openai.yaml
+  - name: mcc
+    path: .agents/skills/mcc/SKILL.md
+    description: Alias for multi-cc
+    adapters:
+      openai: .agents/skills/mcc/agents/openai.yaml
   - name: pr-adversarial-loop
     path: .agents/skills/pr-adversarial-loop/SKILL.md
     description: Carry the current implementation branch or an existing PR through independent adversarial review, fixes, full verification, and merge
@@ -117,6 +174,12 @@ skills:
     adapters:
       openai: .agents/skills/pal/agents/openai.yaml
       claude: .claude/commands/pal.md
+  - name: pall
+    path: .agents/skills/pall/SKILL.md
+    description: Run a lightweight event-driven adversarial PR loop with risk-tiered verification for each exact head SHA
+    adapters:
+      openai: .agents/skills/pall/agents/openai.yaml
+      claude: .claude/commands/pall.md
   - name: pr-review-loop
     path: .agents/skills/pr-review-loop/SKILL.md
     description: Review every latest PR head through a fresh adversarial pass using the bounded agent comment loop, Chinese human summaries, and SHA-bound GOOD_TO_GO signals
@@ -148,12 +211,12 @@ skills:
       claude: .claude/commands/gha-monitor.md
   - name: android-release
     path: .agents/skills/android-release/SKILL.md
-    description: Prepare and ship an Android release to Google Play via local fastlane build/upload
+    description: Prepare and ship one exact tagged Android source through the exclusive local runner, verify Open testing availability, safely resume Production review submission, and keep Production publishing manual by default
     adapters:
       claude: .claude/commands/android-release.md
   - name: chrome-extension-release
     path: .agents/skills/chrome-extension-release/SKILL.md
-    description: Prepare and publish the Perkmon Chrome extension through Chrome Web Store, including prod env/auth validation, Google OAuth client checks, Apple auth backend readiness, live Web Store status, version bump, local dry-run gate, provider replay safe gate before upload, zip verification, listing asset checks, and explicit approval before upload/publish
+    description: Prepare and publish the Perkmon Chrome extension through Chrome Web Store, including a mandatory manifest sensitive-change hard stop, prod env/auth validation, live status, version bump, local dry-run, provider replay before upload, artifact verification, and explicit approval before upload/publish
   - name: chrome-extension-provider-replay
     path: .agents/skills/chrome-extension-provider-replay/SKILL.md
     description: Use local or sanitized provider captures to record and replay Perkmon Chrome extension provider flows, merchant alert replay, raw issuer capture validation, and isolated extension mock testing without live third-party logins
@@ -188,11 +251,6 @@ skills:
     description: Assess whether tests provide behavioral confidence across trigger, boundary, side effect, reader, and edge-case coverage
     adapters:
       openai: .agents/skills/test-quality-audit/agents/openai.yaml
-  - name: add-high-quality-tests
-    path: .agents/skills/add-high-quality-tests/SKILL.md
-    description: Add or strengthen TypeScript, React, Firebase, Vitest, or Playwright tests that catch named regressions and prove their effectiveness
-    adapters:
-      openai: .agents/skills/add-high-quality-tests/agents/openai.yaml
   - name: tdd
     path: .agents/skills/tdd/SKILL.md
     description: Drive feature work or bug fixes using a Red-Green-Refactor test-driven development cycle with Vitest and Playwright
@@ -205,7 +263,7 @@ skills:
       claude: .claude/commands/verify.md
   - name: staging-tracker-verification
     path: .agents/skills/staging-tracker-verification/SKILL.md
-    description: Verify the staging tracker flow with remote staging E2E, direct Firestore inspection, temporary staging userCard creation, and cleanup
+    description: Verify staging tracker generation and used-state behavior from production candidate logic with namespaced records, deterministic IDs, durable interruption recovery, trigger-owned cleanup, exact card/tracking/profile baseline restoration, and checkpoint evidence
   - name: staging-qa
     path: .agents/skills/staging-qa/SKILL.md
     description: Run the fast post-deploy staging QA gate across remote E2E, Firebase Auth/Firestore health, Hosting build metadata, and stale test-data cleanup, with health-only default build checks and optional strict expected-build verification
@@ -217,19 +275,36 @@ skills:
     description: Verify deploy-relevant diffs on hosted staging by reusing deploy QA, doing targeted browser or Firestore checks, and exercising staging-safe user writes with readback and cleanup
     adapters:
       openai: .agents/skills/staging-diff-verification/agents/openai.yaml
+  - name: native-staging-verification
+    path: .agents/skills/native-staging-verification/SKILL.md
+    description: Verify iOS and Android staging native shells on local simulators with authorized login, explicit device binding, trustworthy evidence, failure classification, and credential-safe cleanup
+    adapters:
+      openai: .agents/skills/native-staging-verification/agents/openai.yaml
   - name: refactor-safety
     path: .agents/skills/refactor-safety/SKILL.md
     description: Prove an N/M-series consolidation refactor is behavior-preserving before merge — mechanical stale-vendor/orphaned-duplicate/parity-test gate plus a required behavior-preservation proof and drift-canary checklist
     adapters:
       claude: .claude/commands/refactor-safety.md
-
+  - name: add-high-quality-tests
+    path: .agents/skills/add-high-quality-tests/SKILL.md
+    description: "Use when adding or strengthening TypeScript, React, Firebase, Vitest, or Playwright tests for existing behavior, especially during coverage backfills, mock-heavy suites, flaky async flows, or suspicious green tests."
+    adapters:
+      claude: .claude/commands/add-high-quality-tests.md
 workflows:
+  - name: codex-collaboration-core
+    path: .agents/workflows/codex-collaboration-core.md
+  - name: multi-cc
+    path: .agents/workflows/multi-cc.md
+  - name: codex-relay-core
+    path: .agents/workflows/codex-relay-core.md
   - name: add-card
     path: .agents/workflows/add-card.md
   - name: add-membership
     path: .agents/workflows/add-membership.md
   - name: ship
     path: .agents/workflows/ship.md
+  - name: shipc
+    path: .agents/workflows/shipc.md
   - name: i18n-staging-sync
     path: .agents/workflows/i18n-staging-sync.md
   - name: deploy
@@ -248,6 +323,8 @@ workflows:
     path: .agents/workflows/chrome-extension-release.md
   - name: run-firestore-script
     path: .agents/workflows/run-firestore-script.md
+  - name: suggestion-approval-ops
+    path: .agents/workflows/suggestion-approval-ops.md
   - name: publish-ask-ai-product-knowledge
     path: .agents/workflows/publish-ask-ai-product-knowledge.md
   - name: grant-welcome-card-slots
@@ -264,9 +341,13 @@ workflows:
     path: .agents/workflows/staging-user-journey-verification.md
   - name: staging-diff-verification
     path: .agents/workflows/staging-diff-verification.md
+  - name: native-staging-verification
+    path: .agents/workflows/native-staging-verification.md
   - name: marketing-recordings
     path: .agents/workflows/marketing-recordings.md
   - name: seo-geo-audit
     path: .agents/workflows/seo-geo-audit.md
   - name: pr-agent-loop
     path: .agents/workflows/pr-agent-loop.md
+  - name: pr-adversarial-loop
+    path: .agents/workflows/pr-adversarial-loop.md

@@ -1,1 +1,1 @@
-/Users/haibinzhang/mine/react/perks-react/.agents/skills/monitor/SKILL.md
+../../.agents/skills/monitor/SKILL.md

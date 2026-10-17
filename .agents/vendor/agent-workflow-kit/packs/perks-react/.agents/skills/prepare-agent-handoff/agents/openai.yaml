@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prepare Agent Handoff"
+  short_description: "Turn prior context into a focused agent handoff prompt"
+  default_prompt: "Use $prepare-agent-handoff to turn our current context into a concise prompt for the next agent."

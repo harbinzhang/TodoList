@@ -4,6 +4,11 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from
 import { dirname, join, resolve } from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
+import {
+  assertRealLocalSkillDirectory,
+  ensureNativeSkillLink,
+  inspectNativeSkillLink,
+} from './skill-routing.mjs'
 
 const args = process.argv.slice(2)
 
@@ -229,11 +234,27 @@ if (!existsSync(targetSkillPath)) {
   process.exit(1)
 }
 
+let nativeSkillState
+try {
+  if (mode === 'vendored') {
+    nativeSkillState = inspectNativeSkillLink(targetRoot, skillName)
+  } else {
+    assertRealLocalSkillDirectory(targetRoot, skillName)
+  }
+} catch (error) {
+  console.error(error.message)
+  process.exit(1)
+}
+
 const targetFrontmatter = parseSkillFrontmatter(read(targetSkillPath))
 const description = targetFrontmatter.description || rootSkill.description
 const agentsDir = join(targetRoot, '.agents')
 const catalogPath = join(agentsDir, 'catalog.yaml')
 mkdirSync(agentsDir, { recursive: true })
+
+if (mode === 'vendored') {
+  nativeSkillState = ensureNativeSkillLink(targetRoot, skillName)
+}
 
 const catalog = existsSync(catalogPath) ? read(catalogPath) : ''
 writeFileSync(
@@ -262,6 +283,10 @@ writeFileSync(
 )
 
 console.log(`Installed ${skillName} ${mode} skill routing in ${targetRoot}`)
+if (nativeSkillState) {
+  const status = nativeSkillState.action === 'create' ? 'created' : nativeSkillState.action
+  console.log(`Codex skill: ${status} (${nativeSkillState.relativePath} -> ${nativeSkillState.target})`)
+}
 console.log(`Catalog: ${catalogPath}`)
 console.log(`Claude command: ${claudeCommandPath}`)
 

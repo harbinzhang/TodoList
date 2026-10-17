@@ -1,1 +1,1 @@
-/Users/haibinzhang/mine/react/perks-react/.agents/skills/android-release/SKILL.md
+../../.agents/skills/android-release/SKILL.md

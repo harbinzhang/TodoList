@@ -1,0 +1,6 @@
+interface:
+  display_name: "MCC"
+  short_description: "Alias for the Multi-CC mission workflow"
+  default_prompt: "Use $mcc to plan this multi-PR mission and finish every PR through merge."
+policy:
+  allow_implicit_invocation: false

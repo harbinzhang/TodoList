@@ -7,9 +7,14 @@ description: How to add a new membership product to the shared card catalog
 This workflow covers creating a shared catalog membership product JSON file and
 uploading it through the same card-product pipeline used by credit cards.
 
-Membership products reuse the existing `CardProduct` contract and admin upload
-path, but source JSON files live in `src/data/membership-products/` so the repo
-catalog keeps credit cards and standalone memberships separate.
+Membership products reuse the existing `CardProduct` contract and canonical
+script-only JSON upload path, but source JSON files live in
+`src/data/membership-products/` so the repo catalog keeps credit cards and
+standalone memberships separate.
+
+The uploader enforces this separation: membership JSON must live in
+`src/data/membership-products/memberships/`, while credit-card JSON must live
+with the other cards in `src/data/card-products/cards/`.
 
 Do not create a separate Firestore collection or upload loader for v1.
 
@@ -142,14 +147,17 @@ src/data/membership-products/membership-list.json
 Update the count in that file the same way card products do. Do not add
 standalone membership products to `src/data/card-products/card-list.json`.
 
-## 7. Upload Through The Existing Admin Path
+## 7. Upload Through The Canonical Script
 
-Use the same upload path as card products:
+Use the same script-only upload path as card products:
 
-1. Run the dev server: `npm run dev`
-2. Navigate to the Admin portal -> Cards section
-3. Use the create/upload product flow, or use `saveCardProduct()` from
-   `src/data/card-products/loader.ts` programmatically
+```bash
+npm run cards:upload-json -- --environment=staging <membership-product.json>
+npm run cards:upload-json -- --environment=staging --fix <membership-product.json>
+```
+
+Do not use the Admin browser control or call `saveCardProduct()`
+programmatically from an ad hoc script.
 
 For staged rollout of a real batch, follow
 `.agents/workflows/card-product-staging-rollout.md` after the JSON and image

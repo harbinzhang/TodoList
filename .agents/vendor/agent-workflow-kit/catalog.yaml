@@ -105,6 +105,51 @@ skills:
     description: Add or strengthen tests that catch named regressions and prove their effectiveness
     adapters:
       claude: adapters/claude/commands/add-high-quality-tests.md
+  - name: roadmap
+    path: skills/roadmap/SKILL.md
+    description: Operate an in-repository epic roadmap with explicit source-of-truth, approval, drift, and mission-linkage rules
+    adapters:
+      claude: adapters/claude/commands/roadmap.md
+  - name: cc
+    path: skills/cc/SKILL.md
+    description: Run compact native Codex collaboration from a user-confirmed task manifest
+    adapters:
+      claude: adapters/claude/commands/cc.md
+  - name: crc
+    path: skills/crc/SKILL.md
+    description: Run compact Codex Relay planning and execution from a user-confirmed task manifest
+    adapters:
+      claude: adapters/claude/commands/crc.md
+  - name: mcc
+    path: skills/mcc/SKILL.md
+    description: Alias for multi-cc
+    adapters:
+      claude: adapters/claude/commands/mcc.md
+  - name: multi-cc
+    path: skills/multi-cc/SKILL.md
+    description: Plan and finish one outcome through sequential independently mergeable Codex collaboration PRs
+    adapters:
+      claude: adapters/claude/commands/multi-cc.md
+  - name: pall
+    path: skills/pall/SKILL.md
+    description: Carry a PR through event-driven adversarial review, risk-tiered exact-head verification, approval, and guarded merge
+    adapters:
+      claude: adapters/claude/commands/pall.md
+  - name: firebase-functions-best-practices
+    path: skills/firebase-functions-best-practices/SKILL.md
+    description: Audit, design, implement, or refactor Firebase Functions with evidence-driven correctness, security, performance, and cost guidance
+    adapters:
+      claude: adapters/claude/commands/firebase-functions-best-practices.md
+  - name: prepare-agent-handoff
+    path: skills/prepare-agent-handoff/SKILL.md
+    description: Compress confirmed context into one authorization-preserving prompt for a downstream agent
+    adapters:
+      claude: adapters/claude/commands/prepare-agent-handoff.md
+  - name: stale-client-handling
+    path: skills/stale-client-handling/SKILL.md
+    description: Investigate and safely mitigate suspected writes from outdated application clients using repository-provided hooks
+    adapters:
+      claude: adapters/claude/commands/stale-client-handling.md
 
 workflows:
   - name: feature
@@ -119,3 +164,7 @@ workflows:
     path: workflows/consumer-onboarding.md
   - name: upstream-and-broadcast
     path: workflows/upstream-and-broadcast.md
+  - name: codex-collaboration-core
+    path: workflows/codex-collaboration-core.md
+  - name: multi-cc
+    path: workflows/multi-cc.md

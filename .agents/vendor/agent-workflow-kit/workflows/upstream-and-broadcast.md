@@ -14,7 +14,7 @@ Use this workflow for the repeated two-phase AWK maintenance loop:
 Required:
 
 - source consumer repo root
-- source skill/workflow files or an instruction to compare all AWK-overlapping skills
+- source skill/workflow files or an instruction to sync the full repo-local `.agents/skills/*` tree
 - broadcast scope: all enabled consumers or named consumers
 
 Optional:
@@ -36,10 +36,31 @@ git -C <source-repo> status --short --branch
 
 Read:
 
-- source repo-local `SKILL.md` and referenced workflow files
+- every source repo-local `.agents/skills/*/SKILL.md` path and referenced workflow file
 - source vendored AWK files when they contain newer reusable behavior
 - matching AWK root files
 - `catalog.yaml` and relevant thin adapters
+
+Inventory and classify every repo-local skill before editing AWK:
+
+- **Existing AWK overlap:** compare it with the matching root `skills/<name>/SKILL.md` and upstream reusable differences.
+- **New reusable candidate:** review it for general use, remove source-specific assumptions, and add it to root AWK only when its behavior is portable.
+- **Repo-specific pack-only:** keep it in `packs/<consumer>/.agents/skills/`; do not register it in root `catalog.yaml`.
+
+A skill must not disappear from the maintenance run merely because its name is
+absent from the root AWK catalog.
+
+Refresh the complete source pack, including all repo-local skills and their
+supporting files:
+
+```bash
+node scripts/backup-repo-pack.mjs --source <source-repo> --pack <consumer> --dry-run
+node scripts/backup-repo-pack.mjs --source <source-repo> --pack <consumer>
+```
+
+The source repo remains read-only. If its `.agents` tree is dirty, record that
+the pack snapshot includes uncommitted source edits. The generated
+`BACKUP_FROM.json` captures that status.
 
 Generalize before editing AWK:
 
@@ -97,10 +118,14 @@ If readiness passes, sync:
 node scripts/sync-consumers.mjs --all --ref <awk-ref>
 ```
 
+For each catalog-selected vendored skill, sync creates or verifies the native
+`.agents/skills/<name>` symlink. It reports conflicts before replacing the
+vendor bundle and leaves consumers without catalogs vendor-only.
+
 If the batch wrapper blocks a consumer because of tracked non-vendor dirt, do not stage that dirt. Either:
 
 - stop and report the blocker, or
-- when the user has clearly asked to broadcast anyway, run `scripts/sync-to-repo.mjs --target <repo> --ref <awk-ref>` for that consumer and later stage only `.agents/vendor/agent-workflow-kit`.
+- when the user has clearly asked to broadcast anyway, run `scripts/sync-to-repo.mjs --target <repo> --ref <awk-ref>` for that consumer and later stage only `.agents/vendor/agent-workflow-kit` plus the managed skill symlinks reported by sync.
 
 ## Phase 4: Commit And Push Consumers
 
@@ -110,7 +135,7 @@ For each consumer:
 
 ```bash
 git -C <repo> status --short --branch
-git -C <repo> add .agents/vendor/agent-workflow-kit
+git -C <repo> add .agents/vendor/agent-workflow-kit .agents/skills/<managed-skill>
 git -C <repo> diff --cached --stat
 git -C <repo> commit -m "chore: sync agent workflow kit"
 git -C <repo> push
@@ -142,12 +167,16 @@ cat .agents/vendor/agent-workflow-kit/VENDORED_FROM.json
 ```
 
 Confirm every consumer `VENDORED_FROM.json` points at the AWK commit that was pushed.
+For every managed skill reported by sync, confirm `readlink` has the expected
+relative target and the linked `SKILL.md` resolves.
 
 ## Report
 
 Report:
 
-- source repo and source files read
+- source repo and the complete repo-local skill inventory
+- classification of each skill as overlap, reusable candidate, or pack-only
+- refreshed pack path and whether it included uncommitted source edits
 - AWK validation, commit, and push status
 - AWK commit used for broadcast
 - consumers synced

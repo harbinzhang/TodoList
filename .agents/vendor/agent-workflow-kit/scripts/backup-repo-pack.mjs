@@ -6,9 +6,12 @@ import {
   mkdirSync,
   realpathSync,
   readFileSync,
+  readlinkSync,
   readdirSync,
   rmSync,
   lstatSync,
+  symlinkSync,
+  unlinkSync,
   writeFileSync,
 } from 'node:fs'
 import { basename, dirname, join, relative, resolve } from 'node:path'
@@ -93,6 +96,25 @@ function rewriteVendoredSkillPaths(file) {
       '- In this pack snapshot, skill entries resolve to pack-local `.agents/skills/` files so the pack can be copied as a self-contained starting point.',
     )
   if (rewritten !== original) writeFileSync(file, rewritten)
+}
+
+function rewriteVendoredSymlinkTargets(root) {
+  for (const file of listFiles(root)) {
+    if (!lstatSync(file).isSymbolicLink()) continue
+    const original = readlinkSync(file)
+    const rewritten = original
+      .replace(
+        /\.agents\/vendor\/agent-workflow-kit\/skills\//g,
+        '.agents/skills/',
+      )
+      .replace(
+        /\.agents\/vendor\/agent-workflow-kit\/workflows\//g,
+        '.agents/workflows/',
+      )
+    if (rewritten === original) continue
+    unlinkSync(file)
+    symlinkSync(rewritten, file)
+  }
 }
 
 function materializeVendoredCatalogReferences(sourceRoot, packRoot) {
@@ -226,6 +248,7 @@ mkdirSync(packAgents, { recursive: true })
 cpSync(sourceAgents, packAgents, {
   recursive: true,
   dereference: false,
+  verbatimSymlinks: true,
   filter: (src) => !relative(sourceAgents, src).split('/').includes('vendor'),
 })
 
@@ -238,7 +261,9 @@ if (existsSync(sourceClaudeCommands)) {
   cpSync(sourceClaudeCommands, packClaudeCommands, {
     recursive: true,
     dereference: false,
+    verbatimSymlinks: true,
   })
+  rewriteVendoredSymlinkTargets(packClaudeCommands)
   for (const file of listFiles(packClaudeCommands)) {
     rewriteVendoredSkillPaths(file)
   }

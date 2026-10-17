@@ -1,6 +1,6 @@
 ---
 name: benefit-drift-audit
-description: Run the read-only userCardBenefitsTracking drift audit and report cadence-aware residuals, or use the user-level aggregate wrapper for one-user tracking investigations
+description: Run the read-only broad/cohort userCardBenefitsTracking drift audit and report cadence-aware residuals, or use the user-level aggregate wrapper for one-user tracking investigations. Route post-approval checks for one cardUpdateSuggestions record to suggestion-approval-tracking-audit.
 ---
 
 # Benefit Tracking Drift Audit
@@ -14,6 +14,13 @@ Invoke when the user asks about:
 - "are there still conflicts after the repair scripts"
 - "look at this user's tracking", "is this user's tracking valid", "any weird tracking for user <uid>"
 - "show me whether this user's recent tracking writes are reasonable"
+
+## Routing
+
+For a post-approval check of one `cardUpdateSuggestions` record's catalog and
+tracking effects, use `$suggestion-approval-tracking-audit` instead. It is the
+staging-first, per-suggestion audit and requires explicit user authorization
+before production reads.
 
 ## Execution
 

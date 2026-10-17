@@ -97,6 +97,49 @@ Split long compound copy (e.g. `Upcoming · Available {{date}}`) onto its own li
 
 ---
 
+## Spacing & Density
+
+Spacing is semantic, not ad-hoc. Prefer the tokens below over sprinkling `p-4`/`p-5`/`p-6` and raw `gap-*` per surface. Do **not** mechanically replace every spacing class — local spacing may stay where it expresses a genuine component-specific need.
+
+### Card padding utilities
+`.card` intentionally carries **no padding**; pair it with one of these (defined in `src/index.css`):
+```
+.card-pad          → p-4 sm:p-5        // comfortable: regular cards, settings, forms
+.card-pad-emphasis → p-4 sm:p-5 lg:p-6 // emphasized: metric/stat cards (Dashboard metric cards = reference impl)
+.card-pad-hero     → p-6 sm:p-8        // spacious: Hero, empty states, rare emphasis
+```
+
+### Semantic gap tokens
+`SafeRow` / `SafeStack` / `SafeChipGroup` / `SafeButtonGroup` (`src/shared/components/SafeLayoutPrimitives.tsx`) accept semantic `gap` tokens; any raw Tailwind gap string still passes through unchanged:
+```
+gap="chip"    → gap-1.5   // chips, badges, tags
+gap="icon"    → gap-2     // icon + label
+gap="row"     → gap-3     // items within a row
+gap="loose"   → gap-4     // loose row groups
+gap="section" → gap-6     // between sections
+```
+
+### Page-level rhythm: `PageStack` / `SectionStack`
+A page's top-level block rhythm is declared once via `<PageStack density>` (same file, `src/shared/components/SafeLayoutPrimitives.tsx`):
+```
+density="compact"     → space-y-4               // data-dense pages (Benefits Tracker)
+density="comfortable" → space-y-6 md:space-y-8  // default — Dashboard, Card Summary, Card Detail
+density="spacious"    → space-y-8 md:space-y-10 // form flows, search/browse pages (Add Card)
+```
+Pages must **not** self-manage container/max-width/vertical page padding — the app shell owns those (`container-custom py-6 md:py-8`); routes needing their own surface register in `FOCUSED_SURFACE_ROUTES` instead. `SectionStack` covers section-internal stacking (fixed `space-y-4`). Only page-block spacing scales with breakpoint; inner spacing stays constant so text wrapping never shifts the rhythm skeleton.
+
+### Structural vs optical
+Structural spacing **must** use the tokens/utilities above. Optical adjustments (e.g. Mint's `gap-3.5`, `space-y-[18px]`) are allowed **only** inside theme-primitive components (e.g. `MintEditorialPrimitives`) and must carry a brief `/* optical: <reason> */` comment.
+
+### Migration order (each batch ships independently)
+1. Primitives + Dashboard reference — **done**
+2. Benefits Tracker compact density (respect 44px touch targets) — **done**
+3. Card Summary / Card Detail rhythm — **done**
+4. Empty / emphasis surfaces → `.card-pad-hero`
+5. Remaining bare `.card` + `p-*` → `.card-pad*`, migrated by domain
+
+---
+
 ## Type Safety
 
 ### Casting for Firestore Subgroups

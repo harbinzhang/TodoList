@@ -1,1 +1,1 @@
-/Users/haibinzhang/mine/react/perks-react/.agents/skills/local-emulator-admin-setup/SKILL.md
+../../.agents/skills/local-emulator-admin-setup/SKILL.md

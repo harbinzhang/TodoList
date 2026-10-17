@@ -1,0 +1,6 @@
+interface:
+  display_name: "CRC"
+  short_description: "Compact grilling-driven Codex relay"
+  default_prompt: "Use $crc to clarify this change, execute as many small Codex tasks as it decomposes into, and finish through PALL."
+policy:
+  allow_implicit_invocation: false

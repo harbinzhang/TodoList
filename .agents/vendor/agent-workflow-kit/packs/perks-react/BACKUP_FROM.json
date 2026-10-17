@@ -1,9 +1,9 @@
 {
-  "sourcePath": "/Users/haibinzhang/mine/react/perks-react",
+  "sourcePath": "/private/tmp/perks-react-latest.NOaD5Y",
   "sourceRepoUrl": "git@github.com:harbinzhang/perks-react.git",
   "sourceBranch": "dev",
-  "sourceCommit": "a17595b0dbdb06a10e750c267b0bb630cf104b70",
-  "sourceAgentsStatus": "M .agents/catalog.yaml\n M .agents/skills/README.md\n M .agents/skills/android-screenshots/SKILL.md\n?? .agents/skills/add-high-quality-tests/",
+  "sourceCommit": "821cf1076de2c933225dddf2924a80988d319ec4",
+  "sourceAgentsStatus": "",
   "sourceClaudeCommandsStatus": "",
-  "backedUpAt": "2026-07-16T06:34:10.758Z"
+  "backedUpAt": "2026-07-26T19:54:11.675Z"
 }

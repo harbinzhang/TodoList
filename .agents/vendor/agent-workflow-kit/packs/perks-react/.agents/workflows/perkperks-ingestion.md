@@ -18,7 +18,8 @@ This workflow is canonical for the PerkPerks ingestion path. Script-specific com
 ## Preconditions
 
 - Firestore production access has been explicitly approved before any production read or write
-- Staging access and admin upload access are available
+- Staging Application Default Credentials are available for the canonical JSON
+  uploader
 - Card product JSON and image changes in the repo are understood and reviewed
 - For any Firestore script, follow `.agents/workflows/run-firestore-script.md`
 
@@ -193,7 +194,8 @@ Use `.agents/workflows/card-product-staging-rollout.md`.
 Summary:
 
 1. deploy staging hosting and card assets as needed
-2. upload card product JSON through staging admin
+2. dry-run and upload each card product JSON through
+   `npm run cards:upload-json`
 3. verify staging Firestore, `/cards/add`, and card image hosting
 4. fix schema, search, or image gaps before considering production
 
@@ -201,7 +203,9 @@ Summary:
 
 Only after staging passes cleanly:
 
-1. repeat the admin upload or approved Firestore write path for production
+1. promote the same Staging-verified JSON through
+   `npm run cards:upload-json -- --environment=production`, pinned to its
+   Staging card ID and SHA-256
 2. deploy production hosting/card-assets if repo/runtime changes are needed
 3. verify production search, images, and any approved suggestion writes
 

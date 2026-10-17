@@ -34,3 +34,9 @@ consumers:
     enabled: true
     syncVendor: true
     notes: Todo app repo with repo-local agent skills; AWK vendor sync will create or refresh the vendored kit.
+
+  - name: company-ops
+    path: /Users/haibinzhang/mine/ops/company-ops
+    enabled: true
+    syncVendor: true
+    notes: Mujaka company operations repo; AWK vendor sync will create or refresh the vendored kit.

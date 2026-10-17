@@ -1,0 +1,4 @@
+interface:
+  display_name: "Add Card"
+  short_description: "Script-upload one aligned card JSON"
+  default_prompt: "Use $add-card to deduplicate a new card in Staging, generate its canonical JSON, upload it through the canonical script, and reuse that exact artifact for any authorized Production promotion."

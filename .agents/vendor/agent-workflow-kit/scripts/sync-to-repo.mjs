@@ -1,8 +1,13 @@
 #!/usr/bin/env node
 
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { execFileSync, spawnSync } from 'node:child_process'
+import {
+  ensureNativeSkillLink,
+  inspectNativeSkillLink,
+  selectedVendoredSkills,
+} from './skill-routing.mjs'
 
 const args = process.argv.slice(2)
 
@@ -45,11 +50,32 @@ const files = execFileSync('git', ['-C', sourceRoot, 'ls-tree', '-r', '--name-on
   .split('\n')
   .filter(Boolean)
   .filter((file) => !file.startsWith('.git/'))
+const catalogPath = join(targetAgents, 'catalog.yaml')
+const selectedSkills = existsSync(catalogPath)
+  ? selectedVendoredSkills(readFileSync(catalogPath, 'utf8'))
+  : []
+const nativeSkillStates = []
+
+for (const skillName of selectedSkills) {
+  if (!files.includes(`skills/${skillName}/SKILL.md`)) {
+    console.error(`Catalog-selected vendored skill is missing from ${ref}: ${skillName}`)
+    process.exit(1)
+  }
+  try {
+    nativeSkillStates.push(inspectNativeSkillLink(targetRoot, skillName))
+  } catch (error) {
+    console.error(error.message)
+    process.exit(1)
+  }
+}
 
 if (dryRun) {
   console.log(`Would sync ${files.length} files`)
   console.log(`Source: ${repoUrl} @ ${commit}`)
   console.log(`Target: ${vendorRoot}`)
+  for (const state of nativeSkillStates) {
+    console.log(`Codex skill ${state.relativePath.split('/').at(-1)}: ${state.action === 'create' ? 'would create' : 'unchanged'}`)
+  }
   for (const file of files) console.log(file)
   process.exit(0)
 }
@@ -71,6 +97,11 @@ writeFileSync(join(vendorRoot, 'VENDORED_FROM.json'), `${JSON.stringify({
   commit,
   syncedAt: new Date().toISOString(),
 }, null, 2)}\n`)
+
+for (const skillName of selectedSkills) {
+  const state = ensureNativeSkillLink(targetRoot, skillName)
+  console.log(`Codex skill ${skillName}: ${state.action === 'create' ? 'created' : state.action}`)
+}
 
 console.log(`Synced ${files.length} files to ${vendorRoot}`)
 console.log(`Source: ${repoUrl} @ ${commit}`)

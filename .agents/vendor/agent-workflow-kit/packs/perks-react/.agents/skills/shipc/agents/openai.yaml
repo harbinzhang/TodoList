@@ -1,0 +1,6 @@
+interface:
+  display_name: "ShipC"
+  short_description: "Full staging patch ship without automated tests"
+  default_prompt: "Use $shipc to follow the full $ship patch-release and staging workflow while explicitly skipping automated test suites."
+policy:
+  allow_implicit_invocation: false

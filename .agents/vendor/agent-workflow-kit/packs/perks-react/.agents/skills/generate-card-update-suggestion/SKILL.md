@@ -45,7 +45,7 @@ Then verify the script's dry-run result; the script reads the live `cards/{cardI
 2. Run a dry-run first from the repo root:
 
    ```bash
-   npx tsx exp/functions-scripts/generate-card-suggestions-from-search.ts --input /tmp/card-update-suggestion.csv --limit 1 --concurrency 1
+   npx tsx exp/functions-scripts/generate-card-suggestions-from-search.ts --project <project-id> --input /tmp/card-update-suggestion.csv --limit 1 --concurrency 1 --report-file /tmp/card-update-suggestion-report.json
    ```
 
 3. Choose the update mode:
@@ -63,10 +63,10 @@ Then verify the script's dry-run result; the script reads the live `cards/{cardI
 5. If the dry-run is acceptable and the user explicitly asks to submit/write the suggestion, rerun with `--fix` and a stable submitter:
 
    ```bash
-   npx tsx exp/functions-scripts/generate-card-suggestions-from-search.ts --input /tmp/card-update-suggestion.csv --limit 1 --concurrency 1 --fix --submitted-by-user-id system
+   npx tsx exp/functions-scripts/generate-card-suggestions-from-search.ts --project <project-id> --input /tmp/card-update-suggestion.csv --limit 1 --concurrency 1 --report-file /tmp/card-update-suggestion-report.json --fix --submitted-by-user-id system
    ```
 
-   Preserve the same mode flag used in dry-run.
+   Preserve the same project and mode flag used in dry-run. A direct Production write additionally requires `--confirm-production-write`.
 
 6. After `--fix`, confirm whether the script wrote, skipped, or failed. If it wrote successfully, tell the user the suggestion is pending in the admin Card Update Suggestions queue.
 

@@ -157,6 +157,8 @@ for (const file of walk(root)) {
   if (rel === 'consumers.yaml') continue
   if (rel === 'README.md') continue
   if (rel.startsWith('packs/')) continue
+  if (rel.startsWith('docs/superpowers/')) continue
+  if (rel.startsWith('.worktrees/')) continue
   const content = read(file)
   for (const banned of bannedStrings) {
     if (content.includes(banned)) {

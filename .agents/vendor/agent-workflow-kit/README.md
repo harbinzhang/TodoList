@@ -23,8 +23,9 @@ Consumer repositories keep their own routing and local policy:
 
 Use this precedence in every consumer repo:
 
-1. Repo-local override: `.agents/skills/<name>/SKILL.md`
-2. Vendored generic skill: `.agents/vendor/agent-workflow-kit/skills/<name>/SKILL.md`
+1. Real repo-local override directory: `.agents/skills/<name>/SKILL.md`
+2. Managed native link: `.agents/skills/<name>` points to the vendored generic
+   skill at `.agents/vendor/agent-workflow-kit/skills/<name>`
 3. Repo profile values: `.agents/repo-profile.yaml`
 
 Do not edit vendored files for project-specific behavior. Add or update a repo-local override, then upstream the generalized part here only after it proves useful.
@@ -33,7 +34,11 @@ Do not edit vendored files for project-specific behavior. Add or update a repo-l
 
 `SKILL.md` is the canonical source. Agent-specific commands must stay thin:
 
-- Codex/OpenAI discovers skills through the consumer repo's `.agents/catalog.yaml`.
+- Codex/OpenAI discovers repository skills by scanning `.agents/skills/*/SKILL.md`.
+- Vendored skills are exposed through relative `.agents/skills/<name>` symlinks
+  that point to `.agents/vendor/agent-workflow-kit/skills/<name>`.
+- `.agents/catalog.yaml` remains AWK's selected-skill and adapter metadata; it is
+  not a Codex discovery source.
 - Claude commands live under `.claude/commands/*.md`, include command frontmatter, and only load the canonical `SKILL.md`.
 - Consumer repo catalog entries should declare the Claude adapter when one exists:
 
@@ -46,7 +51,8 @@ skills:
       claude: .claude/commands/rebase.md
 ```
 
-If a consumer repo overrides a generic skill, change only the catalog `path` and
+If a consumer repo overrides a generic skill, replace the managed symlink with a
+real `.agents/skills/<name>/` directory, then change only the catalog `path` and
 the Claude command's loaded path to `.agents/skills/<name>/SKILL.md`. Do not copy
 the procedure into `.claude/commands/<name>.md`.
 
@@ -59,7 +65,14 @@ node scripts/install-skill-to-repo.mjs --target /path/to/consumer-repo --skill r
 
 `--mode vendored` expects the skill to already exist at
 `.agents/vendor/agent-workflow-kit/skills/<name>/SKILL.md` in the consumer repo.
-Run the vendoring step first. `--mode override` expects a repo-local skill at
+Run the vendoring step first. It creates or verifies this native Codex link:
+
+```text
+.agents/skills/<name> -> ../vendor/agent-workflow-kit/skills/<name>
+```
+
+The installer refuses to replace a real local skill directory or an unexpected
+symlink. `--mode override` expects a real, non-symlinked repo-local skill at
 `.agents/skills/<name>/SKILL.md`.
 
 Installing `pr-coding-loop` or `pr-review-loop` also adds root npm aliases for
@@ -137,13 +150,17 @@ Do not modify the source repo.
 ```
 
 For the recurring full maintenance loop, use `upstream-and-broadcast`: upstream
-the reusable behavior into AWK, validate/commit/push AWK, then broadcast that
-committed AWK ref to the registered consumers in `consumers.yaml`.
+the reusable behavior into AWK, refresh the source consumer's complete repo pack
+including every `.agents/skills/*` entry, validate/commit/push AWK, then
+broadcast that committed AWK ref to the registered consumers in
+`consumers.yaml`. Repo-specific skills stay pack-only unless they are explicitly
+generalized and registered in the root catalog.
 
 ```text
 Use upstream-and-broadcast. Source repo: /path/to/consumer-repo.
-Compare all AWK-overlapping skills, update AWK, commit and push AWK, then
-broadcast to all enabled consumers and commit vendor-only consumer updates.
+Inventory and sync all repo-local .agents/skills/* entries, update reusable AWK
+skills, refresh the source repo pack, commit and push AWK, then broadcast to all
+enabled consumers and commit vendor-only consumer updates.
 ```
 
 ## Vendoring
@@ -173,7 +190,10 @@ node scripts/sync-consumers.mjs --consumer perkmon.com --ref HEAD
 
 `sync-consumers.mjs` is a batch wrapper around `sync-to-repo.mjs`. It blocks
 tracked dirty files outside `.agents/vendor/agent-workflow-kit/`, reports
-untracked files as warnings, and does not commit or push consumer repos.
+untracked files as warnings, and does not commit or push consumer repos. For
+each consumer catalog entry that points into the vendored kit, sync also creates
+or verifies the matching native Codex symlink under `.agents/skills/`. Consumers
+without a catalog receive the vendor bundle without exposing any generic skill.
 
 From this repository, first make sure the generic skill changes are committed.
 `sync-to-repo.mjs` uses `git archive <ref>`, so uncommitted edits are not copied.
@@ -191,6 +211,10 @@ Then register the skills the consumer repo should expose:
 node scripts/install-skill-to-repo.mjs --target /path/to/consumer-repo --skill rebase --mode vendored
 node scripts/install-skill-to-repo.mjs --target /path/to/consumer-repo --skill verify --mode vendored
 ```
+
+Registration writes AWK/Claude routing metadata and the native Codex symlink.
+Later broadcasts refresh the vendored target and reconcile links for those
+selected catalog entries; they do not expose every AWK skill.
 
 Registering `pr-coding-loop` or `pr-review-loop` after vendoring also wires the
 `agent-pr:status` and `agent-pr:ready` npm aliases when the consumer has
@@ -210,6 +234,8 @@ Before committing the consumer repo, validate the routing:
 
 ```bash
 ruby -ryaml -e 'YAML.load_file(".agents/catalog.yaml"); YAML.load_file(".agents/repo-profile.yaml")'
+test "$(readlink .agents/skills/rebase)" = "../vendor/agent-workflow-kit/skills/rebase"
+test -f .agents/skills/rebase/SKILL.md
 git diff --check
 ```
 

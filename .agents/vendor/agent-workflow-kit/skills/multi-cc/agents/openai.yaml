@@ -1,0 +1,6 @@
+interface:
+  display_name: "Multi-CC"
+  short_description: "Plan and finish a sequence of reviewed PRs"
+  default_prompt: "Use $multi-cc to plan this multi-PR mission, confirm it once, and carry every PR through merge."
+policy:
+  allow_implicit_invocation: false

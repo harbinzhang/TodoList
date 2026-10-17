@@ -10,6 +10,8 @@ description: How to prepare and ship an iOS release for App Store Connect and Te
 - Xcode and CocoaPods/Bundler available locally
 - App Store Connect API key or equivalent signing/auth configured
 - Root and `ios/` dependencies installed
+- `ios/App/App/GoogleService-Info.plist` and
+  `ios/App/Pods/FirebaseCrashlytics/upload-symbols` present
 - Version state already correct, or user has approved changing it
 - Default iOS release branch is `native-release`; only use a different release branch when the user explicitly asks for it
 
@@ -62,7 +64,13 @@ This uses `scripts/ios-prepare-archive.sh --upload`, which:
 - runs `node scripts/bump-version.mjs sync`
 - runs `npm install`
 - runs `npm run ios:sync` (production web build + Capacitor sync)
-- runs `cd ios && bundle exec fastlane release` (build + TestFlight upload)
+- runs `cd ios && bundle exec fastlane release`, which:
+  - builds the archive and IPA
+  - verifies the generated dSYM contains at least one UUID
+  - preserves the symbol artifact under `ios/build/dsyms/<version>-<build>/`
+  - explicitly uploads the preserved dSYM to Crashlytics and fails before the
+    TestFlight upload if symbol validation or upload fails
+  - uploads the IPA to TestFlight
 
 ### 2. Full release with App Store metadata
 
@@ -137,11 +145,50 @@ When a task only covers metadata, screenshots, or an IPA upload:
 ```bash
 npm run appstore:metadata
 npm run appstore:screenshots
-npm run appstore:testflight
+DSYM_PATH=/absolute/path/to/App.app.dSYM.zip npm run appstore:testflight
 npm run appstore:upload
 ```
 
+`appstore:testflight` requires the matching dSYM through `DSYM_PATH` when it
+does not run immediately after the Fastlane build lane. This prevents an
+existing IPA from being uploaded without its symbols.
+
 Fastlane lanes live in `ios/fastlane/Fastfile`.
+
+## dSYM guarantees and missing-symbol recovery
+
+The Xcode target keeps `Crashlytics Upload Symbols` as its last build phase for
+manual Xcode archives. The Fastlane release path additionally performs an
+explicit, fail-fast upload before uploading the IPA. Duplicate Crashlytics
+symbol uploads are safe.
+
+After every Fastlane build, retain:
+
+```text
+ios/build/dsyms/<version>-<build>/
+```
+
+When Firebase reports a missing UUID:
+
+1. Locate the matching `.dSYM`, `.dSYM.zip`, or `.xcarchive/dSYMs` directory.
+2. Verify and upload the exact UUID:
+
+```bash
+npm run appstore:dsym:upload -- \
+  --dsym /absolute/path/to/App.xcarchive/dSYMs \
+  --expected-uuid <UUID-FROM-FIREBASE> \
+  --version <MARKETING_VERSION> \
+  --build-number <CURRENT_PROJECT_VERSION>
+```
+
+The command exits nonzero if the artifact is absent, contains no UUIDs, does
+not contain the expected UUID, lacks the Firebase config/upload tool, or if
+Crashlytics rejects the upload. Use `--skip-upload` to validate and preserve an
+artifact without contacting Firebase.
+
+If the archive is unavailable locally, use Xcode Organizer to locate the
+original `.xcarchive`. Do not upload a dSYM from another build: matching the
+marketing version is insufficient; the UUID must match the Firebase alert.
 
 ## CI Path
 
@@ -153,5 +200,8 @@ Use the local fastlane path when the user asks for an iOS build or TestFlight up
 
 - Confirm `npm run version:check` passes after any version changes
 - Confirm `ios/App/App.xcodeproj/project.pbxproj` reflects the intended marketing version and build number
+- Confirm Fastlane reports the generated dSYM UUIDs and the preserved
+  `ios/build/dsyms/<version>-<build>/` artifact
+- Confirm the explicit Crashlytics dSYM upload succeeds before the IPA upload
 - If uploading, confirm the build appears in App Store Connect / TestFlight
 - Report whether distribution is internal only or intended for external testers

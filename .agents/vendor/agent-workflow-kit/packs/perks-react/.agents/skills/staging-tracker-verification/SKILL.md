@@ -1,6 +1,6 @@
 ---
 name: staging-tracker-verification
-description: Validate the staging tracker and tracking-creation flow by running remote staging E2E coverage, inspecting staging Firestore state, optionally creating a staging test userCard to verify tracking docs, checking used/unused persistence, and cleaning up any temporary staging records afterward.
+description: Validate staging tracking derivation with the standard namespaced verifier, deterministic candidate comparison, used-state persistence, exact active-slot restoration, and guaranteed cleanup.
 ---
 
 # Staging Tracker Verification
@@ -14,27 +14,33 @@ For the default post-deploy staging gate, use `staging-qa` instead. This skill i
 ## Safety
 
 - This skill is for staging only. Do not point it at production without explicit user approval.
-- Default to read-heavy verification first.
-- If you create temporary staging records, always clean them up before finishing unless the user explicitly asks to keep them.
-- Treat `.env.staging` as the source of truth for the remote staging E2E account and expected staging configuration.
+- Use only the fixed `xic9967+staging-e2e@gmail.com` account; never fall back to
+  the retired account.
+- Do not manually widen cleanup. The standard verifier owns only its
+  collision-safe, run-ID-derived card ID and nickname.
+- Do not bypass or delete an active fixed-account staging-QA lease. An orphaned
+  lease requires explicit process inspection, then the exact same run ID with
+  `--recover`; recovery must use the lease's durable snapshot and ownership
+  check. Never delete the temporary card until its successful create trigger
+  has written the exact lease acknowledgement.
+- Treat trigger cleanup, exact display-order restoration, or fixed-account
+  user-profile restoration failure as a hard stop.
 
 ## Execution
 
 1. Load `.agents/workflows/staging-tracker-verification.md`.
-2. Run the remote staging Playwright suite first.
-3. If staging E2E is blocked by invalid credentials, verify the Auth user and repair the staging test password from `.env.staging`, then rerun the suite.
-4. Perform a manual Firestore verification pass:
-   - inspect the staging test user
-   - confirm starting wallet/tracking state
-   - add a temporary shared `userCard` with trackable benefits
-   - verify trigger-created `userCardBenefitsTracking` docs
-   - mark one tracking row used and confirm persistence fields
-5. Clean up any temporary staging `userCards` and tracking docs created during the verification pass.
-6. Report the automated results, manual verification results, cleanup status, and any residual risks.
+2. Run `npm run staging:verify:tracker -- --run-id <ship-run-id>`.
+3. If that exact run was interrupted and its verifier is no longer active,
+   rerun with `--recover`; never recover another run's lease.
+4. Inspect the generated report and require its cleanup section to pass.
+5. If broader user journeys also changed, run the remote staging Playwright
+   lane separately through `staging-user-journey-verification`.
+6. Report the standard verifier result, report path, exact baseline restoration,
+   and any blocker.
 
 ## Outputs
 
-- Staging E2E result summary
-- Staging Firestore verification summary
-- Temporary records created and cleaned up
+- Standard staging tracker verifier result and report path
+- Production-derived expected/observed tracking summary
+- Temporary records and exact baseline restoration
 - Any blockers, data quirks, or follow-up actions

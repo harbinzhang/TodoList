@@ -1,6 +1,6 @@
 ---
 name: chrome-extension-release
-description: Prepare and publish the Perkmon Chrome extension through Chrome Web Store, including the provider replay safe gate before upload. Use when the user asks to release, publish, upload, submit, package, dry-run, bump, or check status for `apps/chrome-extension`, Chrome Web Store, Web Store listing assets, `release:webstore`, `webstore:status`, `webstore:package`, or `publish-webstore`.
+description: Use when releasing, publishing, uploading, submitting, packaging, dry-running, versioning, or checking Chrome Web Store status for the Perkmon extension under `apps/chrome-extension`.
 ---
 
 # Chrome Extension Release Skill
@@ -20,6 +20,9 @@ This is separate from the repo `release`, `ship`, and Firebase `deploy` skills.
 - For Google sign-in, do not invent or substitute OAuth clients. The known production Chrome extension Google OAuth client is `1000114568410-lgb07ltc2i2pjmjtnac5nr15c8ctkgab.apps.googleusercontent.com`; stale staging client ids such as `470764116554-...` cause `redirect_uri_mismatch`.
 - For Apple sign-in, verify the production extension auth backend is deployed/configured before claiming the production extension is ready.
 - Hard stop if typecheck, tests, production build, packaging, manifest validation, or version consistency fails.
+- Before build/package/upload/publish, run `npm run webstore:sensitive-gate`. The gate compares every non-version manifest field with `release-sensitive-baseline.json`; any permission, host, CSP, background, content-script, externally-connectable, web-accessible-resource, identity, or future manifest-surface change is a hard stop.
+- A generic release approval such as "go" never overrides a sensitive-change hard stop. Do not upload, submit, pass an ad hoc bypass, or update `release-sensitive-baseline.json` during an ordinary release task.
+- Updating the sensitive baseline requires a separate, explicit human approval naming the exact manifest differences after security/privacy and Web Store disclosure review. Commit that reviewed baseline update before starting a new release attempt.
 - Hard stop if the built `dist/` contains staging project ids, staging Function URLs, staging Firebase API keys, or staging Google OAuth clients.
 - Before any Chrome Web Store upload command, run the `$chrome-extension-provider-replay` safe gate from the canonical workflow. At minimum this includes provider recording manifest validation, provider capture dry-run, fixture safety check, and provider mock replay.
 - Hard stop if provider replay fails, needs live provider credentials/MFA handled by the agent, produces tracked raw captures or Chrome profiles, or leaves a release-impacting provider/fanout/add/enroll/matching/merchant-alert change without replay coverage unless the user explicitly accepts the documented coverage gap.
@@ -40,6 +43,7 @@ This is separate from the repo `release`, `ship`, and Firebase `deploy` skills.
    - chosen next version and files bumped
    - production env/auth validation result, including Google OAuth client and Apple auth start URL
    - dry-run gate result
+   - sensitive-change gate result and approved baseline version
    - provider replay safe gate result, including baseline commands, targeted provider/scenario coverage when applicable, and confirmation that raw data/profiles stayed untracked under `tmp`
    - generated zip path and size
    - listing asset paths/dimensions when relevant
@@ -52,6 +56,7 @@ This is separate from the repo `release`, `ship`, and Firebase `deploy` skills.
 - Version bump summary
 - Production extension auth/env summary
 - Verification commands and results
+- Sensitive-change gate result and approved baseline version
 - Provider replay safe gate result
 - Zip artifact path
 - Blockers or manual Chrome Web Store Dashboard steps

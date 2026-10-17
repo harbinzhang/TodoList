@@ -20,6 +20,7 @@ console.log(`ADMIN_EMAIL=${q(ctx.admin?.email || '')}`)
 console.log(`ADMIN_PASSWORD=${q(ctx.admin?.password || '')}`)
 console.log(`ADMIN_UID=${q(ctx.admin?.uid || '')}`)
 console.log(`FIRST_CARD_ID=${q(firstCard)}`)
+console.log(`FLAGS_PROFILE=${q(ctx.operationalFlags?.profile || '')}`)
 NODE
 )"
 
@@ -39,14 +40,19 @@ if [ "$LOGIN_UID" != "$ADMIN_UID" ]; then
   exit 1
 fi
 
+ID_TOKEN=$(echo "$SIGNIN_JSON" | node -e "const fs=require('fs');const d=JSON.parse(fs.readFileSync(0,'utf8'));process.stdout.write(d.idToken||'')")
+LOOKUP_JSON=$(curl -s -X POST "${AUTH_BASE}/identitytoolkit.googleapis.com/v1/accounts:lookup?key=fake-api-key" \
+  -H 'Content-Type: application/json' \
+  -d "{\"idToken\":\"${ID_TOKEN}\"}")
+EMAIL_VERIFIED=$(echo "$LOOKUP_JSON" | node -e "const fs=require('fs');const d=JSON.parse(fs.readFileSync(0,'utf8'));process.stdout.write(String(d.users?.[0]?.emailVerified))")
+
 USER_DOC=$(curl -s -H 'Authorization: Bearer owner' \
   "${FIRESTORE_BASE}/v1/projects/${PROJECT_ID}/databases/(default)/documents/users/${ADMIN_UID}")
 
-EMAIL_VERIFIED=$(echo "$USER_DOC" | node -e "const fs=require('fs');const d=JSON.parse(fs.readFileSync(0,'utf8'));process.stdout.write(String(d.fields?.emailVerified?.booleanValue))")
 ROLE=$(echo "$USER_DOC" | node -e "const fs=require('fs');const d=JSON.parse(fs.readFileSync(0,'utf8'));process.stdout.write(d.fields?.role?.stringValue||'')")
 
 if [ "$EMAIL_VERIFIED" != "true" ] || [ "$ROLE" != "admin" ]; then
-  echo "Firestore user verification failed. emailVerified=$EMAIL_VERIFIED role=$ROLE"
+  echo "Admin verification failed. auth.emailVerified=$EMAIL_VERIFIED firestore.role=$ROLE"
   exit 1
 fi
 
@@ -60,7 +66,55 @@ if [ -n "$FIRST_CARD_ID" ]; then
   fi
 fi
 
+if [ "$FLAGS_PROFILE" = "local-safe-all-features" ]; then
+  FLAGS_DOC=$(curl -s -H 'Authorization: Bearer owner' \
+    "${FIRESTORE_BASE}/v1/projects/${PROJECT_ID}/databases/(default)/documents/config/flags")
+
+  echo "$FLAGS_DOC" | node -e "
+const fs = require('fs')
+const doc = JSON.parse(fs.readFileSync(0, 'utf8'))
+const fields = doc.fields || {}
+const bool = (key) => fields[key]?.booleanValue
+const string = (key) => fields[key]?.stringValue
+const integer = (key) => Number(fields[key]?.integerValue)
+
+const expected = {
+  askAiPipelineMode: string('askAiPipelineMode') === 'value',
+  askAiActionsEnabled: bool('askAiActionsEnabled') === true,
+  askAiAddPerkEnabled: bool('askAiAddPerkEnabled') === true,
+  wishlistMode: string('wishlistMode') === 'on',
+  scopedTrackerReads: bool('disableScopedTrackerReads') === false,
+  outboundEmailDisabled:
+    bool('adminMonitoringEmailsEnabled') === false &&
+    bool('userReminderEmailsEnabled') === false &&
+    bool('testEmailsEnabled') === false &&
+    bool('transactionalEmailsEnabled') === false,
+  outboundPushDisabled:
+    bool('pushReminderEnabled') === false &&
+    bool('pushReminderIosEnabled') === false,
+  migrationDisabled: bool('migrationDispatchEnabled') === false,
+  benefitSignalsDeltaDisabled: bool('benefitSignalsDeltaEnabled') === false,
+  campaignsDisabled: bool('benefitReminderCampaignsEnabled') === false,
+  outboxDisabled:
+    string('emailSendPath') === 'legacy' &&
+    string('pushSendPath') === 'legacy' &&
+    integer('outboxRolloutUserHashMax') === 0,
+  externalSandboxDisabled: string('priceWatchSandboxMode') === 'in-process',
+}
+
+const failures = Object.entries(expected).filter(([, ok]) => !ok).map(([key]) => key)
+if (failures.length > 0) {
+  console.error('Operational flag verification failed: ' + failures.join(', '))
+  process.exit(1)
+}
+"
+elif [ -n "$FLAGS_PROFILE" ]; then
+  echo "Unexpected operational flag profile: $FLAGS_PROFILE"
+  exit 1
+fi
+
 echo "Verification passed"
 echo "- Admin email: $ADMIN_EMAIL"
 echo "- Admin uid: $ADMIN_UID"
 echo "- First card id: ${FIRST_CARD_ID:-<none>}"
+echo "- Operational flags profile: ${FLAGS_PROFILE:-<preserved>}"
